@@ -1,0 +1,40 @@
+# Student Marketplace - Main Configuration
+# Author: Senior Full-Stack Developer
+
+# 1. ป้องกันการเข้าดู Directory (Directory Browsing)
+# ไม่ให้คนอื่นพิมพ์ path โฟลเดอร์แล้วเห็นรายชื่อไฟล์ทั้งหมด
+Options -Indexes
+
+# 2. ตั้งค่า Default Charset เป็น UTF-8
+AddDefaultCharset UTF-8
+
+# 3. เปิดการใช้งาน Rewrite Engine
+RewriteEngine On
+
+# 4. ซ่อนนามสกุลไฟล์ .php (เพื่อความสวยงามและ UX)
+# เช่น เข้าหน้า /pages/index แทน /pages/index.php
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}\.php -f
+RewriteRule ^(.*)$ $1.php [NC,L]
+
+# 5. ป้องกันการเข้าถึงไฟล์ Config และ Includes โดยตรงจาก Browser
+<FilesMatch "^(database\.php|functions\.php)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# 6. บีบอัดไฟล์ (Gzip) เพื่อให้เว็บโหลดเร็วขึ้น
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/xml
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE application/xhtml+xml
+    AddOutputFilterByType DEFLATE application/rss+xml
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/x-javascript
+</IfModule>
+
+# 7. ตั้งค่าหน้า Error 404 (ถ้าต้องการ)
+# ErrorDocument 404 /student_marketplace/pages/index.php

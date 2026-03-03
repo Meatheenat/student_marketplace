@@ -1,0 +1,7 @@
+# assets/images/.htaccess
+
+# ป้องกันไม่ให้รัน PHP ในโฟลเดอร์รูปภาพ
+<FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|htm|html|shtml)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>

@@ -1,0 +1,37 @@
+student_marketplace/
+│
+├── config/
+│   └── database.php          # [DONE] ไฟล์เชื่อมต่อฐานข้อมูล PDO
+│
+├── assets/                   # เก็บไฟล์ Static สำหรับหน้าบ้าน
+│   ├── css/
+│   │   └── style.css         # ไฟล์ CSS หลัก (Custom UI/UX)
+│   ├── js/
+│   │   └── script.js         # ไฟล์ JavaScript (Form Validation, UI Logic)
+│   └── images/               # โฟลเดอร์เก็บรูปภาพสินค้าและโปรไฟล์
+│
+├── includes/                 # ส่วนประกอบที่ใช้ซ้ำในหลายหน้า (Components)
+│   ├── header.php            # Navbar, Meta tags, Session Start
+│   ├── footer.php            # Copyright, Script links
+│   └── functions.php         # รวมฟังก์ชัน PHP (เช็ค Login, Format ตัวเลข)
+│
+├── auth/                     # ระบบจัดการสิทธิ์การเข้าถึง
+│   ├── login.php             # หน้าเข้าสู่ระบบ
+│   ├── register.php          # หน้าสมัครสมาชิก (แยก Role: Buyer/Seller)
+│   └── logout.php            # ไฟล์สำหรับทำลาย Session
+│
+├── pages/                    # หน้าหลักสำหรับผู้ใช้งานทั่วไป (Public Pages)
+│   ├── index.php             # หน้าแรก (Product Feed & Search)
+│   ├── shop_profile.php      # หน้าโปรไฟล์ร้านค้า
+│   └── product_detail.php    # หน้ารายละเอียดสินค้าและปุ่มติดต่อ
+│
+├── seller/                   # ส่วนจัดการสำหรับนักเรียนที่ขายของ
+│   ├── dashboard.php         # สรุปยอดและรายการสินค้าของตนเอง
+│   ├── add_product.php       # ฟอร์มเพิ่ม/แก้ไขสินค้า
+│   └── edit_shop.php         # ตั้งค่าข้อมูลร้านค้า (ลิงก์ LINE/IG)
+│
+├── admin/                    # ส่วนจัดการสำหรับครู/ผู้ดูแลระบบ
+│   ├── admin_dashboard.php   # สรุปข้อมูลรวมของทั้งระบบ
+│   └── approve_shop.php      # ระบบตรวจสอบและอนุมัติร้านค้าใหม่
+│
+└── .htaccess                 # (Optional) สำหรับจัดการ URL และความปลอดภัย
