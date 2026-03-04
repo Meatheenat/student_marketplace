@@ -34,6 +34,13 @@ if (isset($_GET['code'])) {
     $user = $stmt->fetch();
 
     if ($user) {
+        // 🚫 🛠️ เงื่อนไขเพิ่มเติม: ตรวจสอบสถานะการโดนแบนก่อนเข้าสู่ระบบ
+        if (isset($user['is_banned']) && $user['is_banned'] == 1) {
+            $_SESSION['flash_message'] = "🚫 บัญชีของคุณถูกระงับการใช้งาน กรุณาติดต่อแอดมินเพื่อตรวจสอบ";
+            $_SESSION['flash_type'] = "danger";
+            redirect('login.php'); // ส่งกลับหน้า Login ทันที
+        }
+
         // บันทึกสถานะการเข้าสู่ระบบ
         $_SESSION['user_id']    = $user['id'];
         $_SESSION['fullname']   = $user['fullname'];

@@ -4,12 +4,13 @@
  * - แก้ไขปัญหาสี Navbar เพี้ยนด้วยระบบ Force CSS Variables
  * - บูรณาการระบบ Wishlist เข้ากับ Sidebar
  * - ระบบอัปโหลดรูปโปรไฟล์พร้อมการตรวจสอบความปลอดภัย
+ * - บูรณาการ LINE Login (OAuth 2.0) เพื่อรับแจ้งเตือนอัตโนมัติ
  */
-$pageTitle = "โปรไฟล์ของฉัน - BNCC Market";
-require_once '../includes/header.php';
+
+// 🚀 1. โหลด Functions มาก่อนเสมอ! (ห้ามมี HTML หลุดออกมาก่อนหน้านี้เด็ดขาด)
 require_once '../includes/functions.php';
 
-// 1. ตรวจสอบสิทธิ์การเข้าถึง (Security Gate)
+// 2. ตรวจสอบสิทธิ์การเข้าถึง (Security Gate)
 if (!isLoggedIn()) {
     redirect('../auth/login.php');
 }
@@ -17,54 +18,60 @@ if (!isLoggedIn()) {
 $db = getDB();
 $user_id = $_SESSION['user_id'];
 
-// 2. ดึงข้อมูลผู้ใช้จากฐานข้อมูล student_market_db
+// 3. ดึงข้อมูลผู้ใช้จากฐานข้อมูล student_market_db (รวมถึงคอลัมน์ line_user_id สำหรับ Admin/Teacher)
 $stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
 $stmt->execute([$user_id]);
 $user = $stmt->fetch();
 
-// 3. ดึงจำนวนรายการที่ถูกใจ (Wishlist Count) เพื่อแสดงผลที่เมนู
+// 🛠️ ดึงข้อมูลร้านค้าเพื่อเช็คสถานะ LINE ของคนขาย
+$shop_stmt = $db->prepare("SELECT line_user_id FROM shops WHERE user_id = ?");
+$shop_stmt->execute([$user_id]);
+$shop_info = $shop_stmt->fetch();
+
+// 4. ดึงจำนวนรายการที่ถูกใจ (Wishlist Count)
 $wish_stmt = $db->prepare("SELECT COUNT(*) FROM wishlist WHERE user_id = ?");
 $wish_stmt->execute([$user_id]);
 $wish_count = $wish_stmt->fetchColumn();
 
-// --- 4. ตรรกะการอัปเดตข้อมูล (ห้ามลดโค้ดตามคำสั่ง) ---
+// --- 🛑 5. **จุดสำคัญ!** ประมวลผลการบันทึกข้อมูล (POST) ตรงนี้ก่อนเลย ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fullname = trim($_POST['fullname']);
     $phone = trim($_POST['phone']);
     $bio = trim($_POST['bio']);
     $profile_img = $user['profile_img'];
 
-    // จัดการอัปโหลดรูปภาพใหม่
+   // จัดการอัปโหลดรูปภาพใหม่
     if (!empty($_FILES['avatar']['name'])) {
-        $target_dir = "../assets/uploads/profiles/";
-        if (!is_dir($target_dir)) {
-            mkdir($target_dir, 0777, true);
-        }
+        // 🎯 ชี้ไปที่โฟลเดอร์ที่มึงมีอยู่แล้วเป๊ะๆ
+        $target_dir = "../assets/images/profiles/"; 
         
         $file_ext = strtolower(pathinfo($_FILES["avatar"]["name"], PATHINFO_EXTENSION));
         $new_file_name = "user_" . $user_id . "_" . time() . "." . $file_ext;
         $target_file = $target_dir . $new_file_name;
 
-        // ตรวจสอบนามสกุลไฟล์ที่อนุญาตเพื่อความปลอดภัย
         $allowed = ['jpg', 'jpeg', 'png', 'webp'];
         if (in_array($file_ext, $allowed)) {
             if (move_uploaded_file($_FILES["avatar"]["tmp_name"], $target_file)) {
                 $profile_img = $new_file_name;
-                $_SESSION['profile_img'] = $new_file_name; // อัปเดต Session ทันที
+                $_SESSION['profile_img'] = $new_file_name; 
             }
         }
     }
 
-    // อัปเดตข้อมูลลงฐานข้อมูล (Prepared Statement)
     $update = $db->prepare("UPDATE users SET fullname = ?, phone = ?, bio = ?, profile_img = ? WHERE id = ?");
     if ($update->execute([$fullname, $phone, $bio, $profile_img, $user_id])) {
         $_SESSION['fullname'] = $fullname;
         $_SESSION['flash_message'] = "บันทึกการเปลี่ยนแปลงเรียบร้อยแล้ว!";
         $_SESSION['flash_type'] = "success";
-        header("Location: profile.php");
-        exit();
+        
+        // 🛠️ เปลี่ยนมาใช้ redirect() ที่เราสร้างไว้ใน functions.php แทน header()
+        redirect("profile.php");
     }
 }
+
+// 🟩 6. เมื่อคำนวณและเช็ก POST เสร็จแล้ว ค่อยโหลด Header (UI) ขึ้นมา
+$pageTitle = "โปรไฟล์ของฉัน - BNCC Market";
+require_once '../includes/header.php';
 ?>
 
 <style>
@@ -77,7 +84,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         --bg-card-rgb: 15, 23, 42;
     }
 
-    /* รีเซ็ตสีพื้นหลัง Body เพื่อรองรับระบบ Glassmorphism ของ Navbar */
     body {
         background-color: var(--bg-body) !important;
         margin: 0;
@@ -89,7 +95,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         min-height: 100vh;
     }
 
-    /* ตกแต่ง Sidebar และ Card */
     .profile-card {
         background: var(--bg-card);
         border: 1px solid var(--border-color);
@@ -134,8 +139,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     .btn-camera-overlay:hover { transform: scale(1.15); }
 
-    .badge-role.admin { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+    .badge-role.admin { background: rgba(99, 102, 241, 0.15); color: #6366f1; border: 1px solid rgba(99, 102, 241, 0.2); }
     .badge-role.seller { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); }
+    /* 👑 🛠️ เพิ่มสี Badge สำหรับยศครู (Red Version) */
+    .badge-role.teacher { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
 
     .sidebar-menu-item {
         display: flex;
@@ -152,6 +159,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         background: rgba(var(--primary-rgb), 0.1);
         color: var(--primary);
     }
+
+    .btn-line-connect {
+        background: #06c755;
+        color: white !important;
+        padding: 12px 20px;
+        border-radius: 12px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 15px;
+        transition: 0.3s;
+        border: none;
+        width: 100%;
+        justify-content: center;
+    }
+    .btn-line-connect:hover {
+        background: #05b34c;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(6, 199, 85, 0.3);
+    }
 </style>
 
 <div class="profile-page-wrapper">
@@ -163,9 +192,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 <div style="position: relative; z-index: 1;">
                     <div class="avatar-wrapper" style="position: relative; display: inline-block;">
-                        <img src="../assets/images/profiles/<?= !empty($user['profile_img']) ? $user['profile_img'] : 'default_profile.png' ?>" 
-                             id="img-preview" alt="User Profile Image"
-                             style="width: 155px; height: 155px; border-radius: 50%; object-fit: cover; border: 6px solid var(--bg-card); box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+                       <?php
+    $display_avatar = (!empty($user['profile_img'])) 
+                                            ? "../assets/images/profiles/" . $user['profile_img'] 
+                                            : "../assets/images/profiles/default_profile.png";
+?>
+                        <img src="<?= $display_avatar ?>" 
+                             id="img-preview" alt="Profile"
+                             style="width: 155px; height: 155px; border-radius: 50%; object-fit: cover; border: 6px solid var(--bg-card); box-shadow: 0 10px 30px rgba(0,0,0,0.15); background-color: var(--bg-body);">
                         <label for="avatar-input" class="btn-camera-overlay">
                             <i class="fas fa-camera"></i>
                         </label>
@@ -174,10 +208,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div style="margin-top: 25px;">
                         <h2 style="font-size: 1.6rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px;"><?= htmlspecialchars($user['fullname']) ?></h2>
                         
-                        <?php if ($user['role'] === 'admin' || $user['role'] === 'seller'): ?>
+                        <?php if (in_array($user['role'], ['admin', 'seller', 'teacher'])): ?>
                             <div>
                                 <span class="badge-role <?= $user['role'] ?>" style="padding: 6px 18px; border-radius: 50px; font-weight: 700; font-size: 0.75rem; text-transform: uppercase;">
-                                    <i class="fas <?= $user['role'] === 'admin' ? 'fa-user-shield' : 'fa-store' ?>"></i> <?= strtoupper($user['role']) ?>
+                                    <i class="fas <?= $user['role'] === 'teacher' ? 'fa-chalkboard-teacher' : ($user['role'] === 'admin' ? 'fa-user-shield' : 'fa-store') ?>"></i> <?= strtoupper($user['role']) ?>
                                 </span>
                             </div>
                         <?php endif; ?>
@@ -185,13 +219,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <div style="margin-top: 40px; text-align: left; padding: 0 15px; border-top: 1px solid var(--border-color); padding-top: 30px;">
                       
-                        
                         <a href="wishlist.php" class="sidebar-menu-item">
                             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                                 <span><i class="fas fa-heart" style="width: 25px; color: #ef4444;"></i> รายการที่ชอบ</span>
                                 <span style="background: #ef4444; color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 700;"><?= $wish_count ?></span>
                             </div>
                         </a>
+
+                        <?php if (in_array($user['role'], ['admin', 'seller', 'teacher'])): ?>
+                        <div style="margin-top: 20px; padding: 15px; background: rgba(6, 199, 85, 0.05); border-radius: 16px; border: 1px solid rgba(6, 199, 85, 0.1);">
+                            <h4 style="font-size: 0.85rem; color: #06c755; font-weight: 700; margin-bottom: 8px;">
+                                <i class="fab fa-line"></i> แจ้งเตือนผ่าน LINE
+                            </h4>
+                            
+                            <?php 
+                            // 🛠️ เช็คการเชื่อมต่อ: สำหรับ Admin/Teacher เช็คจากตาราง users, สำหรับ Seller เช็คจากตาราง shops
+                            $line_id = (in_array($user['role'], ['admin', 'teacher'])) ? ($user['line_user_id'] ?? '') : ($shop_info['line_user_id'] ?? '');
+                            
+                            if (empty($line_id)): 
+                            ?>
+                                <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;">เชื่อมต่อเพื่อรับแจ้งเตือนระบบอัตโนมัติ</p>
+                                <?php
+                                $client_id = "2009322126"; 
+                                $redirect_uri = urlencode("http://localhost/student_marketplace/auth/line_login_callback.php");
+                                $state = $_SESSION['user_id'];
+                                $line_auth_url = "https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=$client_id&redirect_uri=$redirect_uri&state=$state&scope=profile%20openid";
+                                ?>
+                                <a href="<?= $line_auth_url ?>" class="btn-line-connect" style="font-size: 0.8rem; padding: 10px;">
+                                    <i class="fas fa-link"></i> เชื่อมต่อ LINE
+                                </a>
+                            <?php else: ?>
+                                <div style="display: flex; align-items: center; gap: 8px; color: #06c755; font-size: 0.85rem; font-weight: 600;">
+                                    <i class="fas fa-check-circle"></i> เชื่อมต่อแล้ว
+                                    <a href="../auth/line_disconnect.php" style="color: #ef4444; font-size: 0.7rem; font-weight: 400; margin-left: auto;">ยกเลิก</a>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        <?php endif; ?>
 
                         <div style="margin-top: 20px; border-top: 1px dashed var(--border-color); padding-top: 20px;">
                             <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 12px; font-size: 0.9rem; color: var(--text-muted);">
@@ -258,17 +322,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 
-
-
 <script>
-    /**
-     * Preview Image Script (Real-time Interaction)
-     */
     document.getElementById('avatar-input').onchange = evt => {
         const [file] = evt.target.files;
         if (file) {
             const preview = document.getElementById('img-preview');
-            // เพิ่ม Effect ระหว่างโหลด
             preview.style.filter = 'grayscale(100%) blur(3px)';
             preview.style.opacity = '0.5';
             
@@ -278,7 +336,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     preview.src = e.target.result;
                     preview.style.filter = 'none';
                     preview.style.opacity = '1';
-                }, 400); // ดีเลย์นิดหน่อยเพื่อให้ดูเหมือนระบบกำลังประมวลผล
+                }, 400); 
             };
             reader.readAsDataURL(file);
         }

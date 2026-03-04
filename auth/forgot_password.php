@@ -1,7 +1,7 @@
 <?php
 /**
  * BNCC Market - Forgot Password System
- * ปรับปรุงตามโค้ดล่าสุด: เช็คอีเมลในระบบ และใช้ App Password ใหม่
+ * ปรับปรุงตามโค้ดล่าสุด: เช็คอีเมลในระบบ, ตรวจสอบสถานะการแบน และใช้ App Password ใหม่
  */
 $pageTitle = "ลืมรหัสผ่าน - BNCC Market";
 require_once '../includes/header.php';
@@ -15,11 +15,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email']);
     $db = getDB();
 
-    // 1. ตรวจสอบว่ามีอีเมลนี้ในระบบ student_market_db หรือไม่
-    $stmt = $db->prepare("SELECT id FROM users WHERE email = ?");
+    // 1. 🛠️ แก้ไข SQL: ดึง id และ is_banned มาตรวจสอบพร้อมกัน
+    $stmt = $db->prepare("SELECT id, is_banned FROM users WHERE email = ?");
     $stmt->execute([$email]);
+    $user = $stmt->fetch();
     
-    if ($stmt->fetch()) {
+    if ($user) {
+        
+        // 🚫 🛠️ เงื่อนไขเพิ่มเติม: ตรวจสอบสถานะการโดนแบน
+        if ($user['is_banned'] == 1) {
+            $_SESSION['flash_message'] = "🚫 บัญชีนี้ถูกระงับการใช้งานชั่วคราว ไม่สามารถดำเนินการรีเซ็ตรหัสผ่านได้";
+            $_SESSION['flash_type'] = "danger";
+            redirect('forgot_password.php'); // หยุดการทำงานทันที
+        }
+
         $otp = sprintf("%06d", mt_rand(1, 999999)); // สุ่มเลข 6 หลัก
         $expires_at = date("Y-m-d H:i:s", strtotime("+15 minutes")); // หมดอายุใน 15 นาที
 
@@ -36,8 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $mail->isSMTP();
             $mail->Host       = 'smtp.gmail.com'; 
             $mail->SMTPAuth   = true;
-            $mail->Username   = 'meatheenat.k@gmail.com'; // เมลที่มึงใช้ขอ Key
-            $mail->Password   = 'jxev urqg otnp avnt';    // App Password ตัวใหม่ล่าสุด
+            $mail->Username   = 'meatheenat.k@gmail.com'; // เมลของมึง
+            $mail->Password   = 'jxev urqg otnp avnt';    // App Password ตัวเดิม
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
             $mail->Port       = 587;
 
@@ -63,9 +72,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 
 <div style="max-width: 450px; margin: 60px auto; background: var(--bg-card); padding: 40px; border-radius: 20px; border: 1px solid var(--border-color); position: relative; box-shadow: var(--shadow);">
-    
-    
-
     <div style="text-align: center; margin-bottom: 30px;">
         <h2 style="color: var(--primary-color); font-weight: 700;">ลืมรหัสผ่าน?</h2>
         <p style="color: var(--text-muted); font-size: 0.9rem;">ระบุอีเมลวิทยาลัยที่ลงทะเบียนเพื่อรับรหัส OTP</p>
@@ -90,11 +96,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 
-
-
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // --- ระบบสลับธีม (Theme Switcher) ---
         const themeBtn = document.querySelector('#theme-toggle');
         const themeIcon = document.querySelector('#theme-icon');
         const html = document.documentElement;
@@ -102,19 +105,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         const currentTheme = localStorage.getItem('theme') || 'light';
         if (currentTheme === 'dark') {
             html.classList.add('dark-theme');
-            themeIcon.classList.replace('fa-moon', 'fa-sun');
+            if(themeIcon) themeIcon.classList.replace('fa-moon', 'fa-sun');
         }
 
-        themeBtn.addEventListener('click', () => {
-            const isDark = html.classList.toggle('dark-theme');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-            
-            if (isDark) {
-                themeIcon.classList.replace('fa-moon', 'fa-sun');
-            } else {
-                themeIcon.classList.replace('fa-sun', 'fa-moon');
-            }
-        });
+        if(themeBtn) {
+            themeBtn.addEventListener('click', () => {
+                const isDark = html.classList.toggle('dark-theme');
+                localStorage.setItem('theme', isDark ? 'dark' : 'light');
+                
+                if (themeIcon) {
+                    if (isDark) {
+                        themeIcon.classList.replace('fa-moon', 'fa-sun');
+                    } else {
+                        themeIcon.classList.replace('fa-sun', 'fa-moon');
+                    }
+                }
+            });
+        }
     });
 </script>
 

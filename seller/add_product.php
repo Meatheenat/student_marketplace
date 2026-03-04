@@ -12,10 +12,11 @@ $db = getDB();
 $user_id = $_SESSION['user_id'];
 
 // 1. ดึง ID ร้านค้าของผู้ใช้ปัจจุบัน
-$shop_stmt = $db->prepare("SELECT id FROM shops WHERE user_id = ?");
+$shop_stmt = $db->prepare("SELECT id, shop_name FROM shops WHERE user_id = ?");
 $shop_stmt->execute([$user_id]);
 $shop = $shop_stmt->fetch();
 $shop_id = $shop['id'];
+$shop_name = $shop['shop_name'] ?? 'ร้านค้าไม่ทราบชื่อ';
 
 // 2. ตรวจสอบโหมด: แก้ไข (Edit) หรือ เพิ่มใหม่ (Add)
 $product_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -66,16 +67,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     WHERE id = ? AND shop_id = ?";
             $params = [$title, $price, $category_id, $p_status, $description, $image_url, $product_id, $shop_id];
             $success_msg = "แก้ไขข้อมูลสำเร็จ! สินค้าเข้าสู่สถานะรอแอดมินตรวจสอบอีกครั้ง";
+            $admin_notify_msg = "🔄 [Admin] มีการแก้ไขข้อมูลสินค้า!\n📦 สินค้า: $title\n🏪 ร้านค้า: $shop_name\n🔗 ตรวจสอบ: http://localhost/student_marketplace/admin/manage_products.php";
         } else {
             // เมื่อเพิ่มใหม่: ตั้งค่าเริ่มต้นเป็น 'pending'
             $sql = "INSERT INTO products (title, price, category_id, status, product_status, description, image_url, shop_id) 
                     VALUES (?, ?, ?, 'pending', ?, ?, ?, ?)";
             $params = [$title, $price, $category_id, $p_status, $description, $image_url, $shop_id];
             $success_msg = "ลงขายสินค้าใหม่สำเร็จ! กรุณารอแอดมินอนุมัติก่อนแสดงในตลาด";
+            $admin_notify_msg = "🆕 [Admin] มีการลงขายสินค้าใหม่!\n📦 สินค้า: $title\n💰 ราคา: ฿" . number_format($price, 2) . "\n🏪 ร้านค้า: $shop_name\n🔗 ตรวจสอบ: http://localhost/student_marketplace/admin/manage_products.php";
         }
 
         $stmt_save = $db->prepare($sql);
         if ($stmt_save->execute($params)) {
+            // 🔔 ส่งแจ้งเตือนหา Admin ทุกคนทันที
+            notifyAllAdmins($admin_notify_msg);
+
             $_SESSION['flash_message'] = $success_msg;
             $_SESSION['flash_type'] = "success";
             redirect('dashboard.php');
@@ -153,8 +159,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </form>
 </div>
-
-
 
 <script>
 document.getElementById('product_image').addEventListener('change', function() {

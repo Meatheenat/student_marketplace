@@ -3,7 +3,9 @@
  * BNCC Market - Master Header (Refined UX/UI)
  * สำหรับโปรเจกต์ Student Marketplace โดยเฉพาะ
  */
-require_once 'functions.php';
+
+// 🛠️ อัปเกรด: ใช้ __DIR__ เพื่อให้ Path ถูกต้องเสมอ ไม่ว่าจะเรียกจากโฟลเดอร์ไหน
+require_once __DIR__ . '/functions.php';
 
 // 1. ตรวจสอบชื่อไฟล์ปัจจุบัน
 $current_page = basename($_SERVER['PHP_SELF']);
@@ -17,10 +19,11 @@ if (session_status() === PHP_SESSION_NONE) {
 $hide_home_list = ['login.php', 'register.php', 'register_google.php'];
 $hide_auth_list = ['index.php', 'register_seller.php', 'product_detail.php'];
 
-// 4. ฟังก์ชันจัดการรูปโปรไฟล์ (🛠️ แก้ไขที่นี่ไอควย)
+// 4. ฟังก์ชันจัดการรูปโปรไฟล์
+// 🎯 ชี้เป้าไปที่โฟลเดอร์เดียวกันให้หมด จะได้ไม่แตก
 $user_avatar = isset($_SESSION['profile_img']) && !empty($_SESSION['profile_img']) 
-               ? "../assets/uploads/profiles/" . $_SESSION['profile_img'] 
-               : "../assets/images/profiles/default_profile.png"; // เปลี่ยนชื่อไฟล์ให้ถูกต้อง
+                ? "../assets/images/profiles/" . $_SESSION['profile_img'] 
+                : "../assets/images/profiles/default_profile.png";
 ?>
 <!DOCTYPE html>
 <html lang="th">
@@ -34,7 +37,6 @@ $user_avatar = isset($_SESSION['profile_img']) && !empty($_SESSION['profile_img'
     <link rel="stylesheet" href="/student_marketplace/assets/css/style.css">
 
     <style>
-        /* CSS ภายใน Header เพื่อควบคุม UI ให้ตรงตามภาพ */
         :root {
             --nav-height: 70px;
             --glass-bg: rgba(var(--bg-card-rgb), 0.8);
@@ -98,12 +100,11 @@ $user_avatar = isset($_SESSION['profile_img']) && !empty($_SESSION['profile_img'
             color: var(--primary);
         }
 
-        /* User Navigation Box */
         .user-nav-box {
             display: flex;
             align-items: center;
             gap: 12px;
-            background: #1e293b; /* ปรับสีตามภาพ image_008c0f.png */
+            background: #1e293b; 
             padding: 6px 16px;
             border-radius: 50px;
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -139,6 +140,7 @@ $user_avatar = isset($_SESSION['profile_img']) && !empty($_SESSION['profile_img'
             margin-top: 2px;
         }
 
+        .badge-teacher { color: #ef4444; } /* 👑 สีของครู */
         .badge-admin { color: #f87171; }
         .badge-seller { color: #34d399; }
 
@@ -173,15 +175,15 @@ $user_avatar = isset($_SESSION['profile_img']) && !empty($_SESSION['profile_img'
             color: white;
             border-color: var(--primary);
         }
-.badge-count {
-    background: #ef4444;
-    color: white;
-    font-size: 0.65rem;
-    padding: 2px 6px;
-    border-radius: 50px;
-    margin-left: 5px;
-}
-        /* (เติม CSS อื่นๆ ให้ครบ 200 บรรทัด เช่น Responsive, Animations) */
+        
+        .badge-count {
+            background: #ef4444;
+            color: white;
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 50px;
+            margin-left: 5px;
+        }
     </style>
 
     <script>
@@ -219,44 +221,50 @@ $user_avatar = isset($_SESSION['profile_img']) && !empty($_SESSION['profile_img'
 
             <?php if (isLoggedIn()): ?>
                 
-                <?php if ($_SESSION['role'] === 'admin'): ?>
-    <li><a href="../admin/admin_dashboard.php" class="nav-link text-danger"><i class="fas fa-shield-halved"></i> Admin</a></li>
-    
-    <li>
-        <a href="../admin/approve_product.php" class="nav-link">
-            <i class="fas fa-clipboard-check"></i> อนุมัติสินค้า 
-            <?php 
-                // (Bonus) แสดงตัวเลขสินค้าที่ค้างรออนุมัติ
-                $db = getDB();
-                $count_stmt = $db->query("SELECT COUNT(*) FROM products WHERE status = 'pending'");
-                $pending_count = $count_stmt->fetchColumn();
-                if ($pending_count > 0) echo "<span class='badge-count'>$pending_count</span>";
-            ?>
-        </a>
-    </li>
-<?php endif; ?>
+                <?php if ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'teacher'): ?>
+                    <li><a href="../admin/admin_dashboard.php" class="nav-link text-danger"><i class="fas fa-shield-halved"></i> <?php echo $_SESSION['role'] === 'teacher' ? 'Master Admin' : 'Admin'; ?></a></li>
+                    <li>
+                        <a href="../admin/approve_product.php" class="nav-link">
+                            <i class="fas fa-clipboard-check"></i> อนุมัติสินค้า 
+                            <?php 
+                                $db = getDB();
+                                $count_stmt = $db->query("SELECT COUNT(*) FROM products WHERE status = 'pending'");
+                                $pending_count = $count_stmt->fetchColumn();
+                                if ($pending_count > 0) echo "<span class='badge-count'>$pending_count</span>";
+                            ?>
+                        </a>
+                    </li>
+                <?php endif; ?>
+
+                <?php if ($_SESSION['role'] === 'seller'): ?>
+                    <li><a href="../seller/dashboard.php" class="nav-link"><i class="fas fa-chart-line"></i> Dashboard ผู้ขาย</a></li>
+                <?php endif; ?>
+
+                <?php if ($_SESSION['role'] === 'buyer'): ?>
+                    <li><a href="../auth/register_seller.php" class="nav-link text-primary"><i class="fas fa-store"></i> สมัครเป็นผู้ขาย</a></li>
+                <?php endif; ?>
 
                 <li class="user-nav-box">
-    <a href="../pages/profile.php" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
-        <img src="<?= $user_avatar ?>" class="avatar-circle" alt="Avatar">
-        <div class="user-info">
-            <div class="user-name"><?= e($_SESSION['fullname']) ?></div>
-            <?php if ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'seller'): ?>
-                <small class="role-badge-nav <?= $_SESSION['role'] === 'admin' ? 'badge-admin' : 'badge-seller' ?>">
-                    <?= e($_SESSION['role']) ?>
-                </small>
-            <?php endif; ?>
-        </div>
-    </a>
+                    <a href="../pages/profile.php" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+                        <img src="<?= $user_avatar ?>" class="avatar-circle" alt="Avatar">
+                        <div class="user-info">
+                            <div class="user-name"><?= e($_SESSION['fullname']) ?></div>
+                            <?php if (in_array($_SESSION['role'], ['admin', 'seller', 'teacher'])): ?>
+                                <small class="role-badge-nav <?= $_SESSION['role'] === 'teacher' ? 'badge-teacher' : ($_SESSION['role'] === 'admin' ? 'badge-admin' : 'badge-seller') ?>">
+                                    <?= strtoupper(e($_SESSION['role'])) ?>
+                                </small>
+                            <?php endif; ?>
+                        </div>
+                    </a>
 
-    <a href="../pages/wishlist.php" title="รายการที่ชอบ" style="color: #ef4444; font-size: 1.1rem; margin-left: 5px;">
-        <i class="fas fa-heart"></i>
-    </a>
-    
-    <a href="../auth/logout.php" class="logout-icon" title="Logout">
-        <i class="fas fa-power-off"></i>
-    </a>
-</li>
+                    <a href="../pages/wishlist.php" title="รายการที่ชอบ" style="color: #ef4444; font-size: 1.1rem; margin-left: 5px;">
+                        <i class="fas fa-heart"></i>
+                    </a>
+                    
+                    <a href="../auth/logout.php" class="logout-icon" title="Logout">
+                        <i class="fas fa-power-off"></i>
+                    </a>
+                </li>
 
             <?php else: ?>
                 <?php if (!in_array($current_page, $hide_auth_list)): ?>

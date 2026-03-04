@@ -36,7 +36,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = $stmt->fetch();
 
         if ($user && password_verify($password, $user['password'])) {
-            // บันทึกข้อมูลลง Session เมื่อรหัสผ่านถูกต้อง
+            
+            // 🚫 🛠️ เงื่อนไขเพิ่มเติม: ตรวจสอบสถานะการโดนแบน
+            if (isset($user['is_banned']) && $user['is_banned'] == 1) {
+                $_SESSION['flash_message'] = "🚫 บัญชีของคุณถูกระงับการใช้งาน กรุณาติดต่อแอดมินเพื่อตรวจสอบ";
+                $_SESSION['flash_type'] = "danger";
+                redirect('login.php'); // หยุดการทำงานและค้างไว้ที่หน้า Login
+            }
+
+            // บันทึกข้อมูลลง Session เมื่อรหัสผ่านถูกต้องและไม่โดนแบน
             $_SESSION['user_id']    = $user['id'];
             $_SESSION['fullname']   = $user['fullname'];
             $_SESSION['role']       = $user['role'];

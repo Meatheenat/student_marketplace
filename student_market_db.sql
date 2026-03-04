@@ -131,5 +131,37 @@ CREATE TABLE wishlist (
 -- เพิ่มคอลัมน์ status ในตาราง products
 ALTER TABLE products 
 ADD COLUMN status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending' AFTER category_id;
--- เพิ่มคอลัมน์เก็บ Token ในตาราง shops
-ALTER TABLE shops ADD COLUMN line_token VARCHAR(255) NULL;
+-- ถ้ายังไม่มี ให้รันคำสั่งนี้ครับ
+ALTER TABLE shops 
+ADD COLUMN line_user_id VARCHAR(255) NULL AFTER contact_ig;
+-- เพิ่มคอลัมน์ line_user_id เข้าไปในตาราง users เพื่อรองรับ Admin
+ALTER TABLE users ADD line_user_id VARCHAR(255) NULL AFTER role;
+-- 1. เพิ่มสถานะการแบนในตาราง users และ shops
+ALTER TABLE users ADD is_banned TINYINT(1) DEFAULT 0;
+ALTER TABLE shops ADD is_blocked TINYINT(1) DEFAULT 0;
+
+-- 2. สร้างตารางสำหรับการรีพอร์ต
+CREATE TABLE reports (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    reporter_id INT NOT NULL, -- คนที่กดรีพอร์ต
+    target_id INT NOT NULL,   -- ID ของสิ่งที่ถูกรีพอร์ต (comment_id, user_id, หรือ shop_id)
+    target_type ENUM('comment', 'user', 'shop') NOT NULL, 
+    reason TEXT NOT NULL,
+    status ENUM('pending', 'resolved', 'dismissed') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE admin_logs (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    admin_id INT NOT NULL,      -- ID ของแอดมินที่ทำรายการ
+    action_type VARCHAR(50),    -- ประเภทการกระทำ (เช่น ban_user, unblock_shop)
+    target_type VARCHAR(20),    -- ประเภทเป้าหมาย (user หรือ shop)
+    target_id INT NOT NULL,     -- ID ของคนที่โดนกระทำ
+    details TEXT,               -- รายละเอียดเพิ่มเติม
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (admin_id) REFERENCES users(id)
+);
+-- 1. เพิ่มบทบาท teacher ในตาราง users
+ALTER TABLE users MODIFY COLUMN role ENUM('buyer', 'seller', 'admin', 'teacher') DEFAULT 'buyer';
+
+-- 2. ปรับแต่ง admin_logs ให้รองรับการเก็บเหตุผล (ถ้ามึงยังไม่มีคอลัมน์ details ให้เพิ่มตามนี้)
+ ALTER TABLE admin_logs ADD COLUMN reason_text TEXT AFTER details;

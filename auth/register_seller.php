@@ -33,20 +33,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['flash_type'] = "danger";
     } else {
         try {
-            // เริ่ม Transaction: เพื่อให้มั่นใจว่า Role เปลี่ยนและร้านค้าถูกสร้างพร้อมกัน
+            // เริ่ม Transaction
             $db->beginTransaction();
 
             // 1. อัปเดตสถานะผู้ใช้งานจาก 'buyer' เป็น 'seller'
             $updateUser = $db->prepare("UPDATE users SET role = 'seller' WHERE id = ?");
             $updateUser->execute([$user_id]);
 
-            // 2. เพิ่มข้อมูลร้านค้าใหม่ (สถานะเริ่มต้นเป็น pending รอครูอนุมัติ)
+            // 2. เพิ่มข้อมูลร้านค้าใหม่ (สถานะเริ่มต้นเป็น pending)
             $insertShop = $db->prepare("INSERT INTO shops (user_id, shop_name, description, contact_line, contact_ig, status) VALUES (?, ?, ?, ?, ?, 'pending')");
             $insertShop->execute([$user_id, $shop_name, $description, $contact_line, $contact_ig]);
 
+            // ✅ ยืนยันการบันทึกฐานข้อมูล
             $db->commit();
 
-            // 3. อัปเดต Session Role เพื่อให้ Navbar เปลี่ยนทันที
+            // 🔔 3. ส่งแจ้งเตือนหา Admin (ถ้าจุดนี้พัง มันจะไป catch แต่ DB บันทึกไปแล้ว)
+            $admin_msg = "📢 [Admin] มีคำขอเปิดร้านค้าใหม่!\n"
+                       . "👤 ผู้สมัคร: " . $_SESSION['fullname'] . "\n"
+                       . "🏪 ชื่อร้าน: " . $shop_name . "\n"
+                       . "🔗 ตรวจสอบ: http://localhost/student_marketplace/admin/manage_shops.php";
+            
+            notifyAllAdmins($admin_msg);
+
+            // 4. อัปเดต Session Role
             $_SESSION['role'] = 'seller';
 
             $_SESSION['flash_message'] = "สมัครเป็นผู้ขายสำเร็จ! ขณะนี้ร้านค้าของคุณกำลังรอการอนุมัติจากคุณครู";
@@ -54,7 +63,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect('../seller/dashboard.php');
 
         } catch (Exception $e) {
-            $db->rollBack();
+            // 🛠️ แก้ไขจุดตาย: เช็กก่อนว่ามี Transaction ค้างอยู่จริงไหมก่อนสั่ง Rollback
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
             $_SESSION['flash_message'] = "เกิดข้อผิดพลาด: " . $e->getMessage();
             $_SESSION['flash_type'] = "danger";
         }
@@ -69,39 +81,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <form action="register_seller.php" method="POST" class="needs-validation">
-        
         <div style="background: var(--bg-body); padding: 20px; border-radius: 12px; margin-bottom: 25px; border-left: 4px solid var(--primary-color);">
             <h4 style="margin-bottom: 10px;"><i class="fas fa-store"></i> ข้อมูลหน้าร้าน</h4>
-            
             <div class="form-group">
                 <label>ชื่อร้านค้าของคุณ <span style="color: var(--color-danger);">*</span></label>
-                <input type="text" name="shop_name" class="form-control" placeholder="เช่น ร้านคุกกี้พี่ ม.6, รับวาดรูป Digital Art" required>
+                <input type="text" name="shop_name" class="form-control" placeholder="เช่น ร้านคุกกี้พี่ ม.6" required>
             </div>
-
             <div class="form-group">
                 <label>สโลแกนหรือคำบรรยายร้าน (สั้นๆ)</label>
-                <textarea name="description" class="form-control" rows="3" placeholder="บอกจุดเด่นของร้านคุณให้เพื่อนๆ รู้..."></textarea>
+                <textarea name="description" class="form-control" rows="3"></textarea>
             </div>
         </div>
 
         <div style="background: var(--bg-body); padding: 20px; border-radius: 12px; margin-bottom: 25px; border-left: 4px solid #00c300;">
             <h4 style="margin-bottom: 15px;"><i class="fas fa-comments"></i> ช่องทางการติดต่อ</h4>
-            
             <div class="form-group">
-                <label><i class="fab fa-line" style="color: #00c300;"></i> LINE ID (ไม่ต้องใส่ @)</label>
-                <input type="text" name="contact_line" class="form-control" placeholder="ไอดีไลน์สำหรับให้ลูกค้าทัก">
+                <label><i class="fab fa-line" style="color: #00c300;"></i> LINE ID</label>
+                <input type="text" name="contact_line" class="form-control">
             </div>
-
             <div class="form-group">
-                <label><i class="fab fa-instagram" style="color: #e1306c;"></i> Instagram User</label>
-                <input type="text" name="contact_ig" class="form-control" placeholder="ชื่อบัญชี IG">
+                <label><i class="fab fa-instagram" style="color: #e1306c;"></i> Instagram</label>
+                <input type="text" name="contact_ig" class="form-control">
             </div>
-        </div>
-
-        <div style="background: rgba(245, 158, 11, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-            <p style="font-size: 0.85rem; color: var(--color-warning); line-height: 1.4;">
-                <strong>หมายเหตุ:</strong> ข้อมูลส่วนตัวของคุณ (ชื่อ-นามสกุล, ชั้นเรียน) จะถูกดึงมาจากระบบโดยอัตโนมัติ เพื่อยืนยันตัวตนผู้ขาย
-            </p>
         </div>
 
         <button type="submit" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1rem; font-weight: 600;">

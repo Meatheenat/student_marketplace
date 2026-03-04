@@ -6,6 +6,7 @@
 $pageTitle = "ลงทะเบียนสมาชิกใหม่ด้วย Google";
 require_once '../includes/header.php';
 require_once '../includes/functions.php';
+require_once '../vendor/autoload.php';
 
 // 1. ตรวจสอบข้อมูลชั่วคราวจาก Google (Session)
 if (!isset($_SESSION['temp_email'])) {
@@ -13,6 +14,19 @@ if (!isset($_SESSION['temp_email'])) {
 }
 
 $temp_email = $_SESSION['temp_email'];
+$db = getDB();
+
+// 🚫 🛠️ เพิ่มเติม: ตรวจสอบว่าอีเมลนี้ถูกระงับการใช้งาน (Banned) หรือไม่ก่อนเริ่มกรอกข้อมูล
+$check_email_banned = $db->prepare("SELECT is_banned FROM users WHERE email = ?");
+$check_email_banned->execute([$temp_email]);
+$banned_status = $check_email_banned->fetchColumn();
+
+if ($banned_status == 1) {
+    $_SESSION['flash_message'] = "🚫 อีเมลนี้ถูกระงับการใช้งานในระบบ BNCC Market กรุณาติดต่อแอดมิน";
+    $_SESSION['flash_type'] = "danger";
+    unset($_SESSION['temp_email']); // ล้างค่าทิ้งเพื่อป้องกันการพยายามเข้าถึงซ้ำ
+    redirect('login.php');
+}
 
 // 2. จัดการเมื่อมีการส่งฟอร์ม (POST)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -38,8 +52,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['flash_type'] = "danger";
     }
     else {
-        $db = getDB();
-        
         // ตรวจสอบรหัสนักเรียนซ้ำในระบบ ( student_id เป็น UNIQUE )
         $stmt = $db->prepare("SELECT id FROM users WHERE student_id = ?");
         $stmt->execute([$student_id]);

@@ -5,15 +5,16 @@
  */
 
 // 1. ดึงไฟล์เชื่อมต่อฐานข้อมูลมาใช้ (ห้ามประกาศฟังก์ชัน getDB ซ้ำในนี้!)
-ob_start(); // บังคับให้ PHP เก็บ Output ไว้ในบัฟเฟอร์ก่อน ไม่ให้พ่นออกไปทันที
-session_start();
-require_once __DIR__ . '/../config/database.php'; 
-
-// 2. เริ่มต้น Session
+if (ob_get_level() == 0) ob_start(); 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-function sendLineNotify($message, $token) {
+require_once __DIR__ . '/../config/database.php'; 
+
+/**
+ * 🚀 LINE Notify Function (สำหรับส่งเข้ากลุ่มแอดมิน)
+ */
+function sendLineNotify($message, $token = "ใส่_TOKEN_LINE_NOTIFY_ของมึงตรงนี้") {
     if (empty($token)) return false;
     
     $ch = curl_init();
@@ -34,8 +35,9 @@ function sendLineNotify($message, $token) {
     curl_close($ch);
     return $result;
 }
+
 /**
- * 3. Security & UI Helpers (โค้ดที่เหลือของมึงอยู่ครบ)
+ * 3. Security & UI Helpers
  */
 function e($item) {
     return htmlspecialchars($item, ENT_QUOTES, 'UTF-8');
@@ -45,12 +47,23 @@ function isLoggedIn() {
     return isset($_SESSION['user_id']);
 }
 
+// 👑 🛠️ ปลดล็อกสิทธิ์ให้ Teacher เข้าถึงหน้าระดับ Admin ได้ทั้งหมด
 function checkRole($role) {
-    if (!isLoggedIn() || $_SESSION['role'] !== $role) {
+    if (!isLoggedIn()) {
+        $_SESSION['flash_message'] = "คุณต้องเข้าสู่ระบบก่อน";
+        $_SESSION['flash_type'] = "danger";
+        redirect("/student_marketplace/auth/login.php");
+    }
+
+    // ถ้าเป็นครู (Teacher) และพยายามเข้าหน้า Admin ให้ปล่อยผ่านได้เลย
+    if ($_SESSION['role'] === 'teacher' && $role === 'admin') {
+        return; 
+    }
+
+    if ($_SESSION['role'] !== $role) {
         $_SESSION['flash_message'] = "คุณไม่มีสิทธิ์เข้าถึงหน้านี้";
         $_SESSION['flash_type'] = "danger";
-        header("Location: /student_marketplace/auth/login.php");
-        exit();
+        redirect("/student_marketplace/auth/login.php");
     }
 }
 
@@ -93,8 +106,14 @@ function displayFlashMessage() {
     return "";
 }
 
+// 👑 🛠️ [แก้ไขใหม่] ฟังก์ชัน Redirect อัจฉริยะ (แก้ปัญหา Headers already sent 100%)
 function redirect($url) {
-    header("Location: $url");
+    if (!headers_sent()) {
+        header("Location: $url");
+    } else {
+        echo "<script>window.location.href='$url';</script>";
+        echo "<noscript><meta http-equiv='refresh' content='0;url=$url' /></noscript>";
+    }
     exit();
 }
 
@@ -108,4 +127,76 @@ function uploadImage($file, $targetDir = "../assets/images/products/") {
         if (move_uploaded_file($file["tmp_name"], $targetFilePath)) return $fileName;
     }
     return false;
+}
+
+/**
+ * BNCC Market - LINE Messaging API Function
+ */
+function sendLineMessagingAPI($userId, $message) {
+    $channelAccessToken = 'guV8+F0mODk1GVFbH8IsksOyytFfYWAM7M8Mn1YsjFYDyL+2j7LcZcyHnFf3l/6gEx+zijEn0b0PUPwyfLjpxPhz+qD2LXYnlHNcIXQEA21pRmE5SIdN1IstTob1xlsMcupFcbi12wXEPDmutiB3OQdB04t89/1O/w1cDnyilFU='; 
+    
+    $url = 'https://api.line.me/v2/bot/message/push';
+    $data = [
+        'to' => $userId,
+        'messages' => [['type' => 'text', 'text' => $message]]
+    ];
+
+    $postData = json_encode($data);
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0); 
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0); 
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . $channelAccessToken
+    ]);
+
+    $result = curl_exec($ch);
+    file_put_contents('line_log.txt', date('Y-m-d H:i:s') . " - Push Res: " . $result . PHP_EOL, FILE_APPEND);
+    curl_close($ch);
+    return $result;
+}
+
+/**
+ * ดึงรหัส LINE ของ Admin และ Teacher ทุกคน
+ */
+function getAllAdminLineIds() {
+    $db = getDB();
+    $stmt = $db->prepare("SELECT line_user_id FROM users WHERE role IN ('admin', 'teacher') AND line_user_id IS NOT NULL");
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_COLUMN);
+}
+
+/**
+ * วนลูปส่งแจ้งเตือนหาแอดมินและครูทุกคน
+ */
+function notifyAllAdmins($message) {
+    sendLineNotify($message);
+    $adminIds = getAllAdminLineIds();
+    foreach ($adminIds as $id) {
+        sendLineMessagingAPI($id, $message);
+    }
+}
+
+/**
+ * ฟังก์ชันบันทึก Log การทำงานของ Admin
+ */
+function logAdminAction($action_type, $target_type, $target_id, $details) {
+    $db = getDB();
+    $admin_id = $_SESSION['user_id'];
+    $admin_name = $_SESSION['fullname'];
+
+    $stmt = $db->prepare("INSERT INTO admin_logs (admin_id, action_type, target_type, target_id, details) VALUES (?, ?, ?, ?, ?)");
+    $stmt->execute([$admin_id, $action_type, $target_type, $target_id, $details]);
+
+    $message = "🛡️ [Admin Audit Log]\n"
+             . "ผู้ดำเนินการ: $admin_name\n"
+             . "การกระทำ: $action_type\n"
+             . "เป้าหมาย: $target_type (ID: $target_id)\n"
+             . "รายละเอียด: $details";
+    
+    notifyAllAdmins($message);
 }
