@@ -5,10 +5,10 @@
  */
 
 // ตั้งค่าพารามิเตอร์การเชื่อมต่อ
-$host = 'localhost';
-$db   = 'student_market_db';
-$user = 'root'; // เปลี่ยนตามความเหมาะสมของ Server
-$pass = '';     // เปลี่ยนตามความเหมาะสมของ Server
+$host = 'https://hosting.bncc.ac.th/s673190104';
+$db   = 's673190104';
+$user = 's673190104'; // เปลี่ยนตามความเหมาะสมของ Server
+$pass = 's673190104';     // เปลี่ยนตามความเหมาะสมของ Server
 $charset = 'utf8mb4';
 
 // ตั้งค่า Data Source Name (DSN)
