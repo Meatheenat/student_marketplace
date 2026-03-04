@@ -1,9 +1,10 @@
 <?php
 /**
- * Student Marketplace - Add/Edit Product
+ * Student Marketplace - Add/Edit Product (Approval System Version)
  */
 $pageTitle = "จัดการข้อมูลสินค้า";
 require_once '../includes/header.php';
+require_once '../includes/functions.php';
 
 checkRole('seller');
 
@@ -21,7 +22,6 @@ $product_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $product = null;
 
 if ($product_id > 0) {
-    // โหมดแก้ไข: ดึงข้อมูลสินค้าเดิมมาแสดง (ต้องเป็นของร้านเราเท่านั้น)
     $stmt = $db->prepare("SELECT * FROM products WHERE id = ? AND shop_id = ?");
     $stmt->execute([$product_id, $shop_id]);
     $product = $stmt->fetch();
@@ -33,47 +33,45 @@ if ($product_id > 0) {
     }
 }
 
-// 3. ดึงหมวดหมู่สินค้าทั้งหมดมาใส่ใน Dropdown
 $cat_stmt = $db->query("SELECT * FROM categories ORDER BY category_name ASC");
 $categories = $cat_stmt->fetchAll();
 
 // 4. จัดการการส่งข้อมูล (Form Submission)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $title      = trim($_POST['title']);
-    $price      = (float)$_POST['price'];
+    $title       = trim($_POST['title']);
+    $price       = (float)$_POST['price'];
     $category_id = (int)$_POST['category_id'];
-    $status     = $_POST['product_status'];
+    $p_status    = $_POST['product_status']; // สถานะสต็อกสินค้า
     $description = trim($_POST['description']);
-    $image_url  = $product['image_url'] ?? ''; // ใช้รูปเดิมถ้าไม่มีการอัปโหลดใหม่
+    $image_url   = $product['image_url'] ?? '';
 
-    // ตรวจสอบข้อมูลเบื้องต้น
     if (empty($title) || $price <= 0 || empty($category_id)) {
         $_SESSION['flash_message'] = "กรุณากรอกข้อมูลสำคัญให้ครบถ้วน";
         $_SESSION['flash_type'] = "warning";
     } else {
-        // จัดการอัปโหลดรูปภาพ (ถ้ามีการเลือกไฟล์ใหม่)
         if (!empty($_FILES['product_image']['name'])) {
             $uploadedFile = uploadImage($_FILES['product_image']);
             if ($uploadedFile) {
                 $image_url = $uploadedFile;
             } else {
-                $_SESSION['flash_message'] = "อัปโหลดรูปภาพไม่สำเร็จ (อนุญาตเฉพาะ .jpg, .png, .jpeg)";
+                $_SESSION['flash_message'] = "อัปโหลดรูปภาพไม่สำเร็จ";
                 $_SESSION['flash_type'] = "danger";
             }
         }
 
+        // 🛠️ แก้ไข SQL: เพิ่มระบบ 'pending' เมื่อมีการบันทึกข้อมูล
         if ($product_id > 0) {
-            // SQL สำหรับ Update
-            $sql = "UPDATE products SET title = ?, price = ?, category_id = ?, product_status = ?, description = ?, image_url = ? 
+            // เมื่อแก้ไข: รีเซ็ตสถานะเป็น 'pending' เพื่อให้แอดมินตรวจใหม่
+            $sql = "UPDATE products SET title = ?, price = ?, category_id = ?, status = 'pending', product_status = ?, description = ?, image_url = ? 
                     WHERE id = ? AND shop_id = ?";
-            $params = [$title, $price, $category_id, $status, $description, $image_url, $product_id, $shop_id];
-            $success_msg = "แก้ไขข้อมูลสินค้าเรียบร้อยแล้ว";
+            $params = [$title, $price, $category_id, $p_status, $description, $image_url, $product_id, $shop_id];
+            $success_msg = "แก้ไขข้อมูลสำเร็จ! สินค้าเข้าสู่สถานะรอแอดมินตรวจสอบอีกครั้ง";
         } else {
-            // SQL สำหรับ Insert
-            $sql = "INSERT INTO products (title, price, category_id, product_status, description, image_url, shop_id) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?)";
-            $params = [$title, $price, $category_id, $status, $description, $image_url, $shop_id];
-            $success_msg = "ลงขายสินค้าใหม่สำเร็จ!";
+            // เมื่อเพิ่มใหม่: ตั้งค่าเริ่มต้นเป็น 'pending'
+            $sql = "INSERT INTO products (title, price, category_id, status, product_status, description, image_url, shop_id) 
+                    VALUES (?, ?, ?, 'pending', ?, ?, ?, ?)";
+            $params = [$title, $price, $category_id, $p_status, $description, $image_url, $shop_id];
+            $success_msg = "ลงขายสินค้าใหม่สำเร็จ! กรุณารอแอดมินอนุมัติก่อนแสดงในตลาด";
         }
 
         $stmt_save = $db->prepare($sql);
@@ -92,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <h1 style="margin-top: 10px;"><?php echo $product ? 'แก้ไขสินค้า' : 'ลงขายสินค้าใหม่'; ?></h1>
     </div>
 
-    <form action="add_product.php<?php echo $product ? '?id='.$product['id'] : ''; ?>" method="POST" enctype="multipart/form-data" class="needs-validation">
+    <form action="add_product.php<?php echo $product ? '?id='.$product['id'] : ''; ?>" method="POST" enctype="multipart/form-data">
         <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 30px;" class="form-layout">
             
             <div class="upload-section">
@@ -109,21 +107,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <input type="file" name="product_image" id="product_image" accept="image/*" style="display: none;">
                     </label>
                 </div>
-                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 10px; text-align: center;">
-                    * แนะนำรูปภาพสี่เหลี่ยมจัตุรัส ขนาดไม่เกิน 2MB
-                </p>
             </div>
 
-            <div class="info-section" style="background: var(--bg-card); padding: 30px; border-radius: 16px; box-shadow: var(--shadow); border: 1px solid var(--border-color);">
+            <div class="info-section" style="background: var(--bg-card); padding: 30px; border-radius: 16px; border: 1px solid var(--border-color);">
                 <div class="form-group">
                     <label>ชื่อสินค้า <span style="color: var(--color-danger);">*</span></label>
-                    <input type="text" name="title" class="form-control" value="<?php echo e($product['title'] ?? ''); ?>" placeholder="เช่น คุกกี้เนยสด, รับติวคณิต ม.ต้น" required>
+                    <input type="text" name="title" class="form-control" value="<?php echo e($product['title'] ?? ''); ?>" required>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                     <div class="form-group">
-                        <label>ราคา (บาท) <span style="color: var(--color-danger);">*</span></label>
-                        <input type="number" name="price" step="0.01" class="form-control price-input" value="<?php echo e($product['price'] ?? ''); ?>" placeholder="0.00" required>
+                        <label>ราคา (บาท)</label>
+                        <input type="number" name="price" step="0.01" class="form-control" value="<?php echo e($product['price'] ?? ''); ?>" required>
                     </div>
                     <div class="form-group">
                         <label>หมวดหมู่</label>
@@ -139,41 +134,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
 
                 <div class="form-group">
-                    <label>สถานะสินค้า</label>
+                    <label>สถานะสต็อก (ไม่ใช่สถานะการอนุมัติ)</label>
                     <select name="product_status" class="form-control">
-                        <option value="in-stock" <?php echo (isset($product['product_status']) && $product['product_status'] == 'in-stock') ? 'selected' : ''; ?>>พร้อมส่ง / พร้อมให้บริการ</option>
-                        <option value="pre-order" <?php echo (isset($product['product_status']) && $product['product_status'] == 'pre-order') ? 'selected' : ''; ?>>พรีออเดอร์ (ต้องรอผลิต)</option>
-                        <option value="out-of-stock" <?php echo (isset($product['product_status']) && $product['product_status'] == 'out-of-stock') ? 'selected' : ''; ?>>สินค้าหมดชั่วคราว</option>
+                        <option value="in-stock" <?php echo (isset($product['product_status']) && $product['product_status'] == 'in-stock') ? 'selected' : ''; ?>>พร้อมส่ง</option>
+                        <option value="pre-order" <?php echo (isset($product['product_status']) && $product['product_status'] == 'pre-order') ? 'selected' : ''; ?>>พรีออเดอร์</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label>รายละเอียดสินค้า</label>
-                    <textarea name="description" class="form-control" rows="5" placeholder="อธิบายจุดเด่นของสินค้า หรือเงื่อนไขการจอง..."><?php echo e($product['description'] ?? ''); ?></textarea>
+                    <label>รายละเอียด</label>
+                    <textarea name="description" class="form-control" rows="4"><?php echo e($product['description'] ?? ''); ?></textarea>
                 </div>
 
                 <button type="submit" class="btn btn-primary" style="width: 100%; padding: 15px; margin-top: 10px;">
-                    <i class="fas fa-save"></i> <?php echo $product ? 'บันทึกการแก้ไข' : 'ลงขายสินค้าทันที'; ?>
+                    <i class="fas fa-save"></i> <?php echo $product ? 'บันทึกการแก้ไข (ส่งตรวจใหม่)' : 'ลงขายสินค้า (รออนุมัติ)'; ?>
                 </button>
             </div>
         </div>
     </form>
 </div>
 
-<style>
-/* สำหรับซ่อน Placeholder เมื่อมีรูปพรีวิว */
-#product_image:valid ~ #upload_placeholder { display: none; }
 
-@media (max-width: 768px) {
-    .form-layout { grid-template-columns: 1fr !important; }
-}
-</style>
 
 <script>
-// สคริปต์เพิ่มเติมสำหรับหน้าเพิ่มสินค้า (เสริมจาก script.js)
 document.getElementById('product_image').addEventListener('change', function() {
-    document.getElementById('upload_placeholder').style.display = 'none';
-    document.getElementById('image_preview').style.display = 'block';
+    const [file] = this.files;
+    if (file) {
+        document.getElementById('upload_placeholder').style.display = 'none';
+        const preview = document.getElementById('image_preview');
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = 'block';
+    }
 });
 </script>
 

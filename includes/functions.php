@@ -5,13 +5,35 @@
  */
 
 // 1. ดึงไฟล์เชื่อมต่อฐานข้อมูลมาใช้ (ห้ามประกาศฟังก์ชัน getDB ซ้ำในนี้!)
+ob_start(); // บังคับให้ PHP เก็บ Output ไว้ในบัฟเฟอร์ก่อน ไม่ให้พ่นออกไปทันที
+session_start();
 require_once __DIR__ . '/../config/database.php'; 
 
 // 2. เริ่มต้น Session
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-
+function sendLineNotify($message, $token) {
+    if (empty($token)) return false;
+    
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, "https://notify-api.line.me/api/notify");
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, "message=" . urlencode($message));
+    
+    $headers = [
+        'Content-type: application/x-www-form-urlencoded',
+        'Authorization: Bearer ' . $token
+    ];
+    
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    $result = curl_exec($ch);
+    curl_close($ch);
+    return $result;
+}
 /**
  * 3. Security & UI Helpers (โค้ดที่เหลือของมึงอยู่ครบ)
  */

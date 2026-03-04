@@ -90,3 +90,46 @@ ALTER TABLE users
 ADD COLUMN profile_img VARCHAR(255) DEFAULT 'default_profile.png',
 ADD COLUMN phone VARCHAR(15) NULL,
 ADD COLUMN bio TEXT NULL;
+-- 1. ตารางรีวิวสินค้า
+CREATE TABLE reviews (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    product_id INT NOT NULL,
+    user_id INT NOT NULL,
+    rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    comment TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 2. ตารางแท็ก (Master Tags)
+CREATE TABLE tags (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    tag_name VARCHAR(50) UNIQUE NOT NULL
+);
+
+-- 3. ตารางความสัมพันธ์สินค้ากับแท็ก (Junction Table)
+CREATE TABLE product_tag_map (
+    product_id INT NOT NULL,
+    tag_id INT NOT NULL,
+    PRIMARY KEY (product_id, tag_id),
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+);
+
+-- เพิ่มตัวอย่างแท็กเริ่มต้น
+INSERT INTO tags (tag_name) VALUES ('มือหนึ่ง'), ('มือสอง'), ('ราคาประหยัด'), ('ของกิน'), ('งานฝีมือ');
+CREATE TABLE wishlist (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    product_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_wish (user_id, product_id), -- ป้องกันการบันทึกซ้ำ
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+-- เพิ่มคอลัมน์ status ในตาราง products
+ALTER TABLE products 
+ADD COLUMN status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending' AFTER category_id;
+-- เพิ่มคอลัมน์เก็บ Token ในตาราง shops
+ALTER TABLE shops ADD COLUMN line_token VARCHAR(255) NULL;
