@@ -44,9 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div style="max-width: 400px; margin: 60px auto; background: var(--bg-card); padding: 35px; border-radius: 20px; border: 1px solid var(--border-color); text-align: center; box-shadow: var(--shadow); position: relative;">
     
     <div style="position: absolute; top: 15px; right: 15px;">
-        <button id="theme-toggle" title="สลับโหมด" style="background: var(--bg-body); border: 1px solid var(--border-color); color: var(--text-main); cursor: pointer; padding: 8px; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;">
-            <i class="fas fa-moon" id="theme-icon"></i>
-        </button>
+        
     </div>
 
     <h2 style="color: var(--primary-color); font-weight: 700; margin-bottom: 10px;">ยืนยัน OTP</h2>

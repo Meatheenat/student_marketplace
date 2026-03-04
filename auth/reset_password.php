@@ -39,9 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div style="max-width: 450px; margin: 60px auto; background: var(--bg-card); padding: 35px; border-radius: 20px; border: 1px solid var(--border-color); position: relative; box-shadow: var(--shadow);">
     
     <div style="position: absolute; top: 20px; right: 20px;">
-        <button id="theme-toggle" style="background: var(--bg-body); border: 1px solid var(--border-color); color: var(--text-main); cursor: pointer; padding: 8px; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
-            <i class="fas fa-moon" id="theme-icon"></i>
-        </button>
+       
     </div>
 
     <div style="text-align: center; margin-bottom: 25px;">
