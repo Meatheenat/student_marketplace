@@ -4,8 +4,8 @@ ini_set('display_errors', 1);
 
 // 📍 แก้ข้อมูล 4 บรรทัดนี้ให้ตรงกับหน้าจัดการโฮสต์ของมึงเป๊ะๆ
 $host = 'localhost';
-$db   = 's673190104_db';   // 🎯 เช็ก Prefix ในหน้า Control Panel
-$user = 's673190104_user'; // 🎯 เช็ก Prefix ในหน้า Control Panel
+$db   = 's673190104';   // 🎯 เช็ก Prefix ในหน้า Control Panel
+$user = 's673190104'; // 🎯 เช็ก Prefix ในหน้า Control Panel
 $pass = 'รหัสผ่านที่มึงตั้งไว้';
 
 echo "<h3>🚀 กำลังทดสอบการเชื่อมต่อ...</h3>";
