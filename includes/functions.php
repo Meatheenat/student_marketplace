@@ -1,4 +1,11 @@
 <?php
+// 🚀 ระบบตรวจหา URL เริ่มต้นอัตโนมัติ
+$protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
+$host = $_SERVER['HTTP_HOST'];
+// ปรับให้ตรงกับโฟลเดอร์บน Host จริงของ BNCC
+$base_url = "$protocol://$host/s673190104/student_marketplace/"; 
+
+define('BASE_URL', $base_url);
 /**
  * Student Marketplace - Core Functions
  * ดึงการเชื่อมต่อมาจาก database.php
