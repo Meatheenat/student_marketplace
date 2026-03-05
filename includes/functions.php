@@ -1,21 +1,27 @@
 <?php
-// 🚀 ระบบตรวจหา URL เริ่มต้นอัตโนมัติ
-$protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-$host = $_SERVER['HTTP_HOST'];
-// ปรับให้ตรงกับโฟลเดอร์บน Host จริงของ BNCC
-$base_url = "$protocol://$host/s673190104/student_marketplace/"; 
-
-define('BASE_URL', $base_url);
 /**
- * Student Marketplace - Core Functions
- * ดึงการเชื่อมต่อมาจาก database.php
+ * Student Marketplace - Core Functions (Production Version)
+ * [KEEP ALL FUNCTIONS - NO DELETION]
  */
 
-// 1. ดึงไฟล์เชื่อมต่อฐานข้อมูลมาใช้ (ห้ามประกาศฟังก์ชัน getDB ซ้ำในนี้!)
+// 🚀 1. ระบบตรวจหา URL เริ่มต้นอัตโนมัติ (แก้ไขให้ใช้ได้ทั้ง Local และ Host จริง)
+$protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
+$host = $_SERVER['HTTP_HOST'];
+// ปรับให้ตรงกับโครงสร้างโฟลเดอร์บน Host BNCC
+$base_url = "$protocol://$host/s673190104/student_marketplace/"; 
+
+if (!defined('BASE_URL')) define('BASE_URL', $base_url);
+
+// 2. จัดการ Session และ Output Buffering
 if (ob_get_level() == 0) ob_start(); 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
+/**
+ * 🎯 🛠️ การดึงไฟล์ Database
+ * ใช้ __DIR__ เพื่ออ้างอิงตำแหน่งไฟล์ที่แน่นอน ป้องกันปัญหา Path เพี้ยนเวลาเรียกจากคนละโฟลเดอร์
+ */
 require_once __DIR__ . '/../config/database.php'; 
 
 /**
@@ -54,12 +60,15 @@ function isLoggedIn() {
     return isset($_SESSION['user_id']);
 }
 
-// 👑 🛠️ ปลดล็อกสิทธิ์ให้ Teacher เข้าถึงหน้าระดับ Admin ได้ทั้งหมด
+/**
+ * 👑 🛠️ [FIXED] ปลดล็อกสิทธิ์ให้ Teacher และแก้ปัญหา Redirect Path
+ */
 function checkRole($role) {
     if (!isLoggedIn()) {
         $_SESSION['flash_message'] = "คุณต้องเข้าสู่ระบบก่อน";
         $_SESSION['flash_type'] = "danger";
-        redirect("/student_marketplace/auth/login.php");
+        // 🎯 แก้จาก Path ตายตัว เป็นการใช้ BASE_URL เพื่อให้ทำงานบน Host ได้
+        redirect(BASE_URL . "auth/login.php");
     }
 
     // ถ้าเป็นครู (Teacher) และพยายามเข้าหน้า Admin ให้ปล่อยผ่านได้เลย
@@ -70,7 +79,7 @@ function checkRole($role) {
     if ($_SESSION['role'] !== $role) {
         $_SESSION['flash_message'] = "คุณไม่มีสิทธิ์เข้าถึงหน้านี้";
         $_SESSION['flash_type'] = "danger";
-        redirect("/student_marketplace/auth/login.php");
+        redirect(BASE_URL . "auth/login.php");
     }
 }
 
@@ -113,7 +122,9 @@ function displayFlashMessage() {
     return "";
 }
 
-// 👑 🛠️ [แก้ไขใหม่] ฟังก์ชัน Redirect อัจฉริยะ (แก้ปัญหา Headers already sent 100%)
+/**
+ * 👑 🛠️ ฟังก์ชัน Redirect อัจฉริยะ (แก้ปัญหา Headers already sent 100%)
+ */
 function redirect($url) {
     if (!headers_sent()) {
         header("Location: $url");
@@ -207,7 +218,10 @@ function logAdminAction($action_type, $target_type, $target_id, $details) {
     
     notifyAllAdmins($message);
 }
-// 🔔 ฟังก์ชันส่งการแจ้งเตือน (In-App Notification)
+
+/**
+ * 🔔 ฟังก์ชันส่งการแจ้งเตือน (In-App Notification)
+ */
 function sendNotification($user_id, $type, $message, $link = '#') {
     $db = getDB();
     $stmt = $db->prepare("INSERT INTO notifications (user_id, type, message, link) VALUES (?, ?, ?, ?)");
