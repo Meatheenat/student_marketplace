@@ -354,7 +354,7 @@ require_once '../includes/header.php';
                                 <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px; font-weight: 600;">เชื่อมต่อเพื่อรับแจ้งเตือนระบบอัตโนมัติเมื่อมีออเดอร์ใหม่</p>
                                 <?php
                                 $client_id = "2009322126"; 
-                                $redirect_uri = urlencode("http://hosting.bncc.ac.th/student_marketplace/auth/line_login_callback.php");
+                                $redirect_uri = urlencode("https://hosting.bncc.ac.th/s673190104/student_marketplace/auth/line_login_callback.php");
                                 $state = $_SESSION['user_id'];
                                 $line_auth_url = "https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=$client_id&redirect_uri=$redirect_uri&state=$state&scope=profile%20openid";
                                 ?>
