@@ -3,22 +3,22 @@
  * BNCC Market - LINE Login Callback (Production Fixed)
  * [Cite: User Summary] แก้ไขโดย Gemini & Ploy (Senior IT Support)
  */
-// 🕵️ ระบบสแกนหาตัวปลอมโดย IT Support Ploy
-echo "<h3>--- Debug Mode ---</h3>";
-echo "ไฟล์ที่กำลังรัน: " . __FILE__ . "<br>";
-echo "ไฟล์เชื่อมต่อที่ถูกโหลดมาจริง: <pre>";
+// 🎯 1. บังคับโหลดไฟล์ Config ด้วย Path เต็มของ Server วิทยาลัย
+require_once '/var/www/html/s673190104/student_marketplace/includes/functions.php';
+
+// 🕵️ 2. เช็กอีกรอบว่าคราวนี้ไฟล์โผล่มาหรือยัง
+echo "<pre>ไฟล์ที่ถูกโหลดมาทำงานจริงตอนนี้:\n";
 print_r(get_included_files());
 echo "</pre>";
 
-// ลองเรียกใช้ฟังก์ชันเชื่อมต่อฐานข้อมูล
+// 🎯 3. ทดสอบเรียกใช้ DB ทันที
 try {
     $db = getDB();
-    echo "<b style='color:green'>✅ หน้านี้เชื่อมต่อ DB ได้สำเร็จ!</b>";
+    echo "<h3 style='color:green'>✅ รอดแล้วไอ้เหี้ย! หน้านี้ดึง DB มาใช้ได้แล้ว</h3>";
 } catch (Exception $e) {
-    echo "<b style='color:red'>❌ หน้านี้เชื่อมต่อไม่ได้เพราะ:</b> " . $e->getMessage();
-    echo "<br><b>User ที่ระบบพยายามใช้ตอนนี้คือ:</b> " . $u; // ลอง echo ตัวแปร user ออกมาดู
+    echo "<h3 style='color:red'>❌ ขนาดใช้ Path เต็มยังพังเพราะ: " . $e->getMessage() . "</h3>";
 }
-exit(); // หยุดการทำงานเพื่อดูผลลัพธ์ตรงนี้ก่อน
+exit(); // หยุดดูผลตรงนี้ก่อน
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
