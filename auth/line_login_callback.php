@@ -3,6 +3,22 @@
  * BNCC Market - LINE Login Callback (Production Fixed)
  * [Cite: User Summary] แก้ไขโดย Gemini & Ploy (Senior IT Support)
  */
+// 🕵️ ระบบสแกนหาตัวปลอมโดย IT Support Ploy
+echo "<h3>--- Debug Mode ---</h3>";
+echo "ไฟล์ที่กำลังรัน: " . __FILE__ . "<br>";
+echo "ไฟล์เชื่อมต่อที่ถูกโหลดมาจริง: <pre>";
+print_r(get_included_files());
+echo "</pre>";
+
+// ลองเรียกใช้ฟังก์ชันเชื่อมต่อฐานข้อมูล
+try {
+    $db = getDB();
+    echo "<b style='color:green'>✅ หน้านี้เชื่อมต่อ DB ได้สำเร็จ!</b>";
+} catch (Exception $e) {
+    echo "<b style='color:red'>❌ หน้านี้เชื่อมต่อไม่ได้เพราะ:</b> " . $e->getMessage();
+    echo "<br><b>User ที่ระบบพยายามใช้ตอนนี้คือ:</b> " . $u; // ลอง echo ตัวแปร user ออกมาดู
+}
+exit(); // หยุดการทำงานเพื่อดูผลลัพธ์ตรงนี้ก่อน
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
