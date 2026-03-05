@@ -3,7 +3,22 @@
  * BNCC Market - LINE Login Callback (Production Fixed)
  * [Cite: User Summary] แก้ไขโดย Gemini & Ploy (Senior IT Support)
  */
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
+// 🎯 1. ลองประกาศตัวแปรเชื่อมต่อเองตรงนี้เลย (ห้ามเรียกจากไฟล์อื่น)
+$host = 'localhost';
+$db   = 's673190104';   // 📍 ก๊อปจากหน้าโฮสต์มาวางใหม่!
+$user = 's673190104'; // 📍 ก๊อปจากหน้าโฮสต์มาวางใหม่!
+$pass = 's673190104';
+
+try {
+    $db_conn = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass);
+    // echo "ถ้าเห็นข้อความนี้ แสดงว่าข้อมูล DB ถูกต้อง!"; 
+} catch (PDOException $e) {
+    // 🎯 ถ้ามันยัง Error 1045 ตรงนี้ มึงเลิกแก้โค้ด แล้วไปคุยกับหน้าจัดการโฮสต์ทันที!
+    die("❌ จุดตายอยู่ที่นี่: " . $e->getMessage());
+}
 // 🎯 1. เปิดระบบ Error Reporting เพื่อดูว่ามันตายที่บรรทัดไหนแน่
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
