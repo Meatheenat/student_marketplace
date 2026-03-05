@@ -2,7 +2,7 @@
 /**
  * Student Marketplace - Home Page
  * [SOLID CENTERED EDITION - BOLD PRICE & ANIMATED]
- * Project: BNCC Student Marketplace [Cite: User Summary]
+ * Project: BNCC Student Marketplace
  */
 require_once '../includes/functions.php';
 
@@ -73,7 +73,7 @@ $products = $stmt->fetchAll();
 
 <style>
     /* ============================================================
-       🛠️ SOLID UI SYSTEM - CENTERED & HIGH CONTRAST
+        🛠️ SOLID UI SYSTEM - CENTERED & HIGH CONTRAST
        ============================================================ */
     :root {
         --solid-bg: #f1f5f9;
@@ -202,17 +202,17 @@ $products = $stmt->fetchAll();
     .price-badge {
         position: absolute;
         top: 15px; 
-        left: 15px; /* ย้ายมาซ้ายบนเพื่อให้อ่านง่ายตามทิศทางการมอง */
-        background: #0f172a; /* พื้นดำสนิทตัดกับทุกรูป */
+        left: 15px; 
+        background: #0f172a; 
         color: #ffffff;
         padding: 8px 18px;
         border-radius: 12px;
         font-weight: 900;
-        font-size: 1.4rem; /* ขยายฟอนต์ */
+        font-size: 1.4rem; 
         letter-spacing: -0.5px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.4); /* เพิ่มเงาให้ลอยเด่น */
-        border: 2px solid rgba(255,255,255,0.1); /* ขอบขาวบางๆ */
-        animation: subtlePulse 2s infinite alternate; /* แอนิเมชันเรียกร้องความสนใจนิดๆ */
+        box-shadow: 0 5px 15px rgba(0,0,0,0.4); 
+        border: 2px solid rgba(255,255,255,0.1); 
+        animation: subtlePulse 2s infinite alternate; 
     }
 
     @keyframes subtlePulse {
@@ -321,7 +321,12 @@ $products = $stmt->fetchAll();
                                     <h3><?= e($p['title']) ?></h3>
                                     
                                     <div class="shop-info">
-                                        <span onclick="window.location.href='shop_profile.php?id=<?= $p['shop_id'] ?>'; return false;" style="cursor: pointer; transition: 0.2s;" onmouseover="this.style.color='var(--solid-primary)'" onmouseout="this.style.color='inherit'"><i class="fas fa-store"></i> <?= e($p['shop_name']) ?></span>
+                                        <span onclick="window.location.href='<?= BASE_URL ?>pages/shop_profile.php?id=<?= $p['shop_id'] ?>'; return false;" 
+                                              style="cursor: pointer; transition: 0.2s;" 
+                                              onmouseover="this.style.color='var(--solid-primary)'" 
+                                              onmouseout="this.style.color='inherit'">
+                                              <i class="fas fa-store"></i> <?= e($p['shop_name']) ?>
+                                        </span>
                                         <span><i class="fas fa-eye"></i> <?= number_format($p['views']) ?></span>
                                     </div>
                                 </div>
@@ -348,7 +353,6 @@ $products = $stmt->fetchAll();
     const observer = new IntersectionObserver((entries) => {
         entries.forEach((entry, index) => {
             if (entry.isIntersecting) {
-                // ใส่ดีเลย์ให้โผล่มาทีละอัน
                 setTimeout(() => {
                     entry.target.classList.add('show');
                 }, index * 50); 
