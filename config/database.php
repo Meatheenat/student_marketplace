@@ -8,7 +8,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 // ตั้งค่าพารามิเตอร์การเชื่อมต่อ
-$host = '127.0.0.1';
+$host = 'localhost';
 $db   = 's673190104';
 $user = 's673190104'; // เปลี่ยนตามความเหมาะสมของ Server
 $pass = 's673190104';     // เปลี่ยนตามความเหมาะสมของ Server
