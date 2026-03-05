@@ -18,7 +18,7 @@ if (isLoggedIn()) {
 $client = new Google\Client();
 $client->setClientId('349397957892-6m9lu6a6gd4605i8f9vruei5s07lh6hv.apps.googleusercontent.com');
 $client->setClientSecret('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');
-$client->setRedirectUri('http://localhost/student_marketplace/auth/google_callback.php');
+$client->setRedirectUri('https://hosting.bncc.ac.th/s673190104/student_marketplace/auth/google_callback.php');
 $client->addScope("email");
 $client->addScope("profile");
 $client->setPrompt('select_account'); 
