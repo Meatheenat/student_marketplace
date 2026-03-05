@@ -1,7 +1,8 @@
 <?php
 /**
- * ระบบตลาดออนไลน์นักเรียน (Student Marketplace)
- * หน้าหลัก (Home Page) - ปรับปรุง UI ส่วนการค้นหาให้ชัดเจน
+ * Student Marketplace - Home Page
+ * [SOLID CENTERED EDITION - BOLD PRICE & ANIMATED]
+ * Project: BNCC Student Marketplace [Cite: User Summary]
  */
 require_once '../includes/functions.php';
 
@@ -11,23 +12,30 @@ if (!isLoggedIn()) {
     redirect('../auth/login.php');
 }
 
-$pageTitle = "หน้าแรก - ค้นหาสินค้าและบริการ";
+$pageTitle = "ค้นหาสินค้า - BNCC Market";
 require_once '../includes/header.php';
 
 $db = getDB();
+
+// --- 1. Filter Logic (คงเดิม 100%) ---
 $search = isset($_GET['q']) ? trim($_GET['q']) : '';
 $cat_id = isset($_GET['cat']) ? $_GET['cat'] : '';
+$min_price = isset($_GET['min_price']) && $_GET['min_price'] !== '' ? (float)$_GET['min_price'] : null;
+$max_price = isset($_GET['max_price']) && $_GET['max_price'] !== '' ? (float)$_GET['max_price'] : null;
+$sort_by = isset($_GET['sort']) ? $_GET['sort'] : 'newest';
 
-// ดึงข้อมูลหมวดหมู่
 $cat_stmt = $db->query("SELECT * FROM categories ORDER BY id ASC");
 $categories = $cat_stmt->fetchAll();
 
-// 🎯 🛠️ เตรียม SQL ดึงสินค้า (โชว์เฉพาะร้านที่อนุมัติแล้ว, สินค้าที่อนุมัติแล้ว และ "ยังไม่ถูกลบ")
-$sql = "SELECT p.*, s.shop_name, s.status as shop_status, c.category_name 
+// --- 2. SQL Query ---
+$sql = "SELECT p.*, s.shop_name, s.status as shop_status, c.category_name,
+               IFNULL(AVG(r.rating), 0) as avg_rating,
+               COUNT(r.id) as review_count
         FROM products p
         JOIN shops s ON p.shop_id = s.id
         JOIN categories c ON p.category_id = c.id
-        WHERE s.status = 'approved' AND p.status = 'approved' AND p.is_deleted = 0"; // เพิ่ม AND p.is_deleted = 0
+        LEFT JOIN reviews r ON p.id = r.product_id AND r.is_deleted = 0
+        WHERE s.status = 'approved' AND p.status = 'approved' AND p.is_deleted = 0";
 
 $params = [];
 if (!empty($search)) {
@@ -39,112 +47,316 @@ if (!empty($cat_id)) {
     $sql .= " AND p.category_id = ?";
     $params[] = $cat_id;
 }
-$sql .= " ORDER BY p.created_at DESC";
+if ($min_price !== null) {
+    $sql .= " AND p.price >= ?";
+    $params[] = $min_price;
+}
+if ($max_price !== null) {
+    $sql .= " AND p.price <= ?";
+    $params[] = $max_price;
+}
+
+$sql .= " GROUP BY p.id";
+
+switch ($sort_by) {
+    case 'oldest': $sql .= " ORDER BY p.created_at ASC"; break;
+    case 'price_low': $sql .= " ORDER BY p.price ASC"; break;
+    case 'price_high': $sql .= " ORDER BY p.price DESC"; break;
+    case 'top_rated': $sql .= " ORDER BY avg_rating DESC, review_count DESC"; break;
+    default: $sql .= " ORDER BY p.created_at DESC";
+}
+
 $stmt = $db->prepare($sql);
 $stmt->execute($params);
 $products = $stmt->fetchAll();
 ?>
 
 <style>
-    .search-input-box::placeholder {
-        color: #94a3b8 !important; /* สีเทาฟ้า ตัดกับพื้นหลังขาวชัดเจน */
-        opacity: 1;
+    /* ============================================================
+       🛠️ SOLID UI SYSTEM - CENTERED & HIGH CONTRAST
+       ============================================================ */
+    :root {
+        --solid-bg: #f1f5f9;
+        --solid-card: #ffffff;
+        --solid-border: #cbd5e1;
+        --solid-text: #0f172a;
+        --solid-primary: #4f46e5;
     }
-    .search-input-box:focus {
+
+    .dark-theme {
+        --solid-bg: #0f172a;
+        --solid-card: #1e293b;
+        --solid-border: #334155;
+        --solid-text: #ffffff;
+        --solid-primary: #6366f1;
+    }
+
+    body { background-color: var(--solid-bg) !important; color: var(--solid-text); }
+
+    /* 🏰 Centered Hero Section */
+    .hero-center {
+        padding: 80px 20px;
+        text-align: center;
+        background: var(--solid-card);
+        border-bottom: 3px solid var(--solid-primary);
+        margin-bottom: 50px;
+    }
+
+    .hero-center h1 {
+        font-size: 3.5rem;
+        font-weight: 900;
+        color: var(--solid-text);
+        letter-spacing: -2px;
+        margin-bottom: 15px;
+        opacity: 0;
+        transform: translateY(-20px);
+        animation: dropIn 0.8s ease forwards;
+    }
+
+    .hero-center p {
+        font-size: 1.1rem;
+        color: var(--text-muted);
+        margin-bottom: 40px;
+        opacity: 0;
+        animation: fadeIn 1s ease 0.4s forwards;
+    }
+
+    /* 🔍 Search Bar - Centered & Sharp */
+    .search-wrap {
+        max-width: 650px;
+        margin: 0 auto;
+        display: flex;
+        gap: 12px;
+        padding: 5px;
+        background: var(--solid-bg);
+        border-radius: 16px;
+        border: 2px solid var(--solid-border);
+    }
+
+    .search-wrap input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        padding: 15px 20px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--solid-text);
         outline: none;
-        background: #ffffff !important;
-        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2) !important;
     }
-    .hero-section {
-        text-align: center; 
-        padding: 60px 20px; 
-        background: linear-gradient(135deg, #4f46e5, #6366f1); 
-        border-radius: 24px; 
-        margin-bottom: 40px; 
-        color: white;
-        box-shadow: 0 10px 30px rgba(79, 70, 229, 0.2);
+
+    .btn-search-solid {
+        background: var(--solid-primary);
+        color: #fff;
+        border: none;
+        padding: 0 30px;
+        border-radius: 12px;
+        font-weight: 800;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    .btn-search-solid:hover { transform: scale(1.05); }
+
+    /* 📂 Sidebar */
+    .sidebar-sticky { position: sticky; top: 100px; }
+    .cat-title { font-size: 0.8rem; font-weight: 900; text-transform: uppercase; color: var(--solid-primary); margin-bottom: 20px; }
+    
+    .cat-btn {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 20px;
+        margin-bottom: 8px;
+        background: var(--solid-card);
+        border: 1px solid var(--solid-border);
+        border-radius: 12px;
+        text-decoration: none;
+        color: var(--solid-text);
+        font-weight: 700;
+        transition: 0.2s;
+    }
+    .cat-btn:hover { border-color: var(--solid-primary); padding-left: 25px; }
+    .cat-btn.active { background: var(--solid-primary); color: #fff; border-color: var(--solid-primary); box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4); }
+
+    /* 🧱 Product Card - Solid Style */
+    .product-box {
+        background: var(--solid-card);
+        border: 2px solid var(--solid-border);
+        border-radius: 20px;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    .product-box.show { opacity: 1; transform: translateY(0); }
+    .product-box:hover {
+        transform: translateY(-10px);
+        border-color: var(--solid-primary);
+        box-shadow: 0 20px 30px rgba(0,0,0,0.1);
+    }
+
+    .img-area { height: 220px; width: 100%; position: relative; border-bottom: 2px solid var(--solid-border); overflow: hidden; }
+    .img-area img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
+    .product-box:hover .img-area img { transform: scale(1.1); }
+
+    /* 🎯 🛠️ BIG PRICE BADGE (เน้นราคาให้เด่นสุดๆ) */
+    .price-badge {
+        position: absolute;
+        top: 15px; 
+        left: 15px; /* ย้ายมาซ้ายบนเพื่อให้อ่านง่ายตามทิศทางการมอง */
+        background: #0f172a; /* พื้นดำสนิทตัดกับทุกรูป */
+        color: #ffffff;
+        padding: 8px 18px;
+        border-radius: 12px;
+        font-weight: 900;
+        font-size: 1.4rem; /* ขยายฟอนต์ */
+        letter-spacing: -0.5px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.4); /* เพิ่มเงาให้ลอยเด่น */
+        border: 2px solid rgba(255,255,255,0.1); /* ขอบขาวบางๆ */
+        animation: subtlePulse 2s infinite alternate; /* แอนิเมชันเรียกร้องความสนใจนิดๆ */
+    }
+
+    @keyframes subtlePulse {
+        from { transform: scale(1); }
+        to { transform: scale(1.05); }
+    }
+
+    .info-wrap { padding: 25px; }
+    .info-wrap h3 { font-size: 1.2rem; font-weight: 800; margin-bottom: 10px; color: var(--solid-text); }
+    .shop-info { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--solid-border); padding-top: 15px; margin-top: 15px; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; }
+
+    /* 🎢 Keyframes */
+    @keyframes dropIn { to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { to { opacity: 1; } }
+
+    @media (max-width: 768px) {
+        .hero-center h1 { font-size: 2.2rem; }
+        .main-layout { grid-template-columns: 1fr !important; }
+        .sidebar-sticky { display: none; }
     }
 </style>
 
-<section class="hero-section">
-    <h1 style="font-size: 2.8rem; font-weight: 800; margin-bottom: 10px; letter-spacing: -1px;">ตลาดนัด BNCC</h1>
-    <p style="opacity: 0.9; font-size: 1.1rem; margin-bottom: 35px;">ยินดีต้อนรับคุณ <?php echo e($_SESSION['fullname']); ?> | เลือกช้อปสินค้าจากเพื่อนร่วมวิทยาลัย</p>
-    
-    <form action="index.php" method="GET" style="max-width: 650px; margin: 0 auto; display: flex; gap: 0; background: white; padding: 5px; border-radius: 18px; box-shadow: 0 8px 25px rgba(0,0,0,0.1);">
-        <div style="position: relative; flex: 1; display: flex; align-items: center;">
-            <i class="fas fa-search" style="position: absolute; left: 18px; color: #64748b; font-size: 1.1rem;"></i>
-            <input type="text" name="q" class="search-input-box" 
-                   placeholder="ค้นหาสินค้า เช่น คุกกี้, รับวาดรูป..." 
-                   value="<?php echo e($search); ?>" 
-                   style="width: 100%; padding: 14px 15px 14px 50px; border: none; font-size: 1rem; color: #1e293b; background: transparent;">
-        </div>
-        <button type="submit" class="btn" style="background: #1e293b; color: white; padding: 0 35px; border-radius: 14px; font-weight: 600; margin-left: 5px; transition: 0.3s;">
-            ค้นหา
-        </button>
-    </form>
-</section>
-
-<div style="display: grid; grid-template-columns: 250px 1fr; gap: 30px;" class="main-layout">
-    <aside class="sidebar" style="background: var(--bg-card); padding: 25px; border-radius: 20px; height: fit-content; box-shadow: var(--shadow); border: 1px solid var(--border-color);">
-        <h3 style="margin-bottom: 20px; font-size: 1.1rem; font-weight: 700; color: var(--text-main); border-left: 4px solid var(--primary-color); padding-left: 12px;">หมวดหมู่</h3>
-        <ul style="list-style: none; padding: 0;">
-            <li style="margin-bottom: 12px;">
-                <a href="index.php" style="text-decoration: none; color: <?php echo empty($cat_id) ? 'var(--primary-color)' : 'var(--text-muted)'; ?>; font-weight: <?php echo empty($cat_id) ? '700' : '400'; ?>;">
-                    <i class="fas fa-border-all" style="width: 25px;"></i> ทั้งหมด
-                </a>
-            </li>
-            <?php foreach ($categories as $cat): ?>
-            <li style="margin-bottom: 12px;">
-                <a href="index.php?cat=<?php echo $cat['id']; ?>" style="text-decoration: none; color: <?php echo $cat_id == $cat['id'] ? 'var(--primary-color)' : 'var(--text-muted)'; ?>; font-weight: <?php echo $cat_id == $cat['id'] ? '700' : '400'; ?>;">
-                    <i class="fas fa-chevron-right" style="font-size: 0.8rem; width: 25px;"></i> <?php echo e($cat['category_name']); ?>
-                </a>
-            </li>
-            <?php endforeach; ?>
-        </ul>
-    </aside>
-
-    <section>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-            <h2 style="font-size: 1.4rem; font-weight: 700;">
-                <?php 
-                    if(!empty($search)) echo "🔍 ผลการค้นหา: " . e($search);
-                    else if(!empty($cat_id)) echo "📂 " . e($products[0]['category_name'] ?? 'หมวดหมู่นี้');
-                    else echo "✨ สินค้ามาใหม่ล่าสุด";
-                ?>
-            </h2>
-            <span style="color: var(--text-muted); font-size: 0.85rem; background: var(--bg-card); padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border-color);">
-                ทั้งหมด <?php echo count($products); ?> รายการ
-            </span>
-        </div>
-
-        <?php if (count($products) > 0): ?>
-            <div class="product-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px;">
-                <?php foreach ($products as $p): ?>
-                    <div class="product-card" style="background: var(--bg-card); border-radius: 20px; overflow: hidden; border: 1px solid var(--border-color); transition: 0.3s; position: relative;">
-                        <a href="product_detail.php?id=<?php echo $p['id']; ?>" style="text-decoration: none; color: inherit;">
-                            <img src="<?php echo !empty($p['image_url']) ? '../assets/images/products/'.$p['image_url'] : 'https://via.placeholder.com/400x300'; ?>" 
-                                 alt="<?php echo e($p['title']); ?>" style="width: 100%; height: 200px; object-fit: cover;">
-                            <div style="padding: 20px;">
-                                <span style="font-size: 0.75rem; color: var(--primary-color); font-weight: 600; text-transform: uppercase;"><?php echo e($p['category_name']); ?></span>
-                                <h3 style="font-size: 1.1rem; margin: 8px 0; font-weight: 700;"><?php echo e($p['title']); ?></h3>
-                                <div style="font-size: 1.2rem; font-weight: 800; color: var(--primary-color); margin-bottom: 15px;">฿<?php echo number_format($p['price'], 2); ?></div>
-                                <div style="display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; font-size: 0.85rem; color: var(--text-muted);">
-                                    <i class="fas fa-store"></i> <?php echo e($p['shop_name']); ?>
-                                </div>
-                            </div>
-                        </a>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        <?php else: ?>
-            <div style="text-align: center; padding: 80px 20px; background: var(--bg-card); border-radius: 24px; border: 2px dashed var(--border-color);">
-                <div style="font-size: 4rem; margin-bottom: 20px;">🏜️</div>
-                <h3 style="color: var(--text-main); font-weight: 700;">ไม่พบสินค้าที่คุณค้นหา</h3>
-                <p style="color: var(--text-muted); margin-bottom: 25px;">ลองเปลี่ยนคำค้นหา หรือเลือกหมวดหมู่อื่นดูนะครับ</p>
-                <a href="index.php" class="btn btn-primary" style="padding: 12px 30px; border-radius: 12px;">ดูสินค้าทั้งหมด</a>
-            </div>
-        <?php endif; ?>
-    </section>
+<div class="hero-center">
+    <div class="container">
+        <h1>ค้นหาสิ่งที่คุณต้องการใน BNCC Market</h1>
+        <p>ยินดีต้อนรับคุณ <?php echo e($_SESSION['fullname']); ?> | แหล่งรวมของดีที่เหล่านักศึกษายอมรับ</p>
+        
+        <form action="index.php" method="GET" class="search-wrap">
+            <input type="text" name="q" placeholder="เช่น คุกกี้, อุปกรณ์การเรียน, รับจ้าง..." value="<?= e($search) ?>" autofocus>
+            <button type="submit" class="btn-search-solid">ค้นหาสินค้า</button>
+        </form>
+    </div>
 </div>
+
+<div class="container">
+    <div style="display: grid; grid-template-columns: 280px 1fr; gap: 40px;" class="main-layout">
+        
+        <aside>
+            <div class="sidebar-sticky">
+                <h3 class="cat-title">Categories</h3>
+                <nav>
+                    <a href="index.php" class="cat-btn <?= empty($cat_id) ? 'active' : '' ?>">
+                        <i class="fas fa-th-large"></i> ทั้งหมด
+                    </a>
+                    <?php foreach ($categories as $cat): ?>
+                        <a href="index.php?cat=<?= $cat['id'] ?>&sort=<?= $sort_by ?>" class="cat-btn <?= $cat_id == $cat['id'] ? 'active' : '' ?>">
+                            <i class="fas fa-chevron-right" style="font-size: 0.7rem;"></i> <?= e($cat['category_name']) ?>
+                        </a>
+                    <?php endforeach; ?>
+                </nav>
+
+                <h3 class="cat-title" style="margin-top: 40px;">Filters</h3>
+                <form action="index.php" method="GET" style="background: var(--solid-card); padding: 20px; border-radius: 16px; border: 1px solid var(--solid-border);">
+                    <input type="hidden" name="q" value="<?= e($search) ?>">
+                    <input type="hidden" name="cat" value="<?= e($cat_id) ?>">
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-size: 0.75rem; font-weight: 800; display: block; margin-bottom: 8px;">เรียงลำดับรายการ</label>
+                        <select name="sort" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--solid-border); background: var(--solid-bg); color: var(--solid-text); font-weight: 600;">
+                            <option value="newest" <?= $sort_by == 'newest' ? 'selected' : '' ?>>มาใหม่ล่าสุด</option>
+                            <option value="price_low" <?= $sort_by == 'price_low' ? 'selected' : '' ?>>ราคา: ถูกไปแพง</option>
+                            <option value="price_high" <?= $sort_by == 'price_high' ? 'selected' : '' ?>>ราคา: แพงไปถูก</option>
+                            <option value="top_rated" <?= $sort_by == 'top_rated' ? 'selected' : '' ?>>รีวิวสูงสุด</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: 800;">ใช้ตัวกรอง</button>
+                    <a href="index.php" style="display: block; text-align: center; margin-top: 15px; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-decoration: none;">ล้างค่าทั้งหมด</a>
+                </form>
+            </div>
+        </aside>
+
+        <main>
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px;">
+                <h2 style="font-size: 1.8rem; font-weight: 900; letter-spacing: -1px;">
+                    <?php 
+                        if(!empty($search)) echo "🔎 ผลการค้นหา: " . e($search);
+                        else if(!empty($cat_id)) echo "📂 " . e($products[0]['category_name'] ?? 'หมวดหมู่');
+                        else echo "สินค้ามาใหม่วันนี้";
+                    ?>
+                </h2>
+                <div style="font-weight: 800; color: var(--solid-primary); font-size: 0.9rem; background: var(--solid-card); padding: 5px 15px; border-radius: 10px; border: 2px solid var(--solid-primary);">
+                    <?= count($products) ?> รายการ
+                </div>
+            </div>
+
+            <?php if (count($products) > 0): ?>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 30px;">
+                    <?php foreach ($products as $p): ?>
+                        <div class="product-box">
+                            <a href="product_detail.php?id=<?= $p['id'] ?>" style="text-decoration: none; color: inherit;">
+                                <div class="img-area">
+                                    <img src="<?= !empty($p['image_url']) ? '../assets/images/products/'.$p['image_url'] : 'https://via.placeholder.com/400x300' ?>" alt="<?= e($p['title']) ?>">
+                                    
+                                    <div class="price-badge">฿<?= number_format($p['price'], 0) ?></div>
+                                    
+                                    <?php if($p['review_count'] > 0): ?>
+                                        <div style="position: absolute; top: 15px; right: 15px; background: #fbbf24; color: #000; padding: 4px 10px; border-radius: 8px; font-weight: 900; font-size: 0.75rem; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                                            ⭐ <?= round($p['avg_rating'], 1) ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+
+                                <div class="info-wrap">
+                                    <span style="font-size: 0.7rem; font-weight: 900; color: var(--solid-primary); text-transform: uppercase;"><?= e($p['category_name']) ?></span>
+                                    <h3><?= e($p['title']) ?></h3>
+                                    
+                                    <div class="shop-info">
+                                        <span onclick="window.location.href='shop_profile.php?id=<?= $p['shop_id'] ?>'; return false;" style="cursor: pointer; transition: 0.2s;" onmouseover="this.style.color='var(--solid-primary)'" onmouseout="this.style.color='inherit'"><i class="fas fa-store"></i> <?= e($p['shop_name']) ?></span>
+                                        <span><i class="fas fa-eye"></i> <?= number_format($p['views']) ?></span>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <div style="text-align: center; padding: 120px 20px; border: 3px dashed var(--solid-border); border-radius: 30px;">
+                    <i class="fas fa-search" style="font-size: 4rem; color: var(--solid-border); margin-bottom: 20px;"></i>
+                    <h3 style="font-weight: 900;">ไม่พบสินค้าที่มึงตามหา</h3>
+                    <p style="color: var(--text-muted); margin-bottom: 20px;">ลองเปลี่ยนคำค้นหาหรือตัวกรองดูนะครับเพื่อน</p>
+                    <a href="index.php" class="btn btn-primary" style="padding: 12px 40px; border-radius: 12px;">กลับไปดูสินค้าทั้งหมด</a>
+                </div>
+            <?php endif; ?>
+        </main>
+    </div>
+</div>
+
+<script>
+    /**
+     * 🚀 Intersection Observer (สำหรับการ์ดเด้งขึ้นมาทีละอันแบบมีคิว)
+     */
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry, index) => {
+            if (entry.isIntersecting) {
+                // ใส่ดีเลย์ให้โผล่มาทีละอัน
+                setTimeout(() => {
+                    entry.target.classList.add('show');
+                }, index * 50); 
+            }
+        });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.product-box').forEach(box => observer.observe(box));
+</script>
 
 <?php require_once '../includes/footer.php'; ?>

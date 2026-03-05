@@ -1,10 +1,8 @@
 <?php
 /**
  * BNCC Market - Master Profile Dashboard (Full Version)
- * - แก้ไขปัญหาสี Navbar เพี้ยนด้วยระบบ Force CSS Variables
- * - บูรณาการระบบ Wishlist เข้ากับ Sidebar
- * - ระบบอัปโหลดรูปโปรไฟล์พร้อมการตรวจสอบความปลอดภัย
- * - บูรณาการ LINE Login (OAuth 2.0) เพื่อรับแจ้งเตือนอัตโนมัติ
+ * [SOLID HIGH-CONTRAST REDESIGN]
+ * Project: BNCC Student Marketplace [Cite: User Summary]
  */
 
 // 🚀 1. โหลด Functions มาก่อนเสมอ! (ห้ามมี HTML หลุดออกมาก่อนหน้านี้เด็ดขาด)
@@ -75,208 +73,324 @@ require_once '../includes/header.php';
 ?>
 
 <style>
+    /* ============================================================
+       🛠️ SOLID DESIGN SYSTEM - HIGH CONTRAST (เหมือน Index/Product)
+       ============================================================ */
     :root {
-        --bg-body: #f1f5f9;
-        --bg-card-rgb: 255, 255, 255;
+        --solid-bg: #f8fafc;
+        --solid-card: #ffffff;
+        --solid-text: #0f172a;
+        --solid-border: #cbd5e1;
+        --solid-primary: #4f46e5;
+        --solid-danger: #ef4444;
     }
+
     .dark-theme {
-        --bg-body: #020617;
-        --bg-card-rgb: 15, 23, 42;
+        --solid-bg: #0b0e14;
+        --solid-card: #161b26;
+        --solid-text: #ffffff;
+        --solid-border: #2d3748;
+        --solid-primary: #6366f1;
     }
 
     body {
-        background-color: var(--bg-body) !important;
-        margin: 0;
-        padding: 0;
+        background-color: var(--solid-bg) !important;
+        color: var(--solid-text);
+        transition: background 0.3s ease;
     }
 
     .profile-page-wrapper {
-        padding: 30px 0 60px 0;
-        min-height: 100vh;
+        padding: 50px 0 80px 0;
+        min-height: calc(100vh - 75px);
     }
 
+    /* 🧱 🛠️ Solid Cards */
     .profile-card {
-        background: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-radius: 24px;
-        box-shadow: var(--shadow-lg);
+        background: var(--solid-card);
+        border: 2px solid var(--solid-border);
+        border-radius: 32px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
         overflow: hidden;
+        position: relative;
     }
 
-    .input-modern {
-        width: 100%;
-        padding: 14px 20px;
-        border-radius: 14px;
-        border: 1px solid var(--border-color);
-        background: var(--bg-body);
-        color: var(--text-main);
-        transition: all 0.3s ease;
-        font-family: 'Prompt', sans-serif;
+    .sidebar-card {
+        position: sticky;
+        top: 100px;
+        text-align: center;
+        padding: 0; /* Padding ใส่ใน Element ย่อยแทนเพราะมี Header Banner */
     }
 
-    .input-modern:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
-        outline: none;
+    .sidebar-banner {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 120px;
+        background: linear-gradient(135deg, var(--solid-primary), #a855f7);
+        z-index: 0;
+    }
+
+    .sidebar-content {
+        position: relative;
+        z-index: 1;
+        padding: 50px 30px 40px;
+    }
+
+    /* 📸 Avatar Styles */
+    .avatar-wrapper {
+        position: relative;
+        display: inline-block;
+        margin-bottom: 20px;
+    }
+
+    .avatar-img {
+        width: 160px;
+        height: 160px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 6px solid var(--solid-card);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        background-color: var(--solid-bg);
+        transition: filter 0.3s ease;
     }
 
     .btn-camera-overlay {
         position: absolute;
-        bottom: 8px;
-        right: 8px;
-        background: var(--primary);
+        bottom: 5px;
+        right: 5px;
+        background: var(--solid-primary);
         color: #fff;
-        width: 42px;
-        height: 42px;
+        width: 45px;
+        height: 45px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        border: 4px solid var(--bg-card);
-        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        border: 4px solid var(--solid-card);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
     .btn-camera-overlay:hover { transform: scale(1.15); }
 
-    .badge-role.admin { background: rgba(99, 102, 241, 0.15); color: #6366f1; border: 1px solid rgba(99, 102, 241, 0.2); }
-    .badge-role.seller { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); }
-    /* 👑 🛠️ เพิ่มสี Badge สำหรับยศครู (Red Version) */
-    .badge-role.teacher { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+    /* 🏷️ Role Badges */
+    .badge-role {
+        padding: 6px 18px;
+        border-radius: 50px;
+        font-weight: 800;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 2px solid transparent;
+    }
+    .badge-role.admin { background: rgba(99, 102, 241, 0.1); color: var(--solid-primary); border-color: rgba(99, 102, 241, 0.3); }
+    .badge-role.seller { background: rgba(16, 185, 129, 0.1); color: #10b981; border-color: rgba(16, 185, 129, 0.3); }
+    .badge-role.teacher { background: rgba(239, 68, 68, 0.1); color: var(--solid-danger); border-color: rgba(239, 68, 68, 0.3); }
 
+    /* 🔗 Sidebar Menus */
     .sidebar-menu-item {
         display: flex;
+        justify-content: space-between;
         align-items: center;
-        gap: 15px;
-        padding: 12px 18px;
-        color: var(--text-muted);
+        padding: 18px 20px;
+        color: var(--solid-text);
         text-decoration: none;
-        border-radius: 12px;
+        border-radius: 16px;
+        font-weight: 700;
         transition: 0.3s;
-        margin-bottom: 5px;
+        border: 2px solid transparent;
+        background: var(--solid-bg);
+        margin-bottom: 10px;
     }
-    .sidebar-menu-item:hover, .sidebar-menu-item.active {
-        background: rgba(var(--primary-rgb), 0.1);
-        color: var(--primary);
+    .sidebar-menu-item:hover {
+        border-color: var(--solid-primary);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        transform: translateY(-2px);
     }
 
+    .wishlist-count {
+        background: var(--solid-danger);
+        color: #fff;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 900;
+        box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
+    }
+
+    /* 🟩 Line Connect */
     .btn-line-connect {
         background: #06c755;
         color: white !important;
-        padding: 12px 20px;
-        border-radius: 12px;
-        font-weight: 600;
+        padding: 15px 20px;
+        border-radius: 16px;
+        font-weight: 800;
         text-decoration: none;
-        display: inline-flex;
+        display: flex;
         align-items: center;
+        justify-content: center;
         gap: 10px;
         margin-top: 15px;
         transition: 0.3s;
         border: none;
         width: 100%;
-        justify-content: center;
+        box-shadow: 0 10px 20px rgba(6, 199, 85, 0.2);
     }
-    .btn-line-connect:hover {
-        background: #05b34c;
+    .btn-line-connect:hover { transform: translateY(-3px); box-shadow: 0 15px 25px rgba(6, 199, 85, 0.4); }
+
+    /* ⌨️ Form Inputs (Solid Style) */
+    .form-group label {
+        display: block;
+        margin-bottom: 10px;
+        font-weight: 800;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .input-solid {
+        width: 100%;
+        padding: 18px 25px;
+        border-radius: 18px;
+        border: 2px solid var(--solid-border);
+        background: var(--solid-bg);
+        color: var(--solid-text);
+        font-size: 1.05rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        outline: none;
+        font-family: 'Prompt', sans-serif;
+    }
+
+    .input-solid:focus {
+        border-color: var(--solid-primary);
+        box-shadow: 0 10px 30px rgba(99, 102, 241, 0.15);
+        background: var(--solid-card);
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(6, 199, 85, 0.3);
+    }
+
+    /* 🔥 Main Buttons */
+    .btn-save-solid {
+        padding: 16px 45px;
+        border-radius: 16px;
+        font-weight: 800;
+        background: var(--solid-primary);
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 1.05rem;
+        box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
+        transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .btn-save-solid:hover { transform: translateY(-4px); box-shadow: 0 15px 35px rgba(99, 102, 241, 0.5); }
+
+    /* 🪄 Animations */
+    .reveal-left { opacity: 0; transform: translateX(-30px); animation: slideReveal 0.8s ease forwards; }
+    .reveal-right { opacity: 0; transform: translateX(30px); animation: slideReveal 0.8s ease 0.2s forwards; }
+    @keyframes slideReveal { to { opacity: 1; transform: translateX(0); } }
+
+    /* 📱 Responsive */
+    @media (max-width: 992px) {
+        .profile-layout { grid-template-columns: 1fr !important; }
+        .sidebar-card { position: static; margin-bottom: 30px; }
     }
 </style>
 
 <div class="profile-page-wrapper">
-    <div class="container" style="display: grid; grid-template-columns: 350px 1fr; gap: 30px;">
+    <div class="container profile-layout" style="display: grid; grid-template-columns: 360px 1fr; gap: 40px;">
         
-        <aside>
-            <div class="profile-card text-center" style="position: sticky; top: 100px; padding: 45px 20px;">
-                <div style="position: absolute; top:0; left:0; width:100%; height:110px; background: linear-gradient(135deg, var(--primary), #6366f1); z-index: 0;"></div>
+        <aside class="reveal-left">
+            <div class="profile-card sidebar-card">
+                <div class="sidebar-banner"></div>
                 
-                <div style="position: relative; z-index: 1;">
-                    <div class="avatar-wrapper" style="position: relative; display: inline-block;">
+                <div class="sidebar-content">
+                    <div class="avatar-wrapper">
                        <?php
-    $display_avatar = (!empty($user['profile_img'])) 
+                            $display_avatar = (!empty($user['profile_img'])) 
                                             ? "../assets/images/profiles/" . $user['profile_img'] 
                                             : "../assets/images/profiles/default_profile.png";
-?>
-                        <img src="<?= $display_avatar ?>" 
-                             id="img-preview" alt="Profile"
-                             style="width: 155px; height: 155px; border-radius: 50%; object-fit: cover; border: 6px solid var(--bg-card); box-shadow: 0 10px 30px rgba(0,0,0,0.15); background-color: var(--bg-body);">
+                        ?>
+                        <img src="<?= $display_avatar ?>" id="img-preview" class="avatar-img" alt="Profile">
                         <label for="avatar-input" class="btn-camera-overlay">
                             <i class="fas fa-camera"></i>
                         </label>
                     </div>
 
-                    <div style="margin-top: 25px;">
-                        <h2 style="font-size: 1.6rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px;"><?= htmlspecialchars($user['fullname']) ?></h2>
+                    <div style="margin-bottom: 35px;">
+                        <h2 style="font-size: 1.8rem; font-weight: 900; color: var(--solid-text); margin-bottom: 12px; letter-spacing: -0.5px;">
+                            <?= htmlspecialchars($user['fullname']) ?>
+                        </h2>
                         
                         <?php if (in_array($user['role'], ['admin', 'seller', 'teacher'])): ?>
-                            <div>
-                                <span class="badge-role <?= $user['role'] ?>" style="padding: 6px 18px; border-radius: 50px; font-weight: 700; font-size: 0.75rem; text-transform: uppercase;">
-                                    <i class="fas <?= $user['role'] === 'teacher' ? 'fa-chalkboard-teacher' : ($user['role'] === 'admin' ? 'fa-user-shield' : 'fa-store') ?>"></i> <?= strtoupper($user['role']) ?>
-                                </span>
-                            </div>
+                            <span class="badge-role <?= $user['role'] ?>">
+                                <i class="fas <?= $user['role'] === 'teacher' ? 'fa-chalkboard-teacher' : ($user['role'] === 'admin' ? 'fa-user-shield' : 'fa-store') ?>"></i> 
+                                <?= strtoupper($user['role']) ?>
+                            </span>
                         <?php endif; ?>
                     </div>
 
-                    <div style="margin-top: 40px; text-align: left; padding: 0 15px; border-top: 1px solid var(--border-color); padding-top: 30px;">
-                      
+                    <div style="text-align: left; padding-top: 30px; border-top: 2px solid var(--solid-border);">
+                        
                         <a href="wishlist.php" class="sidebar-menu-item">
-                            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                                <span><i class="fas fa-heart" style="width: 25px; color: #ef4444;"></i> รายการที่ชอบ</span>
-                                <span style="background: #ef4444; color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 700;"><?= $wish_count ?></span>
-                            </div>
+                            <span><i class="fas fa-heart" style="width: 25px; color: var(--solid-danger); font-size: 1.2rem;"></i> รายการที่ชอบ</span>
+                            <span class="wishlist-count"><?= $wish_count ?></span>
                         </a>
 
                         <?php if (in_array($user['role'], ['admin', 'seller', 'teacher'])): ?>
-                        <div style="margin-top: 20px; padding: 15px; background: rgba(6, 199, 85, 0.05); border-radius: 16px; border: 1px solid rgba(6, 199, 85, 0.1);">
-                            <h4 style="font-size: 0.85rem; color: #06c755; font-weight: 700; margin-bottom: 8px;">
-                                <i class="fab fa-line"></i> แจ้งเตือนผ่าน LINE
+                        <div style="margin-top: 25px; padding: 25px 20px; background: rgba(6, 199, 85, 0.05); border-radius: 20px; border: 2px solid rgba(6, 199, 85, 0.2); text-align: center;">
+                            <h4 style="font-size: 0.9rem; color: #06c755; font-weight: 900; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;">
+                                <i class="fab fa-line" style="font-size: 1.2rem;"></i> LINE Notifications
                             </h4>
                             
                             <?php 
-                            // 🛠️ เช็คการเชื่อมต่อ: สำหรับ Admin/Teacher เช็คจากตาราง users, สำหรับ Seller เช็คจากตาราง shops
                             $line_id = (in_array($user['role'], ['admin', 'teacher'])) ? ($user['line_user_id'] ?? '') : ($shop_info['line_user_id'] ?? '');
-                            
                             if (empty($line_id)): 
                             ?>
-                                <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;">เชื่อมต่อเพื่อรับแจ้งเตือนระบบอัตโนมัติ</p>
+                                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px; font-weight: 600;">เชื่อมต่อเพื่อรับแจ้งเตือนระบบอัตโนมัติเมื่อมีออเดอร์ใหม่</p>
                                 <?php
                                 $client_id = "2009322126"; 
                                 $redirect_uri = urlencode("http://localhost/student_marketplace/auth/line_login_callback.php");
                                 $state = $_SESSION['user_id'];
                                 $line_auth_url = "https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=$client_id&redirect_uri=$redirect_uri&state=$state&scope=profile%20openid";
                                 ?>
-                                <a href="<?= $line_auth_url ?>" class="btn-line-connect" style="font-size: 0.8rem; padding: 10px;">
-                                    <i class="fas fa-link"></i> เชื่อมต่อ LINE
+                                <a href="<?= $line_auth_url ?>" class="btn-line-connect">
+                                    เชื่อมต่อ LINE
                                 </a>
                             <?php else: ?>
-                                <div style="display: flex; align-items: center; gap: 8px; color: #06c755; font-size: 0.85rem; font-weight: 600;">
-                                    <i class="fas fa-check-circle"></i> เชื่อมต่อแล้ว
-                                    <a href="../auth/line_disconnect.php" style="color: #ef4444; font-size: 0.7rem; font-weight: 400; margin-left: auto;">ยกเลิก</a>
+                                <div style="display: flex; justify-content: center; align-items: center; gap: 8px; color: #06c755; font-size: 0.95rem; font-weight: 800; margin-bottom: 10px;">
+                                    <i class="fas fa-check-circle"></i> เชื่อมต่อเรียบร้อย
                                 </div>
+                                <a href="../auth/line_disconnect.php" style="color: var(--solid-danger); font-size: 0.75rem; font-weight: 700; text-decoration: underline;">ยกเลิกการเชื่อมต่อ</a>
                             <?php endif; ?>
                         </div>
                         <?php endif; ?>
 
-                        <div style="margin-top: 20px; border-top: 1px dashed var(--border-color); padding-top: 20px;">
-                            <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 12px; font-size: 0.9rem; color: var(--text-muted);">
-                                <i class="fas fa-envelope text-primary" style="width: 20px;"></i> <?= htmlspecialchars($user['email']) ?>
+                        <div style="margin-top: 30px; padding: 20px; background: var(--solid-bg); border-radius: 16px; border: 2px solid var(--solid-border);">
+                            <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 15px; font-size: 0.9rem; font-weight: 600; color: var(--solid-text);">
+                                <i class="fas fa-envelope" style="color: var(--solid-primary); font-size: 1.1rem;"></i> <?= htmlspecialchars($user['email']) ?>
                             </div>
-                            <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 12px; font-size: 0.9rem; color: var(--text-muted);">
-                                <i class="fas fa-id-card text-primary" style="width: 20px;"></i> <?= htmlspecialchars($user['student_id']) ?>
+                            <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 15px; font-size: 0.9rem; font-weight: 600; color: var(--solid-text);">
+                                <i class="fas fa-id-badge" style="color: var(--solid-primary); font-size: 1.1rem;"></i> <?= htmlspecialchars($user['student_id']) ?>
                             </div>
-                            <div style="display: flex; align-items: center; gap: 12px; font-size: 0.9rem; color: var(--text-muted);">
-                                <i class="fas fa-calendar-alt text-primary" style="width: 20px;"></i> เข้าร่วม: <?= date('d/m/Y', strtotime($user['created_at'] ?? 'now')) ?>
+                            <div style="display: flex; align-items: center; gap: 15px; font-size: 0.9rem; font-weight: 600; color: var(--text-muted);">
+                                <i class="fas fa-calendar-check" style="color: var(--solid-primary); font-size: 1.1rem;"></i> Joined: <?= date('d M Y', strtotime($user['created_at'] ?? 'now')) ?>
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>
         </aside>
 
-        <main>
-            <div class="profile-card" style="padding: 45px; min-height: 600px;">
-                <h1 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 40px; color: var(--text-main); display: flex; align-items: center; gap: 15px;">
-                    <i class="fas fa-sliders-h text-primary"></i> ตั้งค่าบัญชีผู้ใช้
+        <main class="reveal-right">
+            <div class="profile-card" style="padding: 50px; min-height: 100%;">
+                <h1 style="font-size: 2.2rem; font-weight: 900; margin-bottom: 40px; color: var(--solid-text); display: flex; align-items: center; gap: 15px; border-bottom: 3px solid var(--solid-bg); padding-bottom: 20px;">
+                    <i class="fas fa-user-cog" style="color: var(--solid-primary);"></i> Profile Settings
                 </h1>
 
                 <?php echo displayFlashMessage(); ?>
@@ -284,59 +398,68 @@ require_once '../includes/header.php';
                 <form action="profile.php" method="POST" enctype="multipart/form-data">
                     <input type="file" name="avatar" id="avatar-input" accept="image/*" style="display: none;">
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
                         <div class="form-group">
-                            <label style="display: block; margin-bottom: 10px; font-weight: 600; color: var(--text-muted);">ชื่อ-นามสกุลจริง</label>
-                            <input type="text" name="fullname" class="input-modern" value="<?= htmlspecialchars($user['fullname']) ?>" required>
+                            <label>Full Name</label>
+                            <input type="text" name="fullname" class="input-solid" value="<?= htmlspecialchars($user['fullname']) ?>" required>
                         </div>
                         <div class="form-group">
-                            <label style="display: block; margin-bottom: 10px; font-weight: 600; color: var(--text-muted);">เบอร์โทรศัพท์ติดต่อ</label>
-                            <input type="text" name="phone" class="input-modern" value="<?= htmlspecialchars($user['phone'] ?? '') ?>" placeholder="0xx-xxx-xxxx">
+                            <label>Phone Number</label>
+                            <input type="text" name="phone" class="input-solid" value="<?= htmlspecialchars($user['phone'] ?? '') ?>" placeholder="0xx-xxx-xxxx">
                         </div>
                     </div>
 
-                    <div class="form-group" style="margin-top: 30px;">
-                        <label style="display: block; margin-bottom: 10px; font-weight: 600; color: var(--text-muted);">สโลแกนหรือประวัติส่วนตัว (Bio)</label>
-                        <textarea name="bio" class="input-modern" style="min-height: 150px; resize: vertical;" placeholder="บอกเล่าเรื่องราวของคุณให้โลกรู้..."><?= htmlspecialchars($user['bio'] ?? '') ?></textarea>
+                    <div class="form-group" style="margin-bottom: 40px;">
+                        <label>Bio & Slogan</label>
+                        <textarea name="bio" class="input-solid" style="min-height: 160px; resize: vertical; line-height: 1.6;" placeholder="บอกเล่าเรื่องราวหรือสโลแกนของคุณให้โลกรู้..."><?= htmlspecialchars($user['bio'] ?? '') ?></textarea>
                     </div>
 
-                    <div style="margin-top: 50px; padding-top: 35px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 15px;">
-                        <a href="index.php" class="btn btn-outline" style="padding: 14px 35px; border-radius: 12px; font-weight: 600;">ยกเลิก</a>
-                        <button type="submit" class="btn btn-primary" style="padding: 14px 45px; border-radius: 12px; font-weight: 700; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);">
-                            <i class="fas fa-check-circle"></i> บันทึกข้อมูล
+                    <div style="display: flex; justify-content: flex-end; gap: 20px; padding-top: 30px; border-top: 2px solid var(--solid-bg);">
+                        <a href="index.php" class="btn btn-outline" style="padding: 16px 40px; border-radius: 16px; font-weight: 800; font-size: 1.05rem; border-width: 2px;">CANCEL</a>
+                        <button type="submit" class="btn-save-solid">
+                            SAVE CHANGES <i class="fas fa-check"></i>
                         </button>
                     </div>
                 </form>
 
-                <div style="margin-top: 40px; padding: 30px; border-radius: 20px; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.1); display: flex; justify-content: space-between; align-items: center;">
+                <div style="margin-top: 50px; padding: 35px; border-radius: 24px; background: rgba(239, 68, 68, 0.05); border: 2px dashed var(--solid-danger); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
                     <div>
-                        <h3 style="margin-bottom: 5px; color: var(--text-main); font-weight: 700;"><i class="fas fa-lock text-danger"></i> ความปลอดภัยของบัญชี</h3>
-                        <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">ควรเปลี่ยนรหัสผ่านทุก ๆ 3 เดือนเพื่อความปลอดภัยสูงสุด</p>
+                        <h3 style="margin-bottom: 8px; color: var(--solid-danger); font-weight: 900; font-size: 1.2rem; text-transform: uppercase;">
+                            <i class="fas fa-shield-alt"></i> Account Security
+                        </h3>
+                        <p style="color: var(--text-muted); font-size: 0.95rem; font-weight: 600; margin: 0;">ควรเปลี่ยนรหัสผ่านทุก ๆ 3 เดือนเพื่อความปลอดภัยสูงสุดของบัญชี</p>
                     </div>
-                    <a href="change_password.php" class="btn btn-danger" style="border-radius: 10px; padding: 10px 25px; font-size: 0.9rem;">
-                        <i class="fas fa-key"></i> เปลี่ยนรหัสผ่าน
+                    <a href="change_password.php" class="btn btn-danger" style="border-radius: 14px; padding: 14px 30px; font-size: 1rem; font-weight: 800; box-shadow: 0 10px 20px rgba(239, 68, 68, 0.3);">
+                        <i class="fas fa-key"></i> CHANGE PASSWORD
                     </a>
                 </div>
             </div>
         </main>
+
     </div>
 </div>
 
 <script>
+    // 📸 Image Upload Preview System with Feedback
     document.getElementById('avatar-input').onchange = evt => {
         const [file] = evt.target.files;
         if (file) {
             const preview = document.getElementById('img-preview');
-            preview.style.filter = 'grayscale(100%) blur(3px)';
+            
+            // Visual feedback before loading
+            preview.style.filter = 'grayscale(100%) blur(5px)';
             preview.style.opacity = '0.5';
             
             const reader = new FileReader();
             reader.onload = (e) => {
                 setTimeout(() => {
                     preview.src = e.target.result;
+                    // Restore visual
                     preview.style.filter = 'none';
                     preview.style.opacity = '1';
-                }, 400); 
+                    preview.style.transform = 'scale(1.05)';
+                    setTimeout(() => preview.style.transform = 'scale(1)', 200);
+                }, 300); // Fake delay for smooth transition
             };
             reader.readAsDataURL(file);
         }

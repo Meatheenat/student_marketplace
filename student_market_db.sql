@@ -201,3 +201,14 @@ CREATE TABLE `notifications` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ALTER TABLE products ADD COLUMN views INT(11) DEFAULT 0;
+CREATE TABLE `shop_reviews` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `shop_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `rating` int(1) NOT NULL,
+  `comment` text DEFAULT NULL,
+  `is_deleted` tinyint(1) DEFAULT 0,
+  `created_at` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+ALTER TABLE reports ADD COLUMN is_deleted TINYINT(1) DEFAULT 0;

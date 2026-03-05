@@ -1,7 +1,8 @@
 <?php
 /**
  * BNCC Market - My Orders (Purchase History)
- * หน้าประวัติการสั่งซื้อสำหรับผู้ซื้อ
+ * [SOLID HIGH-CONTRAST REDESIGN]
+ * Project: BNCC Student Marketplace [Cite: User Summary]
  */
 require_once '../includes/functions.php';
 
@@ -31,77 +32,264 @@ $stmt->execute([$user_id]);
 $my_orders = $stmt->fetchAll();
 ?>
 
-<div class="container" style="max-width: 1000px; margin: 40px auto;">
-    <h2 style="margin-bottom: 30px; display: flex; align-items: center; gap: 12px; font-weight: 800;">
-        <i class="fas fa-shopping-bag text-primary"></i> ประวัติการสั่งซื้อของฉัน
-    </h2>
+<style>
+    /* ============================================================
+       🛠️ SOLID DESIGN SYSTEM - HIGH CONTRAST (ORDER HISTORY)
+       ============================================================ */
+    :root {
+        --solid-bg: #f8fafc;
+        --solid-card: #ffffff;
+        --solid-text: #0f172a;
+        --solid-border: #cbd5e1;
+        --solid-primary: #4f46e5;
+    }
+
+    .dark-theme {
+        --solid-bg: #0b0e14;
+        --solid-card: #161b26;
+        --solid-text: #ffffff;
+        --solid-border: #2d3748;
+        --solid-primary: #6366f1;
+    }
+
+    body {
+        background-color: var(--solid-bg) !important;
+        color: var(--solid-text);
+        transition: background 0.3s ease;
+    }
+
+    .orders-wrapper {
+        max-width: 1000px;
+        margin: 40px auto 80px;
+        padding: 0 20px;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 40px;
+        padding-bottom: 20px;
+        border-bottom: 3px solid var(--solid-border);
+        opacity: 0;
+        transform: translateY(-20px);
+        animation: dropIn 0.6s ease forwards;
+    }
+
+    .page-header h2 {
+        font-size: 2.2rem;
+        font-weight: 900;
+        color: var(--solid-text);
+        letter-spacing: -1px;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .page-header h2 i { color: var(--solid-primary); }
+
+    .order-count-badge {
+        background: var(--solid-card);
+        border: 2px solid var(--solid-border);
+        padding: 8px 20px;
+        border-radius: 12px;
+        font-weight: 800;
+        font-size: 1rem;
+        color: var(--solid-text);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+
+    /* 🧱 Order List Style (Table) */
+    .table-container {
+        background: var(--solid-card);
+        border: 2px solid var(--solid-border);
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+        opacity: 0;
+        transform: translateY(30px);
+        animation: dropIn 0.8s ease 0.2s forwards;
+    }
+
+    .solid-table { width: 100%; border-collapse: collapse; }
+    .solid-table th {
+        background: var(--solid-bg);
+        padding: 20px;
+        font-size: 0.85rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-muted);
+        border-bottom: 2px solid var(--solid-border);
+    }
+    .solid-table td { padding: 20px; border-bottom: 1px solid var(--solid-border); font-weight: 600; vertical-align: middle; transition: background 0.2s; }
+    .solid-table tr:last-child td { border-bottom: none; }
+    .solid-table tr:hover td { background: rgba(79, 70, 229, 0.03); }
+
+    /* Product Section in Table */
+    .order-product-info {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .order-img {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        object-fit: cover;
+        border: 1px solid var(--solid-border);
+        background: var(--solid-bg);
+    }
+
+    .order-title {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: var(--solid-text);
+        text-decoration: none;
+        margin-bottom: 5px;
+        display: block;
+        transition: 0.2s;
+    }
+    .order-title:hover { color: var(--solid-primary); text-decoration: underline; }
+
+    .order-price {
+        font-size: 1.1rem;
+        font-weight: 900;
+        color: var(--solid-text);
+    }
+
+    /* 🚦 Status Badge */
+    .status-badge {
+        padding: 8px 16px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 2px solid transparent;
+    }
+
+    /* 💬 Chat Button */
+    .btn-chat {
+        background: var(--solid-primary);
+        color: #fff !important;
+        padding: 10px 20px;
+        border-radius: 12px;
+        font-weight: 800;
+        font-size: 0.9rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: 0.2s;
+        box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
+    }
+    .btn-chat:hover { filter: brightness(1.15); transform: translateY(-2px); box-shadow: 0 6px 15px rgba(79, 70, 229, 0.3); }
+
+    /* 📱 Responsive Adjustment */
+    @media (max-width: 768px) {
+        .page-header { flex-direction: column; gap: 15px; align-items: flex-start; }
+        .solid-table th { display: none; }
+        .solid-table tr { display: block; border-bottom: 2px solid var(--solid-border); margin-bottom: 20px; }
+        .solid-table td { display: block; text-align: right; padding: 15px; border-bottom: 1px dotted var(--solid-border); }
+        .solid-table td::before { content: attr(data-label); float: left; font-weight: 800; color: var(--text-muted); text-transform: uppercase; font-size: 0.8rem; }
+        .order-product-info { flex-direction: column; align-items: flex-end; text-align: right; }
+    }
+
+    @keyframes dropIn { to { opacity: 1; transform: translateY(0); } }
+</style>
+
+<div class="orders-wrapper">
+    <div class="page-header">
+        <h2><i class="fas fa-shopping-bag"></i> ประวัติการสั่งซื้อ</h2>
+        <div class="order-count-badge">ทั้งหมด <?= count($my_orders) ?> รายการ</div>
+    </div>
 
     <?php echo displayFlashMessage(); ?>
 
-    <div class="card" style="background: var(--bg-card); border-radius: 20px; overflow: hidden; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse; text-align: left;">
-                <thead style="background: var(--bg-body); border-bottom: 2px solid var(--border-color);">
-                    <tr>
-                        <th style="padding: 18px 20px; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">รหัสคำสั่งซื้อ</th>
-                        <th style="padding: 18px 20px; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">สินค้า</th>
-                        <th style="padding: 18px 20px; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">ร้านค้า</th>
-                        <th style="padding: 18px 20px; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">สถานะ</th>
-                        <th style="padding: 18px 20px; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">ติดต่อผู้ขาย</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if(count($my_orders) > 0): ?>
-                        <?php foreach($my_orders as $o): 
-                            // จัดการสีของ Badge สถานะให้ตรงกับที่คนขายเห็น
-                            $badge_bg = '#e2e8f0'; $badge_color = '#475569'; $status_text = 'รอยืนยัน'; $icon = 'fa-clock';
-                            if($o['status'] == 'pending') { $badge_bg = '#fef3c7'; $badge_color = '#d97706'; $status_text = 'รอยืนยัน'; $icon = 'fa-hourglass-half'; }
-                            elseif($o['status'] == 'preparing') { $badge_bg = '#dbeafe'; $badge_color = '#2563eb'; $status_text = 'กำลังเตรียมของ'; $icon = 'fa-box-open'; }
-                            elseif($o['status'] == 'completed') { $badge_bg = '#d1fae5'; $badge_color = '#059669'; $status_text = 'สำเร็จแล้ว'; $icon = 'fa-check-circle'; }
-                            elseif($o['status'] == 'cancelled') { $badge_bg = '#fee2e2'; $badge_color = '#dc2626'; $status_text = 'ยกเลิก'; $icon = 'fa-times-circle'; }
-                        ?>
-                        <tr style="border-bottom: 1px solid var(--border-color); transition: 0.2s;">
-                            <td style="padding: 15px 20px;">
-                                <div style="font-weight: 700; color: var(--primary);">#<?= str_pad($o['id'], 5, '0', STR_PAD_LEFT) ?></div>
-                                <div style="font-size: 0.75rem; color: var(--text-muted);"><?= date('d/m/Y H:i', strtotime($o['created_at'])) ?></div>
+    <div class="table-container">
+        <table class="solid-table">
+            <thead>
+                <tr>
+                    <th>รหัสคำสั่งซื้อ</th>
+                    <th>สินค้า</th>
+                    <th>ร้านค้า</th>
+                    <th>สถานะ</th>
+                    <th>ติดต่อผู้ขาย</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if(count($my_orders) > 0): ?>
+                    <?php foreach($my_orders as $index => $o): 
+                        // จัดการสีของ Badge สถานะ (Solid Style)
+                        $badge_bg = 'rgba(203, 213, 225, 0.2)'; $badge_color = 'var(--text-muted)'; $badge_border = 'var(--solid-border)'; $status_text = 'รอยืนยัน'; $icon = 'fa-clock';
+                        
+                        if($o['status'] == 'pending') { 
+                            $badge_bg = 'rgba(217, 119, 6, 0.1)'; $badge_color = '#d97706'; $badge_border = 'rgba(217, 119, 6, 0.3)'; $status_text = 'รอยืนยัน'; $icon = 'fa-hourglass-half'; 
+                        }
+                        elseif($o['status'] == 'preparing') { 
+                            $badge_bg = 'rgba(37, 99, 235, 0.1)'; $badge_color = '#2563eb'; $badge_border = 'rgba(37, 99, 235, 0.3)'; $status_text = 'กำลังเตรียมของ'; $icon = 'fa-box-open'; 
+                        }
+                        elseif($o['status'] == 'completed') { 
+                            $badge_bg = 'rgba(5, 150, 105, 0.1)'; $badge_color = '#059669'; $badge_border = 'rgba(5, 150, 105, 0.3)'; $status_text = 'สำเร็จแล้ว'; $icon = 'fa-check-circle'; 
+                        }
+                        elseif($o['status'] == 'cancelled') { 
+                            $badge_bg = 'rgba(220, 38, 38, 0.1)'; $badge_color = '#dc2626'; $badge_border = 'rgba(220, 38, 38, 0.3)'; $status_text = 'ยกเลิก'; $icon = 'fa-times-circle'; 
+                        }
+                    ?>
+                        <tr>
+                            <td data-label="รหัสคำสั่งซื้อ">
+                                <div style="font-weight: 800; color: var(--solid-primary); font-size: 1.1rem;">#<?= str_pad($o['id'], 5, '0', STR_PAD_LEFT) ?></div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;"><i class="fas fa-calendar-alt"></i> <?= date('d/m/Y H:i', strtotime($o['created_at'])) ?></div>
                             </td>
-                            <td style="padding: 15px 20px; display: flex; align-items: center; gap: 15px;">
-                                <img src="<?= !empty($o['image_url']) ? '../assets/images/products/'.$o['image_url'] : 'https://via.placeholder.com/50' ?>" style="width: 50px; height: 50px; border-radius: 10px; object-fit: cover; border: 1px solid var(--border-color);">
-                                <div>
-                                    <a href="product_detail.php?id=<?= $o['product_id'] ?>" style="font-weight: 600; color: var(--text-main); text-decoration: none; display: block; margin-bottom: 3px;"><?= e($o['product_name']) ?></a>
-                                    <div style="font-size: 0.85rem; font-weight: 700; color: var(--primary);">฿<?= number_format($o['price'], 2) ?></div>
+                            <td data-label="สินค้า">
+                                <div class="order-product-info">
+                                    <img src="<?= !empty($o['image_url']) ? '../assets/images/products/'.$o['image_url'] : 'https://via.placeholder.com/60' ?>" class="order-img">
+                                    <div>
+                                        <a href="product_detail.php?id=<?= $o['product_id'] ?>" class="order-title">
+                                            <?= e($o['product_name']) ?> <i class="fas fa-external-link-alt" style="font-size: 0.7rem; color: var(--text-muted);"></i>
+                                        </a>
+                                        <div class="order-price">฿<?= number_format($o['price'], 2) ?></div>
+                                    </div>
                                 </div>
                             </td>
-                            <td style="padding: 15px 20px;">
-                                <a href="view_profile.php?id=<?= $o['seller_id'] ?>" style="color: var(--text-main); text-decoration: none; font-weight: 500; display: flex; align-items: center; gap: 8px;">
-                                    <i class="fas fa-store" style="color: #94a3b8;"></i> <?= e($o['shop_name']) ?>
+                            <td data-label="ร้านค้า">
+                                <a href="view_profile.php?id=<?= $o['seller_id'] ?>" style="color: var(--solid-text); text-decoration: none; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; border-bottom: 1px dashed var(--solid-border); padding-bottom: 2px;">
+                                    <i class="fas fa-store" style="color: var(--text-muted);"></i> <?= e($o['shop_name']) ?>
                                 </a>
                             </td>
-                            <td style="padding: 15px 20px;">
-                                <span style="background: <?= $badge_bg ?>; color: <?= $badge_color ?>; padding: 6px 12px; border-radius: 50px; font-size: 0.8rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
+                            <td data-label="สถานะ">
+                                <span class="status-badge" style="background: <?= $badge_bg ?>; color: <?= $badge_color ?>; border-color: <?= $badge_border ?>;">
                                     <i class="fas <?= $icon ?>"></i> <?= $status_text ?>
                                 </span>
                             </td>
-                            <td style="padding: 15px 20px;">
-                                <a href="chat.php?user=<?= $o['seller_id'] ?>" class="btn btn-sm" style="background: #6366f1; color: white; border-radius: 10px; padding: 8px 15px;">
-                                    <i class="fas fa-comment-dots"></i> ทักแชท
-                                </a>
+                            <td data-label="ติดต่อผู้ขาย">
+                                <?php if($o['status'] != 'cancelled' && $o['status'] != 'completed'): ?>
+                                    <a href="chat.php?user=<?= $o['seller_id'] ?>" class="btn-chat">
+                                        <i class="fas fa-comment-dots"></i> ทักแชทผู้ขาย
+                                    </a>
+                                <?php else: ?>
+                                    <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600;"><i class="fas fa-ban"></i> ไม่สามารถติดต่อได้</span>
+                                <?php endif; ?>
                             </td>
                         </tr>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <tr>
-                            <td colspan="5" style="padding: 60px 20px; text-align: center; color: var(--text-muted);">
-                                <i class="fas fa-shopping-basket" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.3;"></i>
-                                <h3 style="color: var(--text-main);">คุณยังไม่มีประวัติการสั่งซื้อ</h3>
-                                <p style="margin-bottom: 20px;">ลองไปเลือกดูสินค้าที่น่าสนใจในตลาดนัดดูสิ!</p>
-                                <a href="index.php" class="btn btn-primary" style="border-radius: 12px;">ไปช้อปปิ้งกันเลย</a>
-                            </td>
-                        </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <tr>
+                        <td colspan="5" style="padding: 100px 20px; text-align: center; border-bottom: none;">
+                            <i class="fas fa-shopping-basket" style="font-size: 4rem; color: var(--solid-border); margin-bottom: 20px;"></i>
+                            <h3 style="font-weight: 900; font-size: 1.8rem; margin-bottom: 10px; color: var(--solid-text);">คุณยังไม่มีประวัติการสั่งซื้อ</h3>
+                            <p style="color: var(--text-muted); font-size: 1.1rem; font-weight: 500; margin-bottom: 30px;">ลองไปเลือกดูสินค้าที่น่าสนใจในตลาดนัดดูสิ!</p>
+                            <a href="index.php" class="btn-chat" style="padding: 15px 40px; font-size: 1.1rem;">เริ่มช้อปปิ้งกันเลย</a>
+                        </td>
+                    </tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
     </div>
 </div>
 

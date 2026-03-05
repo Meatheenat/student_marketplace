@@ -1,23 +1,27 @@
-/* * Student Marketplace - Main Stylesheet
- * Features: Light/Dark Mode, Responsive Grid, Modern UI
- * Author: Senior UX/UI Designer
+/* * Student Marketplace - Main Stylesheet (Seamless & Glassmorphism Edition)
+ * Features: Light/Dark Mode, Responsive Grid, Modern UI, Premium Glass Effects
+ * Author: Senior UX/UI Designer & Gemini Collaboration
  */
 
 /* 1. Import Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&display=swap');
 
 /* 2. Variable Definitions (Theming) */
 :root {
     /* Light Theme Colors */
     --primary-color: #4f46e5;
     --primary-hover: #4338ca;
+    --primary-rgb: 79, 70, 229;
     --secondary-color: #10b981;
     --bg-body: #f8fafc;
     --bg-card: #ffffff;
+    --bg-card-rgb: 255, 255, 255; /* เพิ่ม RGB เพื่อทำความโปร่งใส */
     --text-main: #1e293b;
     --text-muted: #64748b;
-    --border-color: #e2e8f0;
-    --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --border-color: rgba(226, 232, 240, 0.8);
+    --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
     --nav-bg: rgba(255, 255, 255, 0.8);
     
     /* Status Colors */
@@ -27,15 +31,17 @@
     --color-info: #3b82f6;
 }
 
-/* ธีมมืด .dark-theme */
+/* ธีมมืด .dark-theme (ปรับให้กลืนกับหน้า Login Deep Space) */
 .dark-theme {
     --bg-body: #0f172a;
     --bg-card: #1e293b;
+    --bg-card-rgb: 30, 41, 59; /* RGB สำหรับ Glass Effect ในโหมดมืด */
     --text-main: #f1f5f9;
     --text-muted: #94a3b8;
-    --border-color: #334155;
-    --nav-bg: rgba(15, 23, 42, 0.9);
-    --shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
+    --border-color: rgba(51, 65, 85, 0.5);
+    --nav-bg: rgba(15, 23, 42, 0.8);
+    --shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 30px 60px -15px rgba(0, 0, 0, 0.6);
 }
 
 /* 3. Global Reset */
@@ -44,13 +50,22 @@
     padding: 0;
     box-sizing: border-box;
     font-family: 'Prompt', sans-serif;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+                color 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+                border-color 0.4s ease, 
+                box-shadow 0.4s ease;
 }
 
 body {
     background-color: var(--bg-body);
     color: var(--text-main);
     line-height: 1.6;
+    overflow-x: hidden; /* กัน Element เด้งออกนอกหน้าจอ */
+}
+
+/* 🎯 🛠️ เพิ่มลูกเล่นพื้นหลังสำหรับหน้า Login โดยเฉพาะใน CSS */
+.login-body-bg {
+    background: radial-gradient(circle at 50% 50%, rgba(var(--primary-rgb), 0.05) 0%, var(--bg-body) 100%);
 }
 
 a {
@@ -80,7 +95,8 @@ img {
     top: 0;
     z-index: 1000;
     background-color: var(--nav-bg);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(15px) saturate(180%);
+    -webkit-backdrop-filter: blur(15px) saturate(180%);
     border-bottom: 1px solid var(--border-color);
     height: 70px;
     display: flex;
@@ -96,8 +112,9 @@ img {
 
 .logo {
     font-size: 1.5rem;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--primary-color);
+    letter-spacing: -0.5px;
 }
 
 .nav-links {
@@ -108,29 +125,35 @@ img {
 
 .nav-links a:hover {
     color: var(--primary-color);
+    transform: translateY(-1px);
 }
 
-/* แก้ไข Theme Toggle Button เพื่อป้องกันไอคอนซ้อน */
+/* Theme Toggle Button */
 #theme-toggle {
-    background: transparent !important;
+    background: rgba(var(--bg-card-rgb), 0.5) !important;
     border: 1px solid var(--border-color);
     padding: 5px;
-    border-radius: 10px;
+    border-radius: 12px;
     cursor: pointer;
     color: var(--text-main);
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
     display: flex;
     align-items: center;
     justify-content: center;
     outline: none;
-    -webkit-tap-highlight-color: transparent;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: var(--shadow);
+}
+
+#theme-toggle:hover {
+    transform: scale(1.1) rotate(15deg);
+    background: var(--primary-color) !important;
+    color: white;
 }
 
 #theme-toggle i {
-    font-size: 1.1rem;
-    display: block !important;
-    transition: transform 0.4s ease;
+    font-size: 1.2rem;
 }
 
 /* เมื่ออยู่ในโหมดมืด ให้หมุนไอคอน */
@@ -140,78 +163,89 @@ img {
 
 /* 6. Buttons */
 .btn {
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-weight: 500;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-weight: 600;
     cursor: pointer;
     border: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    transition: all 0.2s;
+    gap: 10px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-primary {
-    background-color: var(--primary-color);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
     color: white;
+    box-shadow: 0 10px 20px -10px rgba(var(--primary-rgb), 0.5);
 }
 
 .btn-primary:hover {
-    background-color: var(--primary-hover);
-    transform: translateY(-2px);
+    transform: translateY(-3px);
+    box-shadow: 0 15px 25px -10px rgba(var(--primary-rgb), 0.6);
+    filter: brightness(1.1);
 }
 
 .btn-outline {
     background: transparent;
-    border: 1px solid var(--primary-color);
+    border: 2px solid var(--primary-color);
     color: var(--primary-color);
 }
 
-/* 7. Product Grid & Cards */
+.btn-outline:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+/* 7. Product Grid & Cards (Modern & Seamless) */
 .product-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 25px;
+    gap: 30px;
     margin-top: 30px;
 }
 
 .product-card {
     background-color: var(--bg-card);
-    border-radius: 16px;
+    border-radius: 24px;
     overflow: hidden;
     box-shadow: var(--shadow);
     border: 1px solid var(--border-color);
     position: relative;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .product-card:hover {
-    transform: scale(1.02);
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-color);
 }
 
 .product-image {
     width: 100%;
-    height: 200px;
+    height: 220px;
     object-fit: cover;
-    background-color: #eee;
+    background-color: rgba(var(--bg-card-rgb), 0.1);
 }
 
 .product-info {
-    padding: 20px;
+    padding: 25px;
 }
 
 .product-category {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--primary-color);
     text-transform: uppercase;
-    font-weight: 600;
-    margin-bottom: 5px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
 }
 
 .product-title {
-    font-size: 1.1rem;
-    font-weight: 500;
-    margin-bottom: 10px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 12px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -219,135 +253,141 @@ img {
 }
 
 .product-price {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--text-main);
-    margin-bottom: 15px;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--primary-color);
+    margin-bottom: 20px;
 }
 
 .product-seller {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 0.9rem;
+    justify-content: space-between;
+    font-size: 0.85rem;
     color: var(--text-muted);
     border-top: 1px solid var(--border-color);
-    padding-top: 15px;
+    padding-top: 18px;
 }
 
-/* 8. Badge Status */
+/* 8. Badge Status (Glass Style) */
 .badge {
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 50px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.badge-instock { background: rgba(16, 185, 129, 0.1); color: var(--color-success); }
-.badge-preorder { background: rgba(245, 158, 11, 0.1); color: var(--color-warning); }
+.badge-instock { 
+    background: rgba(16, 185, 129, 0.1); 
+    color: var(--color-success); 
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+.badge-preorder { 
+    background: rgba(245, 158, 11, 0.1); 
+    color: var(--color-warning); 
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
 
-/* 9. Forms */
+/* 9. Forms (Glassmorphism Inputs) */
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 25px;
 }
 
 .form-group label {
     display: block;
-    margin-bottom: 8px;
-    font-weight: 500;
+    margin-bottom: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-main);
 }
 
 .form-control {
     width: 100%;
-    padding: 12px 15px;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    background-color: var(--bg-card);
+    padding: 14px 18px;
+    border-radius: 14px;
+    border: 2px solid var(--border-color);
+    background-color: rgba(var(--bg-card-rgb), 0.5); /* กึ่งโปร่งใสเพื่อให้กลืนพื้นหลัง */
     color: var(--text-main);
+    font-size: 1rem;
+    transition: all 0.3s;
 }
 
 .form-control:focus {
     outline: none;
+    background-color: var(--bg-card);
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    box-shadow: 0 10px 20px -10px rgba(var(--primary-rgb), 0.3);
+    transform: translateY(-2px);
 }
 
 /* 10. Responsive Design */
 @media (max-width: 768px) {
-    .nav-links {
-        display: none;
-    }
+    .navbar { height: 60px; }
+    .logo { font-size: 1.3rem; }
     
     .product-grid {
         grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
         gap: 15px;
     }
     
-    .product-info {
-        padding: 12px;
-    }
-    
-    .product-title {
-        font-size: 0.95rem;
-    }
+    .product-info { padding: 15px; }
+    .product-title { font-size: 1rem; }
+    .product-price { font-size: 1.2rem; }
 }
 
-/* --- Alert Messages --- */
+/* --- Alert Messages (Seamless Glass Style) --- */
 .alert {
-    padding: 16px 20px;
-    margin-bottom: 25px;
-    border-radius: 12px;
+    padding: 18px 24px;
+    margin-bottom: 30px;
+    border-radius: 18px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 15px;
     font-size: 0.95rem;
+    font-weight: 600;
+    backdrop-filter: blur(10px);
     border: 1px solid transparent;
-    animation: slideIn 0.3s ease-out;
+    animation: slideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
 @keyframes slideIn {
-    from { transform: translateY(-10px); opacity: 0; }
+    from { transform: translateY(-20px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
 }
 
 .alert-danger {
-    background-color: rgba(239, 68, 68, 0.1);
+    background-color: rgba(239, 68, 68, 0.15);
     color: #ef4444;
     border-color: rgba(239, 68, 68, 0.2);
+    box-shadow: 0 10px 30px -10px rgba(239, 68, 68, 0.3);
 }
 
 .alert-success {
-    background-color: rgba(16, 185, 129, 0.1);
+    background-color: rgba(16, 185, 129, 0.15);
     color: #10b981;
     border-color: rgba(16, 185, 129, 0.2);
+    box-shadow: 0 10px 30px -10px rgba(16, 185, 129, 0.3);
 }
 
-.alert-warning {
-    background-color: rgba(245, 158, 11, 0.1);
-    color: #f59e0b;
-    border-color: rgba(245, 158, 11, 0.2);
-}
-
-.badge {
-    display: inline-block;
-    font-weight: 600;
-}
-
-#img-preview {
-    transition: transform 0.3s ease;
-}
-
-#img-preview:hover {
-    transform: scale(1.05);
-}
-
+/* 🎯 🛠️ Card Master (Premium Seamless Card) */
 .card {
-    background: var(--bg-card);
+    background: rgba(var(--bg-card-rgb), 0.6); /* โปร่งใสเพื่อให้กลืนกับพื้นหลัง */
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
     border: 1px solid var(--border-color);
-    padding: 2rem;
-    border-radius: 16px;
-    box-shadow: var(--shadow-md);
+    padding: 2.5rem;
+    border-radius: 32px;
+    box-shadow: var(--shadow-lg);
 }
 
-.dark-theme .alert-danger { background-color: rgba(239, 68, 68, 0.15); }
-.dark-theme .alert-success { background-color: rgba(16, 185, 129, 0.15); }
+/* Utility for extra glass effect */
+.glass-effect {
+    background: rgba(var(--bg-card-rgb), 0.3) !important;
+    backdrop-filter: blur(40px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark-theme .alert-danger { background-color: rgba(239, 68, 68, 0.2); }
+.dark-theme .alert-success { background-color: rgba(16, 185, 129, 0.2); }
