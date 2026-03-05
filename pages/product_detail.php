@@ -1,10 +1,7 @@
 <?php
 /**
- * BNCC Market - Product Detail, Reviews & Wishlist (Messaging API Version)
- * [Cite: User Summary]
+ * BNCC Market - Product Detail, Reviews, Wishlist & Order System
  */
-
-// 🚀 1. โหลด Functions มาก่อนเสมอ! (ห้ามโหลด header.php ตรงนี้เด็ดขาด)
 require_once '../includes/functions.php';
 
 $product_id = $_GET['id'] ?? null;
@@ -13,16 +10,36 @@ if (!$product_id) redirect('index.php');
 $db = getDB();
 $user_id = $_SESSION['user_id'] ?? null;
 
-// 🛠️ 1. SQL: ดึงข้อมูลสินค้า + ร้านค้า + ID เจ้าของร้าน
+// 1. SQL: ดึงข้อมูลสินค้า (ตรวจสอบ is_deleted = 0 ด้วย)
 $stmt = $db->prepare("SELECT p.*, s.shop_name, s.contact_line, s.contact_ig, s.line_user_id, s.user_id as owner_id 
                       FROM products p 
                       JOIN shops s ON p.shop_id = s.id 
-                      WHERE p.id = ?");
+                      WHERE p.id = ? AND p.is_deleted = 0");
 $stmt->execute([$product_id]);
 $product = $stmt->fetch();
 
-// 🛠️ 2. [เพิ่มใหม่] SQL: คำนวณเรตติ้งเฉลี่ยเฉพาะสินค้าชิ้นนี้
-$rating_summary_stmt = $db->prepare("SELECT AVG(rating) as avg_rating, COUNT(*) as total_reviews FROM reviews WHERE product_id = ?");
+// 🚨 ถ้าโดนลบไปแล้ว ให้เด้งกลับ
+if (!$product) {
+    redirect('index.php');
+}
+
+// 🎯 🛠️ [แก้ไขใหม่] ระบบนับยอดวิวแบบกันปั๊ม (Session Based)
+if (!isset($_SESSION['viewed_products'])) {
+    $_SESSION['viewed_products'] = []; // สร้างอาร์เรย์เก็บ ID สินค้าที่ดูแล้วใน Session นี้
+}
+
+// เช็กว่าใน Session นี้ เคยดูสินค้า ID นี้ไปหรือยัง
+if (!in_array($product_id, $_SESSION['viewed_products'])) {
+    // ถ้ายังไม่เคยดู -> อัปเดตยอดวิวใน DB
+    $update_views = $db->prepare("UPDATE products SET views = views + 1 WHERE id = ?");
+    $update_views->execute([$product_id]);
+    
+    // บันทึกใส่ Session ว่า "ดูแล้วนะ" รอบหน้ากด Refresh จะไม่นับเพิ่ม
+    $_SESSION['viewed_products'][] = $product_id;
+}
+
+// 2. คำนวณเรตติ้ง
+$rating_summary_stmt = $db->prepare("SELECT AVG(rating) as avg_rating, COUNT(*) as total_reviews FROM reviews WHERE product_id = ? AND is_deleted = 0");
 $rating_summary_stmt->execute([$product_id]);
 $rating_info = $rating_summary_stmt->fetch();
 $avg_p_rating = round($rating_info['avg_rating'] ?? 0, 1);
@@ -32,7 +49,7 @@ $tag_stmt = $db->prepare("SELECT t.tag_name FROM tags t JOIN product_tag_map ptm
 $tag_stmt->execute([$product_id]);
 $product_tags = $tag_stmt->fetchAll();
 
-// 3. ตรวจสอบสถานะการกดถูกใจ (Wishlist Status)
+// 3. ตรวจสอบ Wishlist
 $is_wishlisted = false;
 if (isLoggedIn()) {
     $check_wish = $db->prepare("SELECT id FROM wishlist WHERE user_id = ? AND product_id = ?");
@@ -40,46 +57,75 @@ if (isLoggedIn()) {
     $is_wishlisted = $check_wish->fetch() ? true : false;
 }
 
-// --- 4. ประมวลผลการส่งรีวิว (POST) พร้อมแจ้งเตือนผ่าน Messaging API ---
+// 🎯 🛠️ [เพิ่มใหม่] 3.5 ประมวลผลการสั่งซื้อสินค้า
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
+    if (!isLoggedIn()) redirect('../auth/login.php');
+    
+    if ($user_id == $product['owner_id']) {
+        $_SESSION['flash_message'] = "คุณไม่สามารถสั่งซื้อสินค้าของร้านตัวเองได้";
+        $_SESSION['flash_type'] = "error";
+    } else {
+        $ins_order = $db->prepare("INSERT INTO orders (buyer_id, shop_id, product_id) VALUES (?, ?, ?)");
+        if ($ins_order->execute([$user_id, $product['shop_id'], $product_id])) {
+            
+            // 🎯 🛠️ [เพิ่มใหม่] แจ้งเตือนกระดิ่งบนเว็บ (ส่งให้เจ้าของร้าน)
+            $notif_msg = "🛒 มีคำสั่งซื้อใหม่สำหรับสินค้า {$product['title']} จากคุณ {$_SESSION['fullname']}";
+            sendNotification($product['owner_id'], 'order', $notif_msg, "../seller/dashboard.php");
+
+            // แจ้งเตือนคนขายผ่าน LINE (ถ้าผูกไว้)
+            if (!empty($product['line_user_id'])) {
+                $msg = "🛒 มีคำสั่งซื้อใหม่!\nสินค้า: " . $product['title'] . "\nจากคุณ: " . $_SESSION['fullname'] . "\nกรุณาตรวจสอบในหน้า Dashboard ของคุณ";
+                sendLineMessagingAPI($product['line_user_id'], $msg);
+            }
+            $_SESSION['flash_message'] = "ส่งคำสั่งซื้อสำเร็จ! กรุณารอผู้ขายยืนยันและติดต่อกลับ";
+            $_SESSION['flash_type'] = "success";
+        }
+    }
+    redirect("product_detail.php?id=$product_id");
+}
+
+// 4. ส่งรีวิว
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
     $rating = $_POST['rating'];
     $comment = trim($_POST['comment']);
     
     $ins = $db->prepare("INSERT INTO reviews (product_id, user_id, rating, comment) VALUES (?, ?, ?, ?)");
     if ($ins->execute([$product_id, $user_id, $rating, $comment])) {
+        
+        // 🎯 🛠️ [เพิ่มใหม่] แจ้งเตือนกระดิ่งเมื่อมีคนมารีวิว
+        $notif_msg = "⭐ มีรีวิวใหม่ ({$rating} ดาว) ในสินค้า {$product['title']}";
+        sendNotification($product['owner_id'], 'review', $notif_msg, "product_detail.php?id=$product_id");
+
         if (!empty($product['line_user_id'])) {
             $message = "📢 มีรีวิวใหม่ถึงสินค้าของคุณ!\n"
                      . "📦 สินค้า: " . $product['title'] . "\n"
                      . "⭐️ คะแนน: " . $rating . " ดาว\n"
                      . "💬 ความเห็น: " . $comment . "\n"
                      . "🔗 ดูรีวิว: http://localhost/student_marketplace/pages/product_detail.php?id=" . $product_id;
-            
             sendLineMessagingAPI($product['line_user_id'], $message);
         }
-
         $_SESSION['flash_message'] = "ขอบคุณสำหรับรีวิว! ระบบได้แจ้งเตือนผู้ขายเรียบร้อยแล้ว";
         $_SESSION['flash_type'] = "success";
-        // 🛠️ เปลี่ยนมาใช้ redirect() ที่เราสร้างไว้ใน functions.php
         redirect("product_detail.php?id=$product_id");
     }
 }
 
-// 🛠️ 5. ดึงรีวิว: เพิ่มรูปโปรไฟล์และ ID ผู้ใช้เพื่อลิงก์ไปหน้า Profile
+// 5. ดึงรีวิวที่ยังไม่โดนลบ
 $rev_stmt = $db->prepare("
     SELECT r.*, u.fullname, u.profile_img, u.id as author_id 
     FROM reviews r 
     JOIN users u ON r.user_id = u.id 
-    WHERE r.product_id = ? 
+    WHERE r.product_id = ? AND r.is_deleted = 0
     ORDER BY r.created_at DESC
 ");
 $rev_stmt->execute([$product_id]);
 $all_reviews = $rev_stmt->fetchAll();
 
-// 🟩 6. เมื่อคำนวณและเช็ก POST เสร็จหมดแล้ว ค่อยโหลด Header (UI) ขึ้นมา
 require_once '../includes/header.php';
 ?>
 
 <div class="product-detail-container" style="max-width: 1000px; margin: 30px auto;">
+    <?php echo displayFlashMessage(); ?>
     <div class="card" style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; padding: 30px; border-radius: 20px; background: var(--bg-card); border: 1px solid var(--border-color);">
         <div class="product-image-side">
             <img src="../assets/images/products/<?= $product['image_url'] ?>" style="width: 100%; border-radius: 15px; box-shadow: var(--shadow-lg);">
@@ -126,6 +172,21 @@ require_once '../includes/header.php';
             
             <p style="color: var(--text-muted); line-height: 1.7; margin-bottom: 30px; font-size: 1.05rem;"><?= nl2br(e($product['description'])) ?></p>
             
+            <form method="POST" style="margin-bottom: 30px; display: flex; gap: 15px;">
+                <?php if ($user_id && $user_id != $product['owner_id']): ?>
+                    <button type="submit" name="place_order" class="btn btn-primary" style="flex: 1; padding: 15px; font-size: 1.1rem; border-radius: 14px; font-weight: 700; background: linear-gradient(135deg, #10b981, #059669); border: none;" onclick="return confirm('ยืนยันการสั่งซื้อสินค้านี้? ข้อมูลจะถูกส่งไปยังผู้ขายทันที')">
+                        <i class="fas fa-shopping-cart"></i> สั่งซื้อสินค้านี้
+                    </button>
+                    <a href="chat.php?user=<?= $product['owner_id'] ?>" class="btn btn-outline" style="padding: 15px 25px; border-radius: 14px; font-size: 1.1rem;">
+                        <i class="fas fa-comment-dots"></i> แชท
+                    </a>
+                <?php elseif (!$user_id): ?>
+                    <a href="../auth/login.php" class="btn btn-primary" style="flex: 1; padding: 15px; font-size: 1.1rem; border-radius: 14px; text-align: center; text-decoration: none;" onclick="alert('กรุณาเข้าสู่ระบบก่อนทำการสั่งซื้อ');">
+                        <i class="fas fa-shopping-cart"></i> เข้าสู่ระบบเพื่อสั่งซื้อ
+                    </a>
+                <?php endif; ?>
+            </form>
+            
             <div style="padding: 25px; background: var(--bg-body); border-radius: 20px; border: 1px solid var(--border-color); position: relative;">
                 <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
                     <div style="width: 50px; height: 50px; background: var(--primary); border-radius: 14px; display: flex; align-items: center; justify-content: center; color: white;">
@@ -140,7 +201,7 @@ require_once '../includes/header.php';
                 </div>
                 
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-                    <div style="display: flex; gap: 10px;">
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <?php if(!empty($product['contact_line'])): ?>
                             <a href="https://line.me/ti/p/~<?= e($product['contact_line']) ?>" target="_blank" class="btn-contact line-color">
                                 <i class="fab fa-line"></i> LINE
@@ -159,6 +220,16 @@ require_once '../includes/header.php';
                     </button>
                 </div>
             </div>
+
+            <?php if (isset($_SESSION['role']) && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'teacher')): ?>
+                <div style="margin-top: 20px; padding: 15px; border-radius: 15px; background: rgba(239, 68, 68, 0.05); border: 1px dashed #ef4444;">
+                    <h4 style="color: #ef4444; margin-bottom: 10px; font-size: 0.9rem;"><i class="fas fa-shield-alt"></i> เมนูจัดการ (Admin Only)</h4>
+                    <button onclick="openDeleteProductModal()" class="btn btn-danger" style="width: 100%; border-radius: 12px; font-weight: 600;">
+                        <i class="fas fa-trash-alt"></i> ระงับ/ลบสินค้านี้
+                    </button>
+                </div>
+            <?php endif; ?>
+
         </div>
     </div>
 
@@ -192,7 +263,6 @@ require_once '../includes/header.php';
         <div class="review-list">
             <?php if (count($all_reviews) > 0): ?>
                 <?php foreach ($all_reviews as $rev): 
-                    // 🛠️ แก้ไขพาธรูปให้ตรงกับโฟลเดอร์ปัจจุบันของมึง
                     $upload_file = "../assets/images/profiles/" . $rev['profile_img'];
                     $default_avatar = "../assets/images/profiles/default_profile.png";
                     $avatar = (!empty($rev['profile_img']) && file_exists($upload_file)) ? $upload_file : $default_avatar;
@@ -218,7 +288,7 @@ require_once '../includes/header.php';
                                         <i class="fas fa-flag"></i>
                                     </button>
                                     
-                                    <?php if ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'teacher'): ?>
+                                    <?php if (isset($_SESSION['role']) && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'teacher')): ?>
                                         <button onclick="openDeleteCommentModal(<?= $rev['id'] ?>, '<?= e($rev['fullname']) ?>')" title="ลบคอมเมนต์ (Admin)" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size: 1.1rem;">
                                             <i class="fas fa-trash-alt"></i>
                                         </button>
@@ -267,20 +337,36 @@ require_once '../includes/header.php';
 
 <div id="deleteCommentModal" style="display:none; position:fixed; z-index:10000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter: blur(5px); align-items:center; justify-content:center;">
     <div style="background:var(--bg-card); padding:35px; border-radius:24px; width:90%; max-width:400px; border:1px solid #ef4444;">
-        <h3 style="color:#ef4444; margin-bottom:10px;"><i class="fas fa-trash-alt"></i> ลบคอมเมนต์</h3>
+        <h3 style="color:#ef4444; margin-bottom:10px;"><i class="fas fa-trash-alt"></i> ซ่อนคอมเมนต์</h3>
         <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px;">เจ้าของคอมเมนต์: <strong id="target_user_name" style="color:var(--text-main);"></strong></p>
         <form action="../admin/admin_delete_comment.php" method="POST">
             <input type="hidden" name="comment_id" id="delete_comment_id">
             <input type="hidden" name="product_id" value="<?= $product_id ?>">
-            
             <div class="form-group">
                 <label style="display:block; margin-bottom:8px; font-weight:600;">เหตุผลในการลบ (จะแจ้งเตือนใน Log):</label>
                 <textarea name="reason" class="form-control" required style="width:100%; min-height:100px; border-radius:12px; padding:15px;" placeholder="เช่น ใช้คำไม่สุภาพ, โฆษณาชวนเชื่อ..."></textarea>
             </div>
-            
             <div style="display:flex; gap:12px; margin-top: 25px;">
                 <button type="button" onclick="closeDeleteCommentModal()" class="btn btn-outline" style="flex:1;">ยกเลิก</button>
                 <button type="submit" class="btn btn-danger" style="flex:1; font-weight:700;">ยืนยันการลบ</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="deleteProductModal" style="display:none; position:fixed; z-index:10000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter: blur(5px); align-items:center; justify-content:center;">
+    <div style="background:var(--bg-card); padding:35px; border-radius:24px; width:90%; max-width:400px; border:1px solid #ef4444;">
+        <h3 style="color:#ef4444; margin-bottom:10px;"><i class="fas fa-box-open"></i> ยืนยันการลบสินค้า</h3>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px;">สินค้านี้จะถูกซ่อนออกจากหน้าร้าน (Soft Delete)</p>
+        <form action="../admin/admin_delete_product.php" method="POST">
+            <input type="hidden" name="product_id" value="<?= $product_id ?>">
+            <div class="form-group">
+                <label style="display:block; margin-bottom:8px; font-weight:600;">เหตุผลที่ระงับสินค้า:</label>
+                <textarea name="reason" class="form-control" required style="width:100%; min-height:100px; border-radius:12px; padding:15px;" placeholder="เช่น ผิดกฎโรงเรียน, ของผิดกฎหมาย..."></textarea>
+            </div>
+            <div style="display:flex; gap:12px; margin-top: 25px;">
+                <button type="button" onclick="closeDeleteProductModal()" class="btn btn-outline" style="flex:1;">ยกเลิก</button>
+                <button type="submit" class="btn btn-danger" style="flex:1; font-weight:700;">ลบสินค้าทันที</button>
             </div>
         </form>
     </div>
@@ -291,7 +377,6 @@ require_once '../includes/header.php';
     .star-rating input { display: none !important; } 
     .star-rating label { font-size: 1.8rem; color: #cbd5e1; cursor: pointer; transition: 0.2s; }
     .star-rating label:hover, .star-rating label:hover ~ label, .star-rating input:checked ~ label { color: #fbbf24; }
-
     .btn-contact { padding: 10px 20px; border-radius: 14px; color: white !important; text-decoration: none; font-size: 0.9rem; font-weight: 600; display: inline-flex; align-items: center; gap: 10px; transition: 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     .btn-contact:hover { transform: translateY(-3px); filter: brightness(1.1); }
     .line-color { background: #06c755; }
@@ -304,19 +389,17 @@ function openReportModal(id, type) {
     document.getElementById('report_target_type').value = type;
     document.getElementById('reportModal').style.display = 'flex';
 }
-function closeReportModal() {
-    document.getElementById('reportModal').style.display = 'none';
-}
+function closeReportModal() { document.getElementById('reportModal').style.display = 'none'; }
 
-// 🛡️ JS สำหรับ Delete Modal
 function openDeleteCommentModal(id, name) {
     document.getElementById('delete_comment_id').value = id;
     document.getElementById('target_user_name').innerText = name;
     document.getElementById('deleteCommentModal').style.display = 'flex';
 }
-function closeDeleteCommentModal() {
-    document.getElementById('deleteCommentModal').style.display = 'none';
-}
+function closeDeleteCommentModal() { document.getElementById('deleteCommentModal').style.display = 'none'; }
+
+function openDeleteProductModal() { document.getElementById('deleteProductModal').style.display = 'flex'; }
+function closeDeleteProductModal() { document.getElementById('deleteProductModal').style.display = 'none'; }
 
 document.getElementById('main-wish-btn').addEventListener('click', function() {
     const btn = this;
@@ -326,16 +409,9 @@ document.getElementById('main-wish-btn').addEventListener('click', function() {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'product_id=' + productId
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.status === 'added') {
-            icon.classList.replace('far', 'fas');
-            btn.style.color = '#ef4444';
-        } else if (data.status === 'removed') {
-            icon.classList.replace('fas', 'far');
-            btn.style.color = '#cbd5e1';
-        }
+    }).then(res => res.json()).then(data => {
+        if (data.status === 'added') { icon.classList.replace('far', 'fas'); btn.style.color = '#ef4444'; }
+        else if (data.status === 'removed') { icon.classList.replace('fas', 'far'); btn.style.color = '#cbd5e1'; }
     });
 });
 </script>

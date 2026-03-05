@@ -1,91 +1,82 @@
 <?php
 /**
- * Student Marketplace - Admin Dashboard (High Performance UI)
+ * Student Marketplace - Admin Dashboard (High Performance UI + Full Recycle Bin)
  */
 $pageTitle = "ระบบผู้ดูแล (Admin) - BNCC Market";
 require_once '../includes/header.php';
 
-// ตรวจสอบสิทธิ์แอดมิน
 checkRole('admin');
-
 $db = getDB();
+
+// 🚀 🛠️ [เพิ่มใหม่] ระบบ Auto-Cleanup: ลบสินค้าและคอมเมนต์ที่อยู่ในถังขยะเกิน 30 วันทิ้งแบบถาวร (Hard Delete)
+$db->query("DELETE FROM products WHERE is_deleted = 1 AND deleted_at <= DATE_SUB(NOW(), INTERVAL 30 DAY)");
+$db->query("DELETE FROM reviews WHERE is_deleted = 1 AND deleted_at <= DATE_SUB(NOW(), INTERVAL 30 DAY)");
 
 // 1. ดึงสถิติภาพรวม
 $count_users = $db->query("SELECT COUNT(*) FROM users")->fetchColumn();
 $count_shops = $db->query("SELECT COUNT(*) FROM shops WHERE status = 'approved'")->fetchColumn();
 $count_pending_shops = $db->query("SELECT COUNT(*) FROM shops WHERE status = 'pending'")->fetchColumn();
-$count_products = $db->query("SELECT COUNT(*) FROM products")->fetchColumn();
-$count_pending_products = $db->query("SELECT COUNT(*) FROM products WHERE status = 'pending'")->fetchColumn();
+$count_products = $db->query("SELECT COUNT(*) FROM products WHERE is_deleted = 0")->fetchColumn(); 
+$count_pending_products = $db->query("SELECT COUNT(*) FROM products WHERE status = 'pending' AND is_deleted = 0")->fetchColumn();
 
-// 🛠️ เพิ่ม: ดึงสถิติคำร้องเรียน (Reports)
+// ดึงสถิติถังขยะ
+$count_trashed_products = $db->query("SELECT COUNT(*) FROM products WHERE is_deleted = 1")->fetchColumn();
+$count_trashed_comments = $db->query("SELECT COUNT(*) FROM reviews WHERE is_deleted = 1")->fetchColumn(); // 🎯 นับคอมเมนต์ที่ถูกลบ
+
 $count_pending_reports = $db->query("SELECT COUNT(*) FROM reports WHERE status = 'pending'")->fetchColumn();
+$count_comment_reports = $db->query("SELECT COUNT(*) FROM reports WHERE target_type = 'comment' AND status = 'pending'")->fetchColumn();
 
-// 🛠️ เพิ่ม: ดึงรายการประวัติการทำงานของแอดมินล่าสุด (Audit Log)
-$log_stmt = $db->query("
-    SELECT l.*, u.fullname as admin_name 
-    FROM admin_logs l 
-    JOIN users u ON l.admin_id = u.id 
-    ORDER BY l.created_at DESC LIMIT 10
-");
+// ดึงประวัติการทำงาน
+$log_stmt = $db->query("SELECT l.*, u.fullname as admin_name FROM admin_logs l JOIN users u ON l.admin_id = u.id ORDER BY l.created_at DESC LIMIT 10");
 $admin_logs = $log_stmt->fetchAll();
 
-// 2. ดึงรายการร้านค้าที่รออนุมัติ (ล่าสุด 5 รายการ)
+// 2. ดึงรายการรออนุมัติ
 $pending_stmt = $db->query("SELECT s.*, u.fullname FROM shops s JOIN users u ON s.user_id = u.id WHERE s.status = 'pending' ORDER BY s.created_at DESC LIMIT 5");
 $pending_shops = $pending_stmt->fetchAll();
 
-// 🛠️ เพิ่ม: ดึงรายการรีพอร์ตล่าสุด (5 รายการ)
 $report_stmt = $db->query("SELECT r.*, u.fullname as reporter_name FROM reports r JOIN users u ON r.reporter_id = u.id WHERE r.status = 'pending' ORDER BY r.created_at DESC LIMIT 5");
 $pending_reports = $report_stmt->fetchAll();
+
+// 3. ดึงรายการสินค้าในถังขยะ
+$trash_stmt = $db->query("
+    SELECT p.id, p.title, p.price, p.deleted_at, s.shop_name, u.fullname as deleter_name 
+    FROM products p 
+    JOIN shops s ON p.shop_id = s.id 
+    LEFT JOIN users u ON p.deleted_by = u.id 
+    WHERE p.is_deleted = 1 
+    ORDER BY p.deleted_at DESC LIMIT 5
+");
+$trashed_products = $trash_stmt->fetchAll();
+
+// 🎯 🛠️ 4. ดึงรายการคอมเมนต์ในถังขยะ
+$trash_rev_stmt = $db->query("
+    SELECT r.id, r.comment, r.deleted_at, p.title as product_name, u.fullname as author_name, del_u.fullname as deleter_name 
+    FROM reviews r 
+    JOIN products p ON r.product_id = p.id 
+    JOIN users u ON r.user_id = u.id 
+    LEFT JOIN users del_u ON r.deleted_by = del_u.id 
+    WHERE r.is_deleted = 1 
+    ORDER BY r.deleted_at DESC LIMIT 5
+");
+$trashed_reviews = $trash_rev_stmt->fetchAll();
 ?>
 
 <style>
-    /* 🎨 Dashboard Specific Styles */
     .dashboard-header { margin-bottom: 35px; border-left: 6px solid var(--primary); padding-left: 20px; }
-    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 40px; }
-    
-    .stat-card {
-        background: var(--bg-card);
-        padding: 30px;
-        border-radius: 24px;
-        border: 1px solid var(--border-color);
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: var(--shadow-sm);
-    }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 40px; }
+    .stat-card { background: var(--bg-card); padding: 30px; border-radius: 24px; border: 1px solid var(--border-color); display: flex; align-items: center; gap: 20px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: var(--shadow-sm); }
     .stat-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); border-color: var(--primary); }
     .stat-icon { width: 60px; height: 60px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
 
-    /* ปรับ Action Grid ให้รองรับ 4 การ์ด */
-    .action-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; margin-bottom: 40px; }
-    .action-card {
-        background: var(--bg-card);
-        border-radius: 24px;
-        padding: 35px;
-        border: 1px solid var(--border-color);
-        position: relative;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-    }
-    .action-card::before {
-        content: ''; position: absolute; top: 0; left: 0; width: 6px; height: 100%; background: var(--primary);
-    }
+    .action-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px; margin-bottom: 40px; }
+    .action-card { background: var(--bg-card); border-radius: 24px; padding: 35px; border: 1px solid var(--border-color); position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; }
+    .action-card::before { content: ''; position: absolute; top: 0; left: 0; width: 6px; height: 100%; background: var(--primary); }
     
-    .btn-action {
-        width: 100%; padding: 14px; border-radius: 14px; font-weight: 700; 
-        display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 20px;
-        text-decoration: none;
-        transition: 0.2s;
-    }
+    .btn-action { width: 100%; padding: 14px; border-radius: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 20px; text-decoration: none; transition: 0.2s; }
     .btn-action:hover { filter: brightness(1.1); transform: scale(1.02); }
     
     .pending-badge { background: #ef4444; color: white; padding: 2px 8px; border-radius: 50px; font-size: 0.75rem; }
     .report-badge { background: #f87171; color: white; padding: 2px 8px; border-radius: 50px; font-size: 0.75rem; }
-
-    /* Style สำหรับ Audit Log */
     .log-badge { background: rgba(99, 102, 241, 0.1); color: var(--primary); padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; }
 </style>
 
@@ -113,14 +104,14 @@ $pending_reports = $report_stmt->fetchAll();
         <div class="stat-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;"><i class="fas fa-box"></i></div>
         <div>
             <div style="font-size: 1.8rem; font-weight: 800;"><?= $count_products ?></div>
-            <div style="color: var(--text-muted); font-size: 0.9rem;">สินค้าทั้งหมด</div>
+            <div style="color: var(--text-muted); font-size: 0.9rem;">สินค้า (ขายอยู่)</div>
         </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;"><i class="fas fa-flag"></i></div>
+    <div class="stat-card" style="border-color: rgba(239, 68, 68, 0.3);">
+        <div class="stat-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;"><i class="fas fa-trash-alt"></i></div>
         <div>
-            <div style="font-size: 1.8rem; font-weight: 800;"><?= $count_pending_reports ?></div>
-            <div style="color: var(--text-muted); font-size: 0.9rem;">รีพอร์ตที่ค้างอยู่</div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: #ef4444;"><?= $count_trashed_products + $count_trashed_comments ?></div>
+            <div style="color: var(--text-muted); font-size: 0.85rem;">ไฟล์ในถังขยะ</div>
         </div>
     </div>
 </div>
@@ -162,7 +153,22 @@ $pending_reports = $report_stmt->fetchAll();
                 <span class="report-badge"><?= $count_pending_reports ?></span>
             <?php endif; ?>
         </div>
-        <a href="manage_reports.php" class="btn btn-danger btn-action">ดูรีพอร์ต</a>
+        <a href="manage_reports.php" class="btn btn-danger btn-action">ดูรีพอร์ตทั่วไป</a>
+    </div>
+
+    <div class="action-card" style="border-color: #f97316;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <h3 style="font-size: 1.2rem; margin-bottom: 10px; color: #f97316;"><i class="fas fa-comments"></i> รีพอร์ตคอมเมนต์</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0;">แบนคนด่า, ตรวจสอบผู้กระทำผิด</p>
+            </div>
+            <?php if($count_comment_reports > 0): ?>
+                <span class="report-badge" style="background: #f97316;"><?= $count_comment_reports ?></span>
+            <?php endif; ?>
+        </div>
+        <a href="manage_reported_comments.php" class="btn btn-action" style="background: #fff7ed; color: #f97316; border: 1px solid #fdba74;">
+            <i class="fas fa-search"></i> ตรวจสอบบริบท
+        </a>
     </div>
 
     <div class="action-card" style="border-color: #6366f1;">
@@ -178,12 +184,11 @@ $pending_reports = $report_stmt->fetchAll();
     </div>
 </div>
 
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
     <div class="card shadow-lg" style="border-radius: 24px; padding: 30px; border: 1px solid var(--border-color); background: var(--bg-card);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-            <h2 style="font-size: 1.2rem; font-weight: 700; margin: 0;"><i class="fas fa-clock text-warning"></i> ร้านค้าที่รอการตรวจสอบล่าสุด</h2>
+            <h2 style="font-size: 1.2rem; font-weight: 700; margin: 0;"><i class="fas fa-clock text-warning"></i> ร้านค้าที่รอตรวจสอบ</h2>
         </div>
-
         <?php if(count($pending_shops) > 0): ?>
             <div style="overflow-x: auto;">
                 <table style="width: 100%; border-collapse: separate; border-spacing: 0 10px;">
@@ -208,7 +213,6 @@ $pending_reports = $report_stmt->fetchAll();
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
             <h2 style="font-size: 1.2rem; font-weight: 700; margin: 0;"><i class="fas fa-bullhorn text-danger"></i> คำร้องเรียนล่าสุด</h2>
         </div>
-
         <?php if(count($pending_reports) > 0): ?>
             <div style="overflow-x: auto;">
                 <table style="width: 100%; border-collapse: separate; border-spacing: 0 10px;">
@@ -229,6 +233,70 @@ $pending_reports = $report_stmt->fetchAll();
             </div>
         <?php else: ?>
             <p style="text-align: center; color: var(--text-muted); padding: 20px;">ไม่มีการแจ้งร้องเรียน</p>
+        <?php endif; ?>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+    <div class="card shadow-lg" style="border-radius: 24px; padding: 30px; border: 1px dashed rgba(239, 68, 68, 0.4); background: var(--bg-card);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+            <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0; color: #ef4444;"><i class="fas fa-box-open"></i> ถังขยะ: สินค้า</h2>
+            <span style="font-size: 0.7rem; color: var(--text-muted);">ลบถาวรใน 30 วัน</span>
+        </div>
+        <?php if(count($trashed_products) > 0): ?>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: separate; border-spacing: 0 8px;">
+                    <tbody>
+                        <?php foreach($trashed_products as $t): 
+                            $deleted_date = new DateTime($t['deleted_at']); $expire_date = clone $deleted_date; $expire_date->modify('+30 days'); $now = new DateTime(); $days_left = $now->diff($expire_date)->days;
+                        ?>
+                        <tr style="background: rgba(239, 68, 68, 0.05);">
+                            <td style="padding: 12px 15px; border-radius: 12px 0 0 12px;">
+                                <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-main);"><?= e($t['title']) ?></div>
+                                <div style="font-size: 0.7rem; color: var(--text-muted);">ลบโดย: <span style="color: #ef4444;"><?= e($t['deleter_name'] ?? 'คนขาย') ?></span></div>
+                            </td>
+                            <td style="padding: 12px 15px; text-align: right; border-radius: 0 12px 12px 0;">
+                                <div style="font-size: 0.75rem; font-weight: 600; color: #ef4444;"><i class="fas fa-hourglass-half"></i> อีก <?= $days_left ?> วัน</div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php else: ?>
+            <p style="text-align: center; color: var(--text-muted); padding: 20px;">ไม่มีสินค้าในถังขยะ</p>
+        <?php endif; ?>
+    </div>
+
+    <div class="card shadow-lg" style="border-radius: 24px; padding: 30px; border: 1px dashed rgba(239, 68, 68, 0.4); background: var(--bg-card);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+            <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0; color: #ef4444;"><i class="fas fa-comments"></i> ถังขยะ: คอมเมนต์</h2>
+            <span style="font-size: 0.7rem; color: var(--text-muted);">ลบถาวรใน 30 วัน</span>
+        </div>
+        <?php if(count($trashed_reviews) > 0): ?>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: separate; border-spacing: 0 8px;">
+                    <tbody>
+                        <?php foreach($trashed_reviews as $tr): 
+                            $deleted_date = new DateTime($tr['deleted_at']); $expire_date = clone $deleted_date; $expire_date->modify('+30 days'); $now = new DateTime(); $days_left = $now->diff($expire_date)->days;
+                        ?>
+                        <tr style="background: rgba(239, 68, 68, 0.05);">
+                            <td style="padding: 12px 15px; border-radius: 12px 0 0 12px;">
+                                <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-main); font-style: italic;">"<?= e(mb_substr($tr['comment'], 0, 30)) ?>..."</div>
+                                <div style="font-size: 0.7rem; color: var(--text-muted);">
+                                    จาก: <?= e($tr['author_name']) ?> | ลบโดย: <span style="color: #ef4444;"><?= e($tr['deleter_name'] ?? 'ระบบ') ?></span>
+                                </div>
+                            </td>
+                            <td style="padding: 12px 15px; text-align: right; border-radius: 0 12px 12px 0;">
+                                <div style="font-size: 0.75rem; font-weight: 600; color: #ef4444;"><i class="fas fa-hourglass-half"></i> อีก <?= $days_left ?> วัน</div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php else: ?>
+            <p style="text-align: center; color: var(--text-muted); padding: 20px;">ไม่มีคอมเมนต์ในถังขยะ</p>
         <?php endif; ?>
     </div>
 </div>

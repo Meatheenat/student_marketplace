@@ -34,6 +34,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             logAdminAction($action_text, 'shop', $target_id, $detail_text);
             $_SESSION['flash_message'] = ($action === 'block') ? "สั่งปิดร้านค้าชั่วคราวแล้ว" : "อนุญาตให้เปิดร้านค้าตามปกติแล้ว";
         }
+        // เอาไปแทรกต่อจากบล็อก elseif ($type === 'shop') { ... } 
+    elseif ($type === 'product') {
+        $status_action = ($action === 'delete') ? 1 : 0; // 1 = ลบ, 0 = กู้คืน
+        $stmt = $db->prepare("UPDATE products SET is_deleted = ? WHERE id = ?");
+        
+        if ($stmt->execute([$status_action, $target_id])) {
+            $action_text = ($status_action) ? "SOFT_DELETE_PRODUCT" : "RESTORE_PRODUCT";
+            $detail_text = ($status_action) ? "ลบสินค้าออกจากระบบ (Soft Delete)" : "กู้คืนสินค้ากลับเข้าระบบ";
+            logAdminAction($action_text, 'product', $target_id, $detail_text);
+            
+            $_SESSION['flash_message'] = ($status_action) ? "ลบสินค้าเรียบร้อยแล้ว (สามารถกู้คืนได้)" : "กู้คืนสินค้าเรียบร้อยแล้ว";
+            $_SESSION['flash_type'] = ($status_action) ? "warning" : "success";
+        }
+    }
     }
     // 👑 🛡️ [เพิ่มใหม่] เปลี่ยนยศแบบอิสระ (เฉพาะ Teacher เท่านั้น!)
     elseif ($type === 'change_role') {

@@ -2,32 +2,54 @@
 /**
  * BNCC Market - Admin Product Approval
  */
-$pageTitle = "จัดการคำขอลงสินค้า - BNCC Market";
-require_once '../includes/header.php';
+
+// 🚀 1. โหลด Functions มาก่อนเสมอ! (ห้ามโหลด header.php ตรงนี้เด็ดขาด)
 require_once '../includes/functions.php';
 
-// เช็คสิทธิ์แอดมิน
-if (!isLoggedIn() || $_SESSION['role'] !== 'admin') redirect('../pages/index.php');
+// 🎯 🛠️ 2. เช็คสิทธิ์: อนุญาตให้ทั้ง admin และ teacher เข้าได้ (จะได้ไม่เด้งกลับหน้าแรก)
+if (!isLoggedIn() || ($_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'teacher')) {
+    redirect('../pages/index.php');
+}
 
 $db = getDB();
 
-// --- ตรรกะการอนุมัติ/ปฏิเสธ ---
+// --- 3. ตรรกะการอนุมัติ/ปฏิเสธ (ทำก่อนโหลด Header) ---
 if (isset($_GET['action']) && isset($_GET['id'])) {
     $id = $_GET['id'];
     $new_status = ($_GET['action'] === 'approve') ? 'approved' : 'rejected';
     
+    // 🎯 🛠️ [เพิ่มใหม่] ดึงข้อมูลเจ้าของร้านและชื่อสินค้าเพื่อแจ้งเตือน
+    $info_stmt = $db->prepare("SELECT s.user_id, p.title FROM products p JOIN shops s ON p.shop_id = s.id WHERE p.id = ?");
+    $info_stmt->execute([$id]);
+    $info = $info_stmt->fetch();
+
     $update = $db->prepare("UPDATE products SET status = ? WHERE id = ?");
-    $update->execute([$new_status, $id]);
+    if ($update->execute([$new_status, $id])) {
+        
+        // 🎯 🛠️ [เพิ่มใหม่] ส่งการแจ้งเตือนเข้ากระดิ่งบนเว็บ
+        if ($info) {
+            $notif_msg = ($new_status === 'approved') 
+                ? "✅ สินค้าของคุณ ({$info['title']}) ได้รับการอนุมัติแล้ว!" 
+                : "❌ สินค้าของคุณ ({$info['title']}) ไม่ผ่านการอนุมัติ กรุณาตรวจสอบความถูกต้อง";
+            $notif_link = "../pages/product_detail.php?id=" . $id;
+            sendNotification($info['user_id'], 'system', $notif_msg, $notif_link);
+        }
+
+        $_SESSION['flash_message'] = "ดำเนินการเรียบร้อยแล้ว และแจ้งเตือนผู้ขายแล้ว";
+        $_SESSION['flash_type'] = "success";
+    }
     
-    $_SESSION['flash_message'] = "ดำเนินการเรียบร้อยแล้ว";
-    $_SESSION['flash_type'] = "success";
-    header("Location: approve_product.php");
-    exit();
+    // 🛠️ เปลี่ยนมาใช้ redirect() ของเราแทน header()
+    redirect("approve_product.php");
 }
 
-// ดึงสินค้าที่สถานะเป็น 'pending'
+// 4. ดึงสินค้าที่สถานะเป็น 'pending'
 $stmt = $db->query("SELECT p.*, s.shop_name FROM products p JOIN shops s ON p.shop_id = s.id WHERE p.status = 'pending' ORDER BY p.created_at ASC");
 $pending_products = $stmt->fetchAll();
+
+// 🟩 5. เมื่อคำนวณและเช็กสิทธิ์เสร็จหมดแล้ว ค่อยโหลด Header (UI) ขึ้นมา
+$pageTitle = "จัดการคำขอลงสินค้า - BNCC Market";
+require_once '../includes/header.php';
 ?>
 
 <div class="container" style="margin-top: 30px;">

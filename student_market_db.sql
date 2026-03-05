@@ -165,3 +165,39 @@ ALTER TABLE users MODIFY COLUMN role ENUM('buyer', 'seller', 'admin', 'teacher')
 
 -- 2. ปรับแต่ง admin_logs ให้รองรับการเก็บเหตุผล (ถ้ามึงยังไม่มีคอลัมน์ details ให้เพิ่มตามนี้)
  ALTER TABLE admin_logs ADD COLUMN reason_text TEXT AFTER details;
+ ALTER TABLE products ADD COLUMN is_deleted TINYINT(1) DEFAULT 0;
+ALTER TABLE reviews ADD COLUMN is_deleted TINYINT(1) DEFAULT 0;
+ALTER TABLE products ADD COLUMN deleted_by INT(11) NULL;
+ALTER TABLE products ADD COLUMN deleted_at DATETIME NULL;
+ALTER TABLE reviews ADD COLUMN deleted_by INT(11) NULL;
+ALTER TABLE reviews ADD COLUMN deleted_at DATETIME NULL;
+CREATE TABLE `messages` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `sender_id` int(11) NOT NULL,
+  `receiver_id` int(11) NOT NULL,
+  `message` text NOT NULL,
+  `is_read` tinyint(1) DEFAULT 0,
+  `created_at` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE `orders` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `buyer_id` int(11) NOT NULL,
+  `shop_id` int(11) NOT NULL,
+  `product_id` int(11) NOT NULL,
+  `status` enum('pending','preparing','completed','cancelled') DEFAULT 'pending',
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE `notifications` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `type` varchar(50) NOT NULL,
+  `message` text NOT NULL,
+  `link` varchar(255) DEFAULT NULL,
+  `is_read` tinyint(1) DEFAULT 0,
+  `created_at` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+ALTER TABLE products ADD COLUMN views INT(11) DEFAULT 0;

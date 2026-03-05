@@ -24,6 +24,15 @@ $hide_auth_list = ['index.php', 'register_seller.php', 'product_detail.php'];
 $user_avatar = isset($_SESSION['profile_img']) && !empty($_SESSION['profile_img']) 
                 ? "../assets/images/profiles/" . $_SESSION['profile_img'] 
                 : "../assets/images/profiles/default_profile.png";
+
+// 5. เช็กจำนวนข้อความแชทที่ยังไม่ได้อ่าน (ถ้าล็อกอินแล้ว)
+$unread_msg_count = 0;
+if (isLoggedIn()) {
+    $db = getDB();
+    $msg_stmt = $db->prepare("SELECT COUNT(*) FROM messages WHERE receiver_id = ? AND is_read = 0");
+    $msg_stmt->execute([$_SESSION['user_id']]);
+    $unread_msg_count = $msg_stmt->fetchColumn();
+}
 ?>
 <!DOCTYPE html>
 <html lang="th">
@@ -109,6 +118,7 @@ $user_avatar = isset($_SESSION['profile_img']) && !empty($_SESSION['profile_img'
             border-radius: 50px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             transition: var(--transition);
+            position: relative;
         }
 
         .avatar-circle {
@@ -140,7 +150,7 @@ $user_avatar = isset($_SESSION['profile_img']) && !empty($_SESSION['profile_img'
             margin-top: 2px;
         }
 
-        .badge-teacher { color: #ef4444; } /* 👑 สีของครู */
+        .badge-teacher { color: #ef4444; }
         .badge-admin { color: #f87171; }
         .badge-seller { color: #34d399; }
 
@@ -184,6 +194,60 @@ $user_avatar = isset($_SESSION['profile_img']) && !empty($_SESSION['profile_img'
             border-radius: 50px;
             margin-left: 5px;
         }
+
+        .chat-icon-container {
+            position: relative;
+            color: #3b82f6; 
+            font-size: 1.1rem;
+            margin-left: 5px;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+        .chat-icon-container:hover {
+            transform: scale(1.1);
+            filter: brightness(1.2);
+        }
+        .chat-badge {
+            position: absolute;
+            top: -8px;
+            right: -10px;
+            background: #ef4444;
+            color: white;
+            font-size: 0.6rem;
+            font-weight: 800;
+            padding: 2px 5px;
+            border-radius: 50px;
+            border: 2px solid #1e293b;
+        }
+        
+        .toolbar-icon {
+            color: #94a3b8;
+            font-size: 1.1rem;
+            margin-left: 5px;
+            text-decoration: none;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+        .toolbar-icon:hover {
+            color: white;
+            transform: scale(1.1);
+        }
+
+        /* 🎯 🛠️ Style สำหรับระบบแจ้งเตือน Dropdown */
+        .notif-dropdown {
+            position: absolute; top: 55px; right: 80px; width: 320px; background: var(--bg-card);
+            border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            display: none; flex-direction: column; overflow: hidden; z-index: 1001; opacity: 0;
+            transform: translateY(-10px); transition: all 0.2s ease;
+        }
+        .notif-dropdown.show { display: flex; opacity: 1; transform: translateY(0); }
+        .notif-header { padding: 15px; border-bottom: 1px solid var(--border-color); font-weight: 700; display: flex; justify-content: space-between; color: var(--text-main); background: var(--bg-card); }
+        .notif-body { max-height: 350px; overflow-y: auto; background: var(--bg-body); }
+        .notif-item { padding: 12px 15px; border-bottom: 1px solid var(--border-color); display: flex; gap: 12px; text-decoration: none; color: var(--text-main); transition: 0.2s; align-items: flex-start; }
+        .notif-item:hover { background: rgba(99, 102, 241, 0.05); }
+        .notif-unread { background: rgba(99, 102, 241, 0.1); }
+        .notif-text { font-size: 0.85rem; line-height: 1.4; margin-bottom: 5px; }
+        .notif-time { font-size: 0.7rem; color: var(--text-muted); }
     </style>
 
     <script>
@@ -257,7 +321,36 @@ $user_avatar = isset($_SESSION['profile_img']) && !empty($_SESSION['profile_img'
                         </div>
                     </a>
 
-                    <a href="../pages/wishlist.php" title="รายการที่ชอบ" style="color: #ef4444; font-size: 1.1rem; margin-left: 5px;">
+                    <div style="position: relative; display: flex; align-items: center;">
+                        <a href="javascript:void(0)" id="notif-bell" class="toolbar-icon" style="color: #f59e0b;">
+                            <i class="fas fa-bell"></i>
+                            <span id="notif-badge" class="chat-badge" style="display:none;">0</span>
+                        </a>
+                        <div id="notif-dropdown" class="notif-dropdown">
+                            <div class="notif-header">
+                                <span>การแจ้งเตือน</span>
+                                <button onclick="markNotifAsRead()" style="background:none; border:none; color:var(--primary); font-size:0.75rem; cursor:pointer; font-weight:700;">อ่านทั้งหมด</button>
+                            </div>
+                            <div class="notif-body" id="notif-list">
+                                <div style="padding:20px; text-align:center; color:var(--text-muted); font-size:0.85rem;">กำลังโหลด...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <a href="../pages/chat.php" title="กล่องข้อความแชท" class="chat-icon-container">
+                        <i class="fas fa-comment-dots"></i>
+                        <?php if($unread_msg_count > 0): ?>
+                            <span class="chat-badge"><?= $unread_msg_count > 99 ? '99+' : $unread_msg_count ?></span>
+                        <?php endif; ?>
+                    </a>
+
+                    <?php if ($_SESSION['role'] === 'buyer' || $_SESSION['role'] === 'seller'): ?>
+                    <a href="../pages/my_orders.php" title="ประวัติการสั่งซื้อของฉัน" class="toolbar-icon" style="color: #10b981;">
+                        <i class="fas fa-shopping-bag"></i>
+                    </a>
+                    <?php endif; ?>
+
+                    <a href="../pages/wishlist.php" title="รายการที่ชอบ" class="toolbar-icon" style="color: #ef4444;">
                         <i class="fas fa-heart"></i>
                     </a>
                     
@@ -275,5 +368,69 @@ $user_avatar = isset($_SESSION['profile_img']) && !empty($_SESSION['profile_img'
         </ul>
     </div>
 </nav>
+
+<?php if(isLoggedIn()): ?>
+<script>
+    const notifBell = document.getElementById('notif-bell');
+    const notifDropdown = document.getElementById('notif-dropdown');
+    const notifBadge = document.getElementById('notif-badge');
+    const notifList = document.getElementById('notif-list');
+
+    notifBell.addEventListener('click', function(e) {
+        e.stopPropagation();
+        notifDropdown.classList.toggle('show');
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!notifDropdown.contains(e.target) && e.target !== notifBell) {
+            notifDropdown.classList.remove('show');
+        }
+    });
+
+    function fetchNotifications() {
+        fetch('../ajax/notifications_api.php?action=fetch')
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === 'success') {
+                if(data.unread_count > 0) {
+                    notifBadge.style.display = 'block';
+                    notifBadge.innerText = data.unread_count > 99 ? '99+' : data.unread_count;
+                } else {
+                    notifBadge.style.display = 'none';
+                }
+                if(data.notifications.length > 0) {
+                    let html = '';
+                    data.notifications.forEach(n => {
+                        const readClass = n.is_read == 0 ? 'notif-unread' : '';
+                        html += `
+                            <a href="${n.link}" class="notif-item ${readClass}">
+                                <div style="font-size: 1.2rem; margin-top: 3px;">${n.icon}</div>
+                                <div>
+                                    <div class="notif-text">${n.message}</div>
+                                    <div class="notif-time">${n.time}</div>
+                                </div>
+                            </a>
+                        `;
+                    });
+                    notifList.innerHTML = html;
+                } else {
+                    notifList.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-muted); font-size:0.85rem;">ไม่มีการแจ้งเตือน</div>';
+                }
+            }
+        });
+    }
+
+    function markNotifAsRead() {
+        fetch('../ajax/notifications_api.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: 'action=mark_read'
+        }).then(() => fetchNotifications());
+    }
+
+    fetchNotifications();
+    setInterval(fetchNotifications, 10000);
+</script>
+<?php endif; ?>
 
 <main class="container" style="padding-top: 2rem; min-height: calc(100vh - var(--nav-height));">

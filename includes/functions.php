@@ -200,3 +200,10 @@ function logAdminAction($action_type, $target_type, $target_id, $details) {
     
     notifyAllAdmins($message);
 }
+// 🔔 ฟังก์ชันส่งการแจ้งเตือน (In-App Notification)
+function sendNotification($user_id, $type, $message, $link = '#') {
+    $db = getDB();
+    $stmt = $db->prepare("INSERT INTO notifications (user_id, type, message, link) VALUES (?, ?, ?, ?)");
+    return $stmt->execute([$user_id, $type, $message, $link]);
+}
+?>

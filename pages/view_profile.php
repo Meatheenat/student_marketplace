@@ -36,8 +36,9 @@ if ($shop) {
         SELECT AVG(r.rating) as avg_r, COUNT(r.id) as count_r 
         FROM reviews r 
         JOIN products p ON r.product_id = p.id 
-        WHERE p.shop_id = ?
+        WHERE p.shop_id = ? AND p.is_deleted = 0 AND r.is_deleted = 0
     ");
+    // 🎯 🛠️ (ด้านบนกูแอบเติม AND p.is_deleted = 0 AND r.is_deleted = 0 ให้ด้วย เรตติ้งจะได้ไม่นับรวมของที่ลบไปแล้ว)
     $rating_stmt->execute([$shop['id']]);
     $rating_data = $rating_stmt->fetch();
     $avg_rating = round($rating_data['avg_r'] ?? 0, 1);
@@ -47,7 +48,8 @@ if ($shop) {
 // 4. ดึงสินค้าเด่นของร้าน
 $products = [];
 if ($shop) {
-    $p_stmt = $db->prepare("SELECT * FROM products WHERE shop_id = ? AND status = 'approved' ORDER BY created_at DESC LIMIT 6");
+    // 🎯 🛠️ แก้ไข: เติม AND is_deleted = 0 เพื่อซ่อนสินค้าที่ติดสถานะลบ (และเช็ก status = 'approved' ให้ชัวร์)
+    $p_stmt = $db->prepare("SELECT * FROM products WHERE shop_id = ? AND status = 'approved' AND is_deleted = 0 ORDER BY created_at DESC LIMIT 6");
     $p_stmt->execute([$shop['id']]);
     $products = $p_stmt->fetchAll();
 }
@@ -172,7 +174,7 @@ $avatar = (!empty($user['profile_img']) && file_exists($upload_file)) ? $upload_
                 <?php if (count($products) == 0): ?>
                     <div style="grid-column: 1/-1; text-align: center; padding: 50px; background: var(--bg-card); border-radius: 20px; color: var(--text-muted); border: 1px dashed var(--border-color);">
                         <i class="fas fa-box-open" style="font-size: 3rem; margin-bottom: 15px;"></i>
-                        <p>ยังไม่มีสินค้าที่วางจำหน่ายในขณะนี้</p>
+                        <p>ไม่มีสินค้าที่วางจำหน่ายในขณะนี้</p>
                     </div>
                 <?php endif; ?>
             </div>

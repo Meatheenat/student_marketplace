@@ -22,13 +22,12 @@ $cat_id = isset($_GET['cat']) ? $_GET['cat'] : '';
 $cat_stmt = $db->query("SELECT * FROM categories ORDER BY id ASC");
 $categories = $cat_stmt->fetchAll();
 
-// เตรียม SQL ดึงสินค้า (โชว์เฉพาะร้านที่อนุมัติแล้ว)
-$sql = // แก้ไข SQL เดิมใน index.php
+// 🎯 🛠️ เตรียม SQL ดึงสินค้า (โชว์เฉพาะร้านที่อนุมัติแล้ว, สินค้าที่อนุมัติแล้ว และ "ยังไม่ถูกลบ")
 $sql = "SELECT p.*, s.shop_name, s.status as shop_status, c.category_name 
         FROM products p
         JOIN shops s ON p.shop_id = s.id
         JOIN categories c ON p.category_id = c.id
-        WHERE s.status = 'approved' AND p.status = 'approved'"; // เพิ่มเงื่อนไข p.status
+        WHERE s.status = 'approved' AND p.status = 'approved' AND p.is_deleted = 0"; // เพิ่ม AND p.is_deleted = 0
 
 $params = [];
 if (!empty($search)) {
