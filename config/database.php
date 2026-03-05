@@ -3,6 +3,9 @@
  * Student Marketplace - Database Connection
  * Author: Senior Full-Stack Developer
  */
+// 🎯 แปะบรรทัดนี้เพื่อเปิดดู Error จริงๆ บนหน้าเว็บ
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
 // ตั้งค่าพารามิเตอร์การเชื่อมต่อ
 $host = 'localhost';
