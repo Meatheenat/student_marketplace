@@ -286,34 +286,16 @@ function getShopBadge($shop_id) {
 }
 
 /**
- * 🛡️ [NEW] ฟังก์ชันกันสแปมรีวิว (Anti-Spam Review System)
- * 1. กันการรีวิวซ้ำในสินค้าเดิม
- * 2. ระบบ Cooldown: ต้องเว้นระยะเวลา 5 นาทีก่อนรีวิวชิ้นต่อไป
+ * 🛡️ [UPDATED] ฟังก์ชันเช็กสิทธิ์รีวิว: ตัด Cooldown 5 นาทีออกตามสั่ง
+ * เงื่อนไขคงเหลือ: 1 คนรีวิวได้ 1 ครั้งต่อ 1 สินค้าเท่านั้น
  */
 function canUserReview($user_id, $product_id) {
     $db = getDB();
-    
-    // 1. เช็กว่าเคยรีวิวสินค้านี้ไปแล้วหรือยัง
-    $check_exists = $db->prepare("SELECT id FROM reviews WHERE user_id = ? AND product_id = ? AND is_deleted = 0");
-    $check_exists->execute([$user_id, $product_id]);
-    if ($check_exists->fetch()) {
+    // เช็กแค่ว่าเคยรีวิวสินค้านี้ไปแล้วหรือยัง
+    $stmt = $db->prepare("SELECT id FROM reviews WHERE user_id = ? AND product_id = ? AND is_deleted = 0");
+    $stmt->execute([$user_id, $product_id]);
+    if ($stmt->fetch()) {
         return ['status' => false, 'message' => 'คุณเคยรีวิวสินค้านี้ไปแล้ว'];
     }
-
-    // 2. Cooldown System: เช็กเวลาที่รีวิวล่าสุด
-    $check_time = $db->prepare("SELECT created_at FROM reviews WHERE user_id = ? ORDER BY created_at DESC LIMIT 1");
-    $check_time->execute([$user_id]);
-    $last_review = $check_time->fetchColumn();
-
-    if ($last_review) {
-        $cooldown = 5 * 60; // 5 นาที (ในหน่วยวินาที)
-        $time_diff = time() - strtotime($last_review);
-        if ($time_diff < $cooldown) {
-            $wait = ceil(($cooldown - $time_diff) / 60);
-            return ['status' => false, 'message' => "คุณรีวิวเร็วเกินไป โปรดรออีก $wait นาทีเพื่อกันสแปม"];
-        }
-    }
-
     return ['status' => true];
 }
-?>
