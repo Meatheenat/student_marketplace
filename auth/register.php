@@ -1,6 +1,6 @@
 <?php
 /**
- * Student Marketplace - Register Page (Integrated with Google Login)
+ * Student Marketplace - Register Page (Integrated with Google Login & OTP System)
  * Database: student_market_db
  * [THEME DYNAMIC REDESIGN - SYNCED EXACTLY WITH LOGIN.PHP]
  */
@@ -55,13 +55,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['flash_type'] = "danger";
         } else {
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-            $sql = "INSERT INTO users (student_id, fullname, class_room, department, email, password, role) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            
+            // 🎯 [NEW] สร้างรหัส OTP 6 หลัก และเตรียมบันทึกสถานะ is_verified
+            $otp_code = rand(100000, 999999);
+            
+            // อัปเดต SQL ให้รองรับ otp_code และ is_verified = 0 (ยังไม่ยืนยัน)
+            $sql = "INSERT INTO users (student_id, fullname, class_room, department, email, password, role, otp_code, is_verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)";
             $insertStmt = $db->prepare($sql);
             
-            if ($insertStmt->execute([$student_id, $fullname, $full_class_room, $department, $email, $hashedPassword, $role])) {
-                $_SESSION['flash_message'] = "สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ";
-                $_SESSION['flash_type'] = "success";
-                redirect('login.php');
+            if ($insertStmt->execute([$student_id, $fullname, $full_class_room, $department, $email, $hashedPassword, $role, $otp_code])) {
+                
+                // ⚠️ [Todo]: เรียกฟังก์ชันส่งอีเมล หรือ LINE ส่ง $otp_code แจ้งผู้ใช้ตรงนี้
+                // sendRegistrationOTP($email, $otp_code);
+
+                // เก็บ Email เพื่อส่งไปตรวจสอบในหน้า Verify
+                $_SESSION['verify_email'] = $email;
+                
+                $_SESSION['flash_message'] = "ระบบได้ส่งรหัส OTP ไปที่อีเมลของคุณแล้ว กรุณายืนยันตัวตนเพื่อเสร็จสิ้นการสมัคร";
+                $_SESSION['flash_type'] = "info";
+                
+                // สลับให้ Redirect ไปหน้ากรอก OTP ทันที
+                redirect('verify_otp.php');
             }
         }
     }
@@ -565,7 +579,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     const wrapper = document.querySelector('.login-master-wrapper');
 
     wrapper.addEventListener('mousemove', (e) => {
-        const x = (window.innerWidth / 2 - e.pageX) / 50; // ปรับให้หนืดขึ้นหน่อยเพราะการ์ดสูง
+        const x = (window.innerWidth / 2 - e.pageX) / 50; 
         const y = (window.innerHeight / 2 - e.pageY) / 50;
         card.style.transform = `perspective(1000px) rotateX(${y}deg) rotateY(${-x}deg) scale3d(1.02, 1.02, 1.02)`;
         card.style.transition = "transform 0.1s ease-out";

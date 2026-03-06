@@ -1,41 +1,71 @@
 <?php
 /**
- * BNCC Market - Verify OTP Page (Seamless Premium Edition)
- * [Cite: User Summary] - ดีไซน์เชื่อมต่อกับระบบ Login/Register
+ * BNCC Market - Verify OTP Page (Unified System)
+ * รองรับทั้งการสมัครสมาชิก (Register) และ การลืมรหัสผ่าน (Forgot Password)
  */
 $pageTitle = "ยืนยันรหัส OTP - BNCC Market";
 require_once '../includes/header.php';
 require_once '../includes/functions.php';
 
-// ป้องกันการเข้าหน้านี้โดยตรงโดยไม่มี Email ใน Session
-if (!isset($_SESSION['reset_email'])) {
-    redirect('forgot_password.php');
+// ดักจับว่ามาจาก Flow ไหน (Register หรือ Forgot Password)
+$is_registration = isset($_SESSION['verify_email']);
+$is_password_reset = isset($_SESSION['reset_email']);
+
+if (!$is_registration && !$is_password_reset) {
+    redirect('login.php');
 }
+
+$email = $is_registration ? $_SESSION['verify_email'] : $_SESSION['reset_email'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $otp_input = trim($_POST['otp']);
-    $email = $_SESSION['reset_email'];
     $db = getDB();
 
-    // แก้ไข Query: ดึงรายการล่าสุดมาตรวจสอบ
-    $stmt = $db->prepare("SELECT * FROM password_resets WHERE email = ? AND otp = ? ORDER BY id DESC LIMIT 1");
-    $stmt->execute([$email, $otp_input]);
-    $row = $stmt->fetch();
+    if ($is_password_reset) {
+        // ----------------------------------------------------
+        // 🔑 Logic สำหรับ "ลืมรหัสผ่าน" (Forgot Password)
+        // ----------------------------------------------------
+        $stmt = $db->prepare("SELECT * FROM password_resets WHERE email = ? AND otp = ? ORDER BY id DESC LIMIT 1");
+        $stmt->execute([$email, $otp_input]);
+        $row = $stmt->fetch();
 
-    if ($row) {
-        $current_time = time(); 
-        $expiry_time = strtotime($row['expires_at']); 
+        if ($row) {
+            $current_time = time(); 
+            $expiry_time = strtotime($row['expires_at']); 
 
-        if ($current_time <= $expiry_time) {
-            $_SESSION['otp_verified'] = true;
-            redirect('reset_password.php');
+            if ($current_time <= $expiry_time) {
+                $_SESSION['otp_verified'] = true;
+                redirect('reset_password.php');
+            } else {
+                $_SESSION['flash_message'] = "รหัส OTP นี้หมดอายุแล้ว กรุณาขอรหัสใหม่";
+                $_SESSION['flash_type'] = "danger";
+            }
         } else {
-            $_SESSION['flash_message'] = "รหัส OTP นี้หมดอายุแล้ว กรุณาขอรหัสใหม่";
+            $_SESSION['flash_message'] = "รหัส OTP ไม่ถูกต้อง";
             $_SESSION['flash_type'] = "danger";
         }
-    } else {
-        $_SESSION['flash_message'] = "รหัส OTP ไม่ถูกต้อง";
-        $_SESSION['flash_type'] = "danger";
+        
+    } elseif ($is_registration) {
+        // ----------------------------------------------------
+        // 📝 Logic สำหรับ "สมัครสมาชิกใหม่" (Registration)
+        // ----------------------------------------------------
+        $stmt = $db->prepare("SELECT id FROM users WHERE email = ? AND otp_code = ? AND is_verified = 0");
+        $stmt->execute([$email, $otp_input]);
+        $user = $stmt->fetch();
+
+        if ($user) {
+            // อัปเดตสถานะเป็นยืนยันแล้ว และลบ OTP ทิ้ง
+            $update = $db->prepare("UPDATE users SET is_verified = 1, otp_code = NULL WHERE id = ?");
+            $update->execute([$user['id']]);
+
+            unset($_SESSION['verify_email']);
+            $_SESSION['flash_message'] = "ยืนยันบัญชีสำเร็จ! เข้าสู่ระบบได้เลย";
+            $_SESSION['flash_type'] = "success";
+            redirect('login.php');
+        } else {
+            $_SESSION['flash_message'] = "รหัส OTP ไม่ถูกต้อง ลองใหม่อีกครั้ง";
+            $_SESSION['flash_type'] = "danger";
+        }
     }
 }
 ?>
@@ -111,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         100% { transform: scale(1.1); opacity: 1; }
     }
 
-    /* 💎 กระจก Glass Card แบบที่พลอยต้องการ */
+    /* 💎 กระจก Glass Card */
     .login-card {
         position: relative;
         width: 100%;
@@ -149,7 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         line-height: 1.6;
     }
 
-    /* ⌨️ OTP Input Styling (เน้นพิมพ์เลขให้มันส์) */
+    /* ⌨️ OTP Input Styling */
     .otp-input-custom {
         width: 100%;
         padding: 20px;
@@ -225,6 +255,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         background: rgba(239, 68, 68, 0.15);
         color: #fca5a5;
     }
+    .alert.success {
+        background: rgba(16, 185, 129, 0.1);
+        border-color: rgba(16, 185, 129, 0.2);
+        color: #10b981;
+    }
+    .dark-theme .alert.success {
+        background: rgba(16, 185, 129, 0.15);
+        color: #6ee7b7;
+    }
 </style>
 
 <div class="login-master-wrapper">
@@ -236,7 +275,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <h2>ยืนยันตัวตน</h2>
             <p>
                 รหัสความปลอดภัย 6 หลักถูกส่งไปที่ <br>
-                <strong style="color: var(--primary-color);"><?php echo e($_SESSION['reset_email']); ?></strong>
+                <strong style="color: var(--primary-color);"><?php echo e($email); ?></strong>
             </p>
         </div>
 
@@ -258,7 +297,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="footer-links">
             <p style="font-size: 0.85rem; color: var(--text-muted);">
                 ไม่ได้รับรหัสใช่หรือไม่? <br>
-                <a href="forgot_password.php" class="resend-link">ส่งรหัสใหม่อีกครั้ง</a>
+                <?php if ($is_password_reset): ?>
+                    <a href="forgot_password.php" class="resend-link">ส่งรหัสใหม่อีกครั้ง</a>
+                <?php else: ?>
+                    <a href="register.php" class="resend-link">ลงทะเบียนใหม่อีกครั้ง</a>
+                <?php endif; ?>
             </p>
         </div>
     </div>
