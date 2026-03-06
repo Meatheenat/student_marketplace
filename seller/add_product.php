@@ -119,10 +119,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 
 <style>
-    /* 🎨 CSS แก้มือ ปรับขนาดให้สวยหรูดูแพง */
+    /* 🎨 CSS พร้อม Animation ขั้นสุด */
     .upload-box {
-        transition: all 0.3s ease;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         position: relative;
+    }
+    .upload-box:hover {
+        border-color: #6c5ce7 !important; 
+        box-shadow: 0 0 20px rgba(108, 92, 231, 0.25);
+        transform: translateY(-3px);
     }
     
     #thumbnails_container {
@@ -133,16 +138,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         justify-content: center;
     }
 
-    /* ขยายขนาดรูป Thumbnail ให้ดูรู้เรื่อง ไม่เล็กเกินไป */
+    /* Animation เด้งดึ๋งตอนโหลดรูป (Pop-in) */
+    @keyframes popIn {
+        0% { transform: scale(0.5); opacity: 0; }
+        70% { transform: scale(1.1); opacity: 1; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Animation หดหายไปตอนกดลบรูป (Shrink-out) */
+    @keyframes shrinkOut {
+        0% { transform: scale(1); opacity: 1; }
+        100% { transform: scale(0); opacity: 0; }
+    }
+
     .thumb-item {
         position: relative;
         width: 90px; 
         height: 90px;
         opacity: 0;
-        transform: translateY(10px);
-        animation: fadeUp 0.3s ease forwards;
+        /* ใช้แอนิเมชัน Pop-in ที่สร้างไว้ */
+        animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .thumb-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.3);
     }
 
     .thumb-img {
@@ -152,44 +174,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         border-radius: 8px;
         cursor: pointer;
         border: 2px solid transparent;
-        transition: all 0.2s ease;
+        transition: all 0.3s ease;
     }
     
     .thumb-item:hover .thumb-img {
         opacity: 0.8;
     }
 
-    /* ปุ่ม X แบบมินิมอล ไม่บังรูป */
+    /* ปุ่ม X แบบมินิมอล พร้อมแอนิเมชันเด้งสู้มือ */
     .remove-btn {
         position: absolute;
         top: -8px;
         right: -8px;
         background: #ff4757;
         color: white;
-        width: 22px;
-        height: 22px;
+        width: 24px;
+        height: 24px;
         border-radius: 50%;
         font-size: 14px;
+        font-weight: bold;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.4);
         z-index: 10;
-        transition: transform 0.2s, background 0.2s;
+        transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
     .remove-btn:hover {
-        transform: scale(1.15);
+        transform: scale(1.2) rotate(90deg); /* หมุนนิดๆ ตอนเอาเมาส์ชี้ */
         background: #ff6b81;
     }
 
-    /* ป้าย "หน้าปก" คาดล่างสวยๆ ไม่กวนสายตา */
+    /* ป้าย "หน้าปก" คาดล่างสวยๆ เลื่อนขึ้นมาแบบสมูท */
     .cover-badge {
         position: absolute;
         bottom: 0;
         left: 0;
         width: 100%;
-        background: rgba(6, 199, 85, 0.9);
+        background: rgba(6, 199, 85, 0.95);
         color: white;
         font-size: 0.75rem;
         font-weight: bold;
@@ -199,28 +222,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         border-bottom-right-radius: 6px;
         pointer-events: none;
         opacity: 0;
-        transition: opacity 0.2s;
+        transform: translateY(10px);
+        transition: all 0.3s ease;
     }
 
     .thumb-item.is-cover .cover-badge {
         opacity: 1;
+        transform: translateY(0);
     }
     .thumb-item.is-cover .thumb-img {
         border-color: #06C755;
     }
 
+    /* Animation สำหรับรูปพรีวิวใหญ่ ให้เฟดมานุ่มๆ */
     #image_preview {
-        animation: fadeUp 0.5s ease forwards;
+        transition: opacity 0.3s ease, transform 0.3s ease;
     }
-    @keyframes fadeUp {
-        to { opacity: 1; transform: translateY(0); }
+    .preview-animating {
+        opacity: 0.3 !important;
+        transform: scale(0.98);
     }
 
-    /* 🌟 CSS สำหรับ Custom Popup แทนที่ Alert โง่ๆ */
+    /* 🌟 CSS สำหรับ Custom Popup แจ้งเตือน */
     .custom-modal-overlay {
         position: fixed;
         top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.6);
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(3px); /* ทำฉากหลังเบลอสวยๆ */
         display: flex;
         align-items: center;
         justify-content: center;
@@ -234,54 +262,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         visibility: visible;
     }
     .custom-modal-content {
-        background: var(--bg-card, #1e1e2f); /* ใช้สีโทนดาร์กตามเว็บมึง */
+        background: var(--bg-card, #1e1e2f); 
         color: white;
         padding: 30px;
         border-radius: 16px;
         text-align: center;
         width: 90%;
         max-width: 400px;
-        transform: scale(0.8);
-        transition: all 0.3s ease;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        transform: scale(0.8) translateY(20px);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 0 15px 40px rgba(0,0,0,0.6);
         border: 1px solid var(--border-color, #333);
     }
     .custom-modal-overlay.show .custom-modal-content {
-        transform: scale(1);
+        transform: scale(1) translateY(0);
     }
     .custom-modal-icon {
-        font-size: 3rem;
+        font-size: 3.5rem;
         color: #ff4757;
         margin-bottom: 15px;
+        animation: popIn 0.5s ease 0.2s both;
     }
     .custom-modal-btn {
         background: #5f42e4;
         color: white;
         border: none;
-        padding: 10px 30px;
+        padding: 12px 35px;
         border-radius: 8px;
         font-weight: bold;
         cursor: pointer;
-        margin-top: 20px;
-        transition: background 0.3s;
+        margin-top: 25px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(95, 66, 228, 0.4);
     }
     .custom-modal-btn:hover {
         background: #4a33b8;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(95, 66, 228, 0.6);
     }
 </style>
 
 <div class="custom-modal-overlay" id="customAlertModal">
     <div class="custom-modal-content">
         <div class="custom-modal-icon"><i class="fas fa-exclamation-circle"></i></div>
-        <h3 style="margin-bottom: 10px;">แจ้งเตือน</h3>
-        <p id="customAlertMessage" style="color: var(--text-muted, #ccc); margin-bottom: 0;">ข้อความ</p>
+        <h3 style="margin-bottom: 10px; font-weight: bold;">แจ้งเตือน</h3>
+        <p id="customAlertMessage" style="color: var(--text-muted, #ccc); margin-bottom: 0; line-height: 1.5;">ข้อความ</p>
         <button class="custom-modal-btn" onclick="closeCustomAlert()">ตกลง</button>
     </div>
 </div>
 
 <div style="max-width: 800px; margin: 0 auto;">
     <div style="margin-bottom: 30px;">
-        <a href="dashboard.php" style="color: var(--text-muted); font-size: 0.9rem;"><i class="fas fa-arrow-left"></i> กลับไปยัง Dashboard</a>
+        <a href="dashboard.php" style="color: var(--text-muted); font-size: 0.9rem; transition: color 0.3s;"><i class="fas fa-arrow-left"></i> กลับไปยัง Dashboard</a>
         <h1 style="margin-top: 10px;"><?php echo $product ? 'แก้ไขสินค้า' : 'ลงขายสินค้าใหม่'; ?></h1>
     </div>
 
@@ -297,8 +329,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                              style="width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; display: <?php echo ($product && $product['image_url']) ? 'block' : 'none'; ?>;">
                         
                         <div id="upload_placeholder" style="<?php echo ($product && $product['image_url']) ? 'display:none;' : 'padding: 40px 0;'; ?>">
-                            <i class="fas fa-cloud-upload-alt" style="font-size: 3rem; color: var(--border-color); margin-bottom: 10px; transition: color 0.3s;"></i>
-                            <p style="color: var(--text-muted); font-size: 0.9rem;">คลิกเพื่อเพิ่มรูปภาพ<br><small>(คลิกซ้ำเพื่อเพิ่ม หรือลากคลุมได้สูงสุด 5 รูป)</small></p>
+                            <i class="fas fa-cloud-upload-alt" style="font-size: 3.5rem; color: var(--border-color); margin-bottom: 10px; transition: color 0.3s;"></i>
+                            <p style="color: var(--text-muted); font-size: 0.95rem;">คลิกเพื่อเพิ่มรูปภาพ<br><small style="opacity: 0.7;">(คลิกซ้ำเพื่อเพิ่ม หรือลากคลุมได้สูงสุด 5 รูป)</small></p>
                         </div>
                         
                         <input type="file" name="product_images[]" id="product_image" accept="image/*" multiple style="display: none;">
@@ -307,15 +339,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div id="thumbnails_container"></div>
                     
                 </div>
-                <div style="text-align: center; margin-top: 10px;">
-                    <small style="color: var(--text-muted);">💡 <b>Tips:</b> คลิกที่รูปเล็กด้านล่างเพื่อเลือกเป็น <b>"รูปหน้าปก"</b></small>
+                <div style="text-align: center; margin-top: 12px;">
+                    <small style="color: var(--text-muted); font-size: 0.85rem;"><i class="fas fa-lightbulb" style="color: #f1c40f;"></i> <b>Tips:</b> คลิกที่รูปเล็กด้านล่างเพื่อเลือกเป็น <b>"รูปหน้าปก"</b></small>
                 </div>
             </div>
 
-            <div class="info-section" style="background: var(--bg-card); padding: 30px; border-radius: 16px; border: 1px solid var(--border-color);">
+            <div class="info-section" style="background: var(--bg-card); padding: 30px; border-radius: 16px; border: 1px solid var(--border-color); box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
                 <div class="form-group">
                     <label>ชื่อสินค้า <span style="color: var(--color-danger);">*</span></label>
-                    <input type="text" name="title" class="form-control" value="<?php echo e($product['title'] ?? ''); ?>" required>
+                    <input type="text" name="title" class="form-control" value="<?php echo e($product['title'] ?? ''); ?>" required style="transition: border-color 0.3s;">
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
@@ -349,8 +381,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <textarea name="description" class="form-control" rows="4"><?php echo e($product['description'] ?? ''); ?></textarea>
                 </div>
 
-                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 15px; margin-top: 10px; background-color: #5f42e4; border: none; border-radius: 8px; font-weight: bold; transition: background 0.3s;">
-                    <i class="fas fa-save"></i> <?php echo $product ? 'บันทึกการแก้ไข (ส่งตรวจใหม่)' : 'ลงขายสินค้า (รออนุมัติ)'; ?>
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 15px; margin-top: 15px; background-color: #5f42e4; border: none; border-radius: 8px; font-weight: bold; font-size: 1.05rem; letter-spacing: 0.5px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(95, 66, 228, 0.3);">
+                    <i class="fas fa-save" style="margin-right: 5px;"></i> <?php echo $product ? 'บันทึกการแก้ไข (ส่งตรวจใหม่)' : 'ลงขายสินค้า (รออนุมัติ)'; ?>
                 </button>
             </div>
         </div>
@@ -366,7 +398,7 @@ const preview = document.getElementById('image_preview');
 const placeholder = document.getElementById('upload_placeholder');
 const thumbsContainer = document.getElementById('thumbnails_container');
 
-// 🌟 ฟังก์ชันเรียกใช้ Custom Alert แทน alert() ของบราวเซอร์
+// ฟังก์ชัน Custom Alert 
 function showCustomAlert(msg) {
     document.getElementById('customAlertMessage').innerText = msg;
     document.getElementById('customAlertModal').classList.add('show');
@@ -401,6 +433,15 @@ fileInput.addEventListener('change', function() {
     renderUI();
 });
 
+// ฟังก์ชันเปลี่ยนรูปใหญ่พร้อมแอนิเมชันนุ่มๆ
+function updatePreviewImage(url) {
+    preview.classList.add('preview-animating');
+    setTimeout(() => {
+        preview.src = url;
+        preview.classList.remove('preview-animating');
+    }, 150); // รอจังหวะเฟดครึ่งทางแล้วสลับรูป
+}
+
 function renderUI() {
     if (fileInput.files.length > 0) {
         placeholder.style.display = 'none';
@@ -408,52 +449,52 @@ function renderUI() {
         thumbsContainer.style.display = 'flex';
         thumbsContainer.innerHTML = ''; 
         
-        preview.style.opacity = '0';
-        setTimeout(() => {
-            preview.src = URL.createObjectURL(fileInput.files[currentMainIndex]);
-            preview.style.opacity = '1';
-        }, 100);
+        // อัปเดตรูปหลักตอนโหลดใหม่
+        updatePreviewImage(URL.createObjectURL(fileInput.files[currentMainIndex]));
         
         for(let i = 0; i < fileInput.files.length; i++) {
             const objectUrl = URL.createObjectURL(fileInput.files[i]);
             
             const thumbDiv = document.createElement('div');
             thumbDiv.className = `thumb-item ${i === currentMainIndex ? 'is-cover' : ''}`;
-            thumbDiv.style.animationDelay = (i * 0.05) + 's'; 
+            // ไล่สเต็ปเวลาให้เด้งขึ้นมาทีละรูป (Stagger effect)
+            thumbDiv.style.animationDelay = (i * 0.08) + 's'; 
             
-            // ปุ่ม X ลบรูป
+            // ปุ่ม X ลบรูป พร้อมแอนิเมชัน Shrink-out
             const removeBtn = document.createElement('div');
             removeBtn.className = 'remove-btn';
-            removeBtn.innerHTML = '×';
+            removeBtn.innerHTML = '<i class="fas fa-times" style="font-size:12px;"></i>';
             removeBtn.title = 'ลบรูปภาพนี้';
             removeBtn.onclick = (e) => {
                 e.stopPropagation(); 
                 e.preventDefault();
                 
-                const dt = new DataTransfer();
-                for(let j = 0; j < fileInput.files.length; j++) {
-                    if(j !== i) dt.items.add(fileInput.files[j]);
-                }
-                accumulatedFiles = dt;
-                fileInput.files = accumulatedFiles.files;
+                // เล่นแอนิเมชันหดตัวก่อนค่อยลบข้อมูลจริง
+                thumbDiv.style.animation = 'shrinkOut 0.3s ease forwards';
                 
-                if(i === currentMainIndex) currentMainIndex = 0;
-                else if(i < currentMainIndex) currentMainIndex--;
+                setTimeout(() => {
+                    const dt = new DataTransfer();
+                    for(let j = 0; j < fileInput.files.length; j++) {
+                        if(j !== i) dt.items.add(fileInput.files[j]);
+                    }
+                    accumulatedFiles = dt;
+                    fileInput.files = accumulatedFiles.files;
+                    
+                    if(i === currentMainIndex) currentMainIndex = 0;
+                    else if(i < currentMainIndex) currentMainIndex--;
 
-                renderUI();
+                    renderUI();
+                }, 300); // รอแอนิเมชันเล่นจบ 0.3 วิ
             };
 
-            // ตัวรูป
             const img = document.createElement('img');
             img.className = 'thumb-img';
             img.src = objectUrl;
             
-            // ป้าย "หน้าปก" แบบแถบคาดล่าง (ไม่บังรูปกลางจอแล้ว)
             const badge = document.createElement('div');
             badge.className = 'cover-badge';
             badge.innerHTML = '<i class="fas fa-star" style="font-size: 0.6rem;"></i> หน้าปก';
 
-            // Radio ซ่อนส่งค่าไป Backend
             const radio = document.createElement('input');
             radio.type = 'radio';
             radio.name = 'main_image_index';
@@ -461,11 +502,14 @@ function renderUI() {
             radio.style.display = 'none';
             if(i === currentMainIndex) radio.checked = true;
 
-            // กดที่รูประบุหน้าปก
+            // กดที่รูประบุหน้าปก พร้อมยิงแอนิเมชัน
             img.onclick = (e) => {
                 e.preventDefault();
-                currentMainIndex = i; 
-                renderUI(); 
+                if (currentMainIndex !== i) {
+                    currentMainIndex = i; 
+                    updatePreviewImage(objectUrl);
+                    renderUI(); 
+                }
             };
 
             thumbDiv.appendChild(removeBtn);
