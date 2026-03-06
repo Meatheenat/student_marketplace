@@ -110,7 +110,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
     }
     redirect("product_detail.php?id=$product_id");
 }
+// --- แทนที่ตั้งแต่ if (isset($_POST['submit_review'])) จนถึง redirect บรรทัด 137 ---
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
+        $rating = $_POST['rating'];
+        $comment = trim($_POST['comment']);
+        $spam_check = canUserReview($user_id, $product_id);
+        if (!$spam_check['status']) {
+            $_SESSION['flash_message'] = $spam_check['message'];
+            $_SESSION['flash_type'] = "danger";
+        } else {
+            $ins = $db->prepare("INSERT INTO reviews (product_id, user_id, rating, comment) VALUES (?, ?, ?, ?)");
+            if ($ins->execute([$product_id, $user_id, $rating, $comment])) {
+                $_SESSION['flash_message'] = "บันทึกรีวิวสำเร็จ";
+                $_SESSION['flash_type'] = "success";
+            }
+        }
+        redirect("product_detail.php?id=$product_id");
+    }
 
+    // 🟢 วางต่อท้ายตรงนี้เลย: ส่วนแก้ไขและลบรีวิว
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_review_submit'])) {
+        $r_id = (int)$_POST['review_id'];
+        $r_rating = (int)$_POST['rating'];
+        $r_comment = trim($_POST['comment']);
+        $stmt = $db->prepare("UPDATE reviews SET rating = ?, comment = ? WHERE id = ? AND user_id = ?");
+        if ($stmt->execute([$r_rating, $r_comment, $r_id, $user_id])) {
+            $_SESSION['flash_message'] = "แก้ไขรีวิวเรียบร้อย"; $_SESSION['flash_type'] = "success";
+        }
+        redirect("product_detail.php?id=$product_id");
+    }
+
+    if (isset($_GET['action']) && $_GET['action'] === 'delete_my_review') {
+        $del_id = (int)$_GET['rev_id'];
+        $stmt = $db->prepare("UPDATE reviews SET is_deleted = 1 WHERE id = ? AND user_id = ?");
+        if ($stmt->execute([$del_id, $user_id])) {
+            $_SESSION['flash_message'] = "ลบรีวิวแล้ว"; $_SESSION['flash_type'] = "success";
+        }
+        redirect("product_detail.php?id=$product_id");
+    }
 // 4. ส่งรีวิว (🎯 [UPDATED] เพิ่มระบบ Anti-Spam Check ก่อนบันทึก)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) 
     {
@@ -634,6 +671,18 @@ require_once '../includes/header.php';
                                         <?php if (isset($_SESSION['role']) && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'teacher')): ?>
                                             <button onclick="openDeleteCommentModal(<?= $rev['id'] ?>, '<?= e($rev['fullname']) ?>')" style="color: var(--solid-danger); background: none; border: none; cursor: pointer; font-size: 1.2rem;"><i class="fas fa-trash-alt"></i></button>
                                         <?php endif; ?>
+                            <?php if ($user_id == $rev['author_id']): ?>
+            <div style="margin-top: 10px; display: flex; gap: 15px; border-top: 1px solid var(--solid-border); padding-top: 10px;">
+                <button type="button" onclick="openEditMyReview(<?= $rev['id'] ?>, <?= $rev['rating'] ?>, '<?= e(str_replace(["\r", "\n"], ' ', $rev['comment'])) ?>')" 
+                        style="background:none; border:none; color:var(--solid-primary); font-size:0.8rem; cursor:pointer; font-weight:800; padding:0;">
+                    <i class="fas fa-edit"></i> แก้ไข
+                </button>
+                <a href="product_detail.php?id=<?= $product_id ?>&action=delete_my_review&rev_id=<?= $rev['id'] ?>" 
+                   onclick="return confirm('ลบรีวิวนี้?')" style="text-decoration:none; color:var(--solid-danger); font-size:0.8rem; font-weight:800;">
+                    <i class="fas fa-trash"></i> ลบ
+                </a>
+            </div>
+        <?php endif; ?>
                                     </div>
                                 </div>
                                 <p style="margin-top: 15px; font-size: 1.05rem; line-height: 1.7; color: var(--solid-text);"><?= nl2br(e($rev['comment'])) ?></p>
@@ -714,7 +763,25 @@ require_once '../includes/header.php';
         </form>
     </div>
 </div>
-
+<div id="editMyReviewModal" class="modal-overlay">
+    <div class="modal-solid">
+        <h3 style="font-weight: 900; margin-bottom: 20px;"><i class="fas fa-pen"></i> แก้ไขรีวิวของคุณ</h3>
+        <form method="POST">
+            <input type="hidden" name="review_id" id="edit_rev_id">
+            <div style="margin-bottom: 15px;">
+                <label style="display:block; margin-bottom:5px; font-weight:800;">คะแนน</label>
+                <select name="rating" id="edit_rev_rating" class="form-control" style="border-radius:12px;">
+                    <option value="5">5 ดาว</option><option value="4">4 ดาว</option><option value="3">3 ดาว</option><option value="2">2 ดาว</option><option value="1">1 ดาว</option>
+                </select>
+            </div>
+            <textarea name="comment" id="edit_rev_comment" class="form-control" required style="min-height: 120px; border-radius: 18px; padding: 15px; border: 2px solid var(--solid-border);"></textarea>
+            <div style="display:flex; gap:12px; margin-top: 25px;">
+                <button type="button" onclick="document.getElementById('editMyReviewModal').style.display='none'" class="btn-chat-seller" style="flex:1;">ยกเลิก</button>
+                <button type="submit" name="edit_review_submit" class="btn-buy-now" style="flex:1;">บันทึก</button>
+            </div>
+        </form>
+    </div>
+</div>
 <script>
     /**
      * 🎯 🛠️ ฟังก์ชันสำหรับเปลี่ยนรูปภาพ (Gallery Slider Animation)
@@ -807,6 +874,13 @@ require_once '../includes/header.php';
         if (event.target == commentM) closeDeleteCommentModal();
         if (event.target == productM) closeDeleteProductModal();
     }
+    // วางก่อนบรรทัด 755
+function openEditMyReview(id, rating, comment) {
+    document.getElementById('edit_rev_id').value = id;
+    document.getElementById('edit_rev_rating').value = rating;
+    document.getElementById('edit_rev_comment').value = comment;
+    document.getElementById('editMyReviewModal').style.display = 'flex';
+}
 </script>
 
 <?php require_once '../includes/footer.php'; ?>
