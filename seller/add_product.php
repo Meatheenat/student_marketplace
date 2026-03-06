@@ -39,11 +39,21 @@ $categories = $cat_stmt->fetchAll();
 
 // 4. จัดการการส่งข้อมูล (Form Submission)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $title       = trim($_POST['title']);
-    $price       = (float)$_POST['price'];
-    $category_id = (int)$_POST['category_id'];
-    $p_status    = $_POST['product_status']; 
-    $description = trim($_POST['description']);
+
+    // 🚨 🛡️ ดักจับกรณี Server ล่มเพราะไฟล์เกินโควต้าขั้นรุนแรง (Post Limit)
+    if (empty($_POST) && isset($_SERVER['CONTENT_LENGTH']) && $_SERVER['CONTENT_LENGTH'] > 0) {
+        $_SESSION['flash_message'] = "❌ ขนาดไฟล์รวมกันใหญ่เกินกว่าที่ระบบจะรับได้ กรุณาลองใหม่อีกครั้ง";
+        $_SESSION['flash_type'] = "danger";
+        redirect('add_product.php' . ($product_id > 0 ? '?id='.$product_id : ''));
+        exit;
+    }
+
+    // 🎯 ใช้ Null Coalescing เพื่อกัน Warning ตอนตัวแปรหลุด
+    $title       = trim($_POST['title'] ?? '');
+    $price       = (float)($_POST['price'] ?? 0);
+    $category_id = (int)($_POST['category_id'] ?? 0);
+    $p_status    = $_POST['product_status'] ?? 'in-stock'; 
+    $description = trim($_POST['description'] ?? '');
     $image_url   = $product['image_url'] ?? '';
 
     if (empty($title) || $price <= 0 || empty($category_id)) {
@@ -138,14 +148,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         justify-content: center;
     }
 
-    /* Animation เด้งดึ๋งตอนโหลดรูป (Pop-in) */
     @keyframes popIn {
         0% { transform: scale(0.5); opacity: 0; }
         70% { transform: scale(1.1); opacity: 1; }
         100% { transform: scale(1); opacity: 1; }
     }
 
-    /* Animation หดหายไปตอนกดลบรูป (Shrink-out) */
     @keyframes shrinkOut {
         0% { transform: scale(1); opacity: 1; }
         100% { transform: scale(0); opacity: 0; }
@@ -156,7 +164,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         width: 90px; 
         height: 90px;
         opacity: 0;
-        /* ใช้แอนิเมชัน Pop-in ที่สร้างไว้ */
         animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         border-radius: 8px;
         box-shadow: 0 4px 10px rgba(0,0,0,0.15);
@@ -177,11 +184,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         transition: all 0.3s ease;
     }
     
-    .thumb-item:hover .thumb-img {
-        opacity: 0.8;
-    }
+    .thumb-item:hover .thumb-img { opacity: 0.8; }
 
-    /* ปุ่ม X แบบมินิมอล พร้อมแอนิเมชันเด้งสู้มือ */
     .remove-btn {
         position: absolute;
         top: -8px;
@@ -202,11 +206,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
     .remove-btn:hover {
-        transform: scale(1.2) rotate(90deg); /* หมุนนิดๆ ตอนเอาเมาส์ชี้ */
+        transform: scale(1.2) rotate(90deg);
         background: #ff6b81;
     }
 
-    /* ป้าย "หน้าปก" คาดล่างสวยๆ เลื่อนขึ้นมาแบบสมูท */
     .cover-badge {
         position: absolute;
         bottom: 0;
@@ -226,29 +229,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         transition: all 0.3s ease;
     }
 
-    .thumb-item.is-cover .cover-badge {
-        opacity: 1;
-        transform: translateY(0);
-    }
-    .thumb-item.is-cover .thumb-img {
-        border-color: #06C755;
-    }
+    .thumb-item.is-cover .cover-badge { opacity: 1; transform: translateY(0); }
+    .thumb-item.is-cover .thumb-img { border-color: #06C755; }
 
-    /* Animation สำหรับรูปพรีวิวใหญ่ ให้เฟดมานุ่มๆ */
-    #image_preview {
-        transition: opacity 0.3s ease, transform 0.3s ease;
-    }
-    .preview-animating {
-        opacity: 0.3 !important;
-        transform: scale(0.98);
-    }
+    #image_preview { transition: opacity 0.3s ease, transform 0.3s ease; }
+    .preview-animating { opacity: 0.3 !important; transform: scale(0.98); }
 
     /* 🌟 CSS สำหรับ Custom Popup แจ้งเตือน */
     .custom-modal-overlay {
         position: fixed;
         top: 0; left: 0; width: 100%; height: 100%;
         background: rgba(0, 0, 0, 0.7);
-        backdrop-filter: blur(3px); /* ทำฉากหลังเบลอสวยๆ */
+        backdrop-filter: blur(3px);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -257,10 +249,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         visibility: hidden;
         transition: all 0.3s ease;
     }
-    .custom-modal-overlay.show {
-        opacity: 1;
-        visibility: visible;
-    }
+    .custom-modal-overlay.show { opacity: 1; visibility: visible; }
     .custom-modal-content {
         background: var(--bg-card, #1e1e2f); 
         color: white;
@@ -274,32 +263,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         box-shadow: 0 15px 40px rgba(0,0,0,0.6);
         border: 1px solid var(--border-color, #333);
     }
-    .custom-modal-overlay.show .custom-modal-content {
-        transform: scale(1) translateY(0);
-    }
-    .custom-modal-icon {
-        font-size: 3.5rem;
-        color: #ff4757;
-        margin-bottom: 15px;
-        animation: popIn 0.5s ease 0.2s both;
-    }
+    .custom-modal-overlay.show .custom-modal-content { transform: scale(1) translateY(0); }
+    .custom-modal-icon { font-size: 3.5rem; color: #ff4757; margin-bottom: 15px; animation: popIn 0.5s ease 0.2s both; }
     .custom-modal-btn {
-        background: #5f42e4;
-        color: white;
-        border: none;
-        padding: 12px 35px;
-        border-radius: 8px;
-        font-weight: bold;
-        cursor: pointer;
-        margin-top: 25px;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(95, 66, 228, 0.4);
+        background: #5f42e4; color: white; border: none; padding: 12px 35px; border-radius: 8px;
+        font-weight: bold; cursor: pointer; margin-top: 25px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(95, 66, 228, 0.4);
     }
-    .custom-modal-btn:hover {
-        background: #4a33b8;
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(95, 66, 228, 0.6);
-    }
+    .custom-modal-btn:hover { background: #4a33b8; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(95, 66, 228, 0.6); }
 </style>
 
 <div class="custom-modal-overlay" id="customAlertModal">
@@ -381,7 +351,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <textarea name="description" class="form-control" rows="4"><?php echo e($product['description'] ?? ''); ?></textarea>
                 </div>
 
-                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 15px; margin-top: 15px; background-color: #5f42e4; border: none; border-radius: 8px; font-weight: bold; font-size: 1.05rem; letter-spacing: 0.5px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(95, 66, 228, 0.3);">
+                <button id="submit_btn" type="submit" class="btn btn-primary" style="width: 100%; padding: 15px; margin-top: 15px; background-color: #5f42e4; border: none; border-radius: 8px; font-weight: bold; font-size: 1.05rem; letter-spacing: 0.5px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(95, 66, 228, 0.3);">
                     <i class="fas fa-save" style="margin-right: 5px;"></i> <?php echo $product ? 'บันทึกการแก้ไข (ส่งตรวจใหม่)' : 'ลงขายสินค้า (รออนุมัติ)'; ?>
                 </button>
             </div>
@@ -397,6 +367,7 @@ const fileInput = document.getElementById('product_image');
 const preview = document.getElementById('image_preview');
 const placeholder = document.getElementById('upload_placeholder');
 const thumbsContainer = document.getElementById('thumbnails_container');
+const submitBtn = document.getElementById('submit_btn');
 
 // ฟังก์ชัน Custom Alert 
 function showCustomAlert(msg) {
@@ -407,13 +378,70 @@ function closeCustomAlert() {
     document.getElementById('customAlertModal').classList.remove('show');
 }
 
-fileInput.addEventListener('change', function() {
+// 🚀 ฟังก์ชันบีบอัดรูปภาพ (ลดความกว้างเหลือ 1000px คุณภาพ 80%)
+function compressImage(file, maxWidth = 1000, quality = 0.8) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = event => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                // รักษาสัดส่วนและลดขนาดให้ไม่เกิน maxWidth
+                if (width > maxWidth) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // แปลงกลับเป็น File Object
+                canvas.toBlob((blob) => {
+                    if(!blob) return reject('Compression failed');
+                    const newFile = new File([blob], file.name, {
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                    });
+                    resolve(newFile);
+                }, 'image/jpeg', quality);
+            };
+            img.onerror = error => reject(error);
+        };
+        reader.onerror = error => reject(error);
+    });
+}
+
+// 🛠️ เปลี่ยน event เป็น async เพื่อรอการบีบอัดไฟล์
+fileInput.addEventListener('change', async function() {
     const newFiles = this.files;
+    if (newFiles.length === 0) return;
+
     let limitReached = false;
+    const pTag = placeholder.querySelector('p');
+    const originalPlaceholderHtml = pTag.innerHTML;
+    
+    // โชว์สถานะกำลังบีบอัด
+    pTag.innerHTML = "<i class='fas fa-spinner fa-spin' style='margin-right: 5px;'></i> กำลังบีบอัดและประมวลผลรูปภาพ...";
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.5';
     
     for(let i = 0; i < newFiles.length; i++) {
         if(accumulatedFiles.files.length < 5) {
-            accumulatedFiles.items.add(newFiles[i]);
+            try {
+                // เรียกฟังก์ชันบีบอัด
+                const compressedFile = await compressImage(newFiles[i], 1000, 0.8);
+                accumulatedFiles.items.add(compressedFile);
+            } catch(e) {
+                console.error("บีบอัดล้มเหลว ใช้ภาพเดิม", e);
+                accumulatedFiles.items.add(newFiles[i]);
+            }
         } else {
             limitReached = true;
             break;
@@ -430,16 +458,18 @@ fileInput.addEventListener('change', function() {
         currentMainIndex = 0;
     }
     
+    pTag.innerHTML = originalPlaceholderHtml;
+    submitBtn.disabled = false;
+    submitBtn.style.opacity = '1';
     renderUI();
 });
 
-// ฟังก์ชันเปลี่ยนรูปใหญ่พร้อมแอนิเมชันนุ่มๆ
 function updatePreviewImage(url) {
     preview.classList.add('preview-animating');
     setTimeout(() => {
         preview.src = url;
         preview.classList.remove('preview-animating');
-    }, 150); // รอจังหวะเฟดครึ่งทางแล้วสลับรูป
+    }, 150); 
 }
 
 function renderUI() {
@@ -449,7 +479,6 @@ function renderUI() {
         thumbsContainer.style.display = 'flex';
         thumbsContainer.innerHTML = ''; 
         
-        // อัปเดตรูปหลักตอนโหลดใหม่
         updatePreviewImage(URL.createObjectURL(fileInput.files[currentMainIndex]));
         
         for(let i = 0; i < fileInput.files.length; i++) {
@@ -457,10 +486,8 @@ function renderUI() {
             
             const thumbDiv = document.createElement('div');
             thumbDiv.className = `thumb-item ${i === currentMainIndex ? 'is-cover' : ''}`;
-            // ไล่สเต็ปเวลาให้เด้งขึ้นมาทีละรูป (Stagger effect)
             thumbDiv.style.animationDelay = (i * 0.08) + 's'; 
             
-            // ปุ่ม X ลบรูป พร้อมแอนิเมชัน Shrink-out
             const removeBtn = document.createElement('div');
             removeBtn.className = 'remove-btn';
             removeBtn.innerHTML = '<i class="fas fa-times" style="font-size:12px;"></i>';
@@ -469,7 +496,6 @@ function renderUI() {
                 e.stopPropagation(); 
                 e.preventDefault();
                 
-                // เล่นแอนิเมชันหดตัวก่อนค่อยลบข้อมูลจริง
                 thumbDiv.style.animation = 'shrinkOut 0.3s ease forwards';
                 
                 setTimeout(() => {
@@ -484,7 +510,7 @@ function renderUI() {
                     else if(i < currentMainIndex) currentMainIndex--;
 
                     renderUI();
-                }, 300); // รอแอนิเมชันเล่นจบ 0.3 วิ
+                }, 300); 
             };
 
             const img = document.createElement('img');
@@ -502,7 +528,6 @@ function renderUI() {
             radio.style.display = 'none';
             if(i === currentMainIndex) radio.checked = true;
 
-            // กดที่รูประบุหน้าปก พร้อมยิงแอนิเมชัน
             img.onclick = (e) => {
                 e.preventDefault();
                 if (currentMainIndex !== i) {
