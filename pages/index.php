@@ -73,7 +73,7 @@ $products = $stmt->fetchAll();
 
 <style>
     /* ============================================================
-        🛠️ SOLID UI SYSTEM - CENTERED & HIGH CONTRAST
+       🛠️ SOLID UI SYSTEM - CENTERED & HIGH CONTRAST
        ============================================================ */
     :root {
         --solid-bg: #f1f5f9;
@@ -131,6 +131,7 @@ $products = $stmt->fetchAll();
         background: var(--solid-bg);
         border-radius: 16px;
         border: 2px solid var(--solid-border);
+        position: relative; /* 🎯 เพิ่มเพื่อให้ Dropdown เกาะติด */
     }
 
     .search-wrap input {
@@ -155,6 +156,38 @@ $products = $stmt->fetchAll();
         transition: transform 0.2s;
     }
     .btn-search-solid:hover { transform: scale(1.05); }
+
+    /* 🎯 🛠️ CSS สำหรับ Search Auto-Complete Dropdown */
+    .search-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        background: var(--solid-card);
+        border: 2px solid var(--solid-border);
+        border-radius: 16px;
+        margin-top: 10px;
+        display: none;
+        z-index: 9999;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        overflow: hidden;
+        animation: fadeUp suggestions 0.3s ease;
+    }
+    .search-item {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 12px 20px;
+        text-decoration: none;
+        color: var(--solid-text);
+        border-bottom: 1px solid var(--solid-border);
+        transition: background 0.2s;
+    }
+    .search-item:last-child { border-bottom: none; }
+    .search-item:hover { background: rgba(99, 102, 241, 0.1); color: var(--solid-primary); }
+    .search-item img { width: 45px; height: 45px; border-radius: 10px; object-fit: cover; border: 1px solid var(--solid-border); }
+    .search-item .suggest-title { font-weight: 800; font-size: 0.95rem; margin: 0; }
+    .search-item .suggest-price { font-weight: 700; color: #10b981; font-size: 0.85rem; }
 
     /* 📂 Sidebar */
     .sidebar-sticky { position: sticky; top: 100px; }
@@ -227,6 +260,7 @@ $products = $stmt->fetchAll();
     /* 🎢 Keyframes */
     @keyframes dropIn { to { opacity: 1; transform: translateY(0); } }
     @keyframes fadeIn { to { opacity: 1; } }
+    @keyframes suggestions { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
     @media (max-width: 768px) {
         .hero-center h1 { font-size: 2.2rem; }
@@ -241,8 +275,10 @@ $products = $stmt->fetchAll();
         <p>ยินดีต้อนรับคุณ <?php echo e($_SESSION['fullname']); ?> | แหล่งรวมของดีที่เหล่านักศึกษายอมรับ</p>
         
         <form action="index.php" method="GET" class="search-wrap">
-            <input type="text" name="q" placeholder="เช่น คุกกี้, อุปกรณ์การเรียน, รับจ้าง..." value="<?= e($search) ?>" autofocus>
+            <input type="text" id="main-search" name="q" placeholder="เช่น คุกกี้, อุปกรณ์การเรียน, รับจ้าง..." value="<?= e($search) ?>" autofocus autocomplete="off">
             <button type="submit" class="btn-search-solid">ค้นหาสินค้า</button>
+            
+            <div id="search-results" class="search-dropdown"></div>
         </form>
     </div>
 </div>
@@ -325,7 +361,7 @@ $products = $stmt->fetchAll();
                                               style="cursor: pointer; transition: 0.2s;" 
                                               onmouseover="this.style.color='var(--solid-primary)'" 
                                               onmouseout="this.style.color='inherit'">
-                                              <i class="fas fa-store"></i> <?= e($p['shop_name']) ?>
+                                            <i class="fas fa-store"></i> <?= e($p['shop_name']) ?>
                                         </span>
                                         <span><i class="fas fa-eye"></i> <?= number_format($p['views']) ?></span>
                                     </div>
@@ -361,6 +397,61 @@ $products = $stmt->fetchAll();
     }, { threshold: 0.1 });
 
     document.querySelectorAll('.product-box').forEach(box => observer.observe(box));
+
+    /**
+     * 🎯 🛠️ [เพิ่มใหม่] JavaScript สำหรับระบบ Search Auto-Complete
+     */
+    const searchInput = document.getElementById('main-search');
+    const resultsBox = document.getElementById('search-results');
+    let debounceTimer;
+
+    if (searchInput && resultsBox) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            const q = this.value.trim();
+
+            if (q.length < 2) {
+                resultsBox.style.display = 'none';
+                return;
+            }
+
+            // หน่วงเวลา 300ms เพื่อไม่ให้ยิง API ถี่เกินไป (ประหยัด Resource เซิร์ฟเวอร์)
+            debounceTimer = setTimeout(() => {
+                // เรียกไฟล์ API ที่เราสร้างไว้ในขั้นตอนก่อนหน้า
+                fetch(`<?= BASE_URL ?>api/search_suggestions.php?q=${encodeURIComponent(q)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data && data.length > 0) {
+                            let html = '';
+                            data.forEach(item => {
+                                html += `
+                                    <a href="<?= BASE_URL ?>pages/product_detail.php?id=${item.id}" class="search-item">
+                                        <img src="<?= BASE_URL ?>assets/images/products/${item.image_url}" onerror="this.src='https://via.placeholder.com/50'">
+                                        <div class="info">
+                                            <p class="suggest-title">${item.title}</p>
+                                            <span class="suggest-price">฿${parseFloat(item.price).toLocaleString()}</span>
+                                        </div>
+                                    </a>`;
+                            });
+                            resultsBox.innerHTML = html;
+                            resultsBox.style.display = 'block';
+                        } else {
+                            resultsBox.style.display = 'none';
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Suggestions Error:", err);
+                    });
+            }, 300);
+        });
+
+        // คลิกข้างนอกกล่องแล้วปิด Dropdown
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !resultsBox.contains(e.target)) {
+                resultsBox.style.display = 'none';
+            }
+        });
+    }
 </script>
 
 <?php require_once '../includes/footer.php'; ?>

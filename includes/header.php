@@ -463,6 +463,22 @@ if (isLoggedIn()) {
             from { opacity: 0; transform: translateX(20px); }
             to { opacity: 1; transform: translateX(0); }
         }
+        /* --- ส่วนที่มึงต้องแปะเพิ่มใน <style> --- */
+.search-container { position: relative; width: 100%; max-width: 500px; margin: 10px auto; }
+.search-dropdown {
+    position: absolute; top: 100%; left: 0; width: 100%;
+    background: var(--solid-card, #1e293b); border: 2px solid var(--solid-border);
+    border-radius: 12px; margin-top: 8px; display: none; z-index: 10000;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.5); overflow: hidden;
+}
+.search-item {
+    display: flex; align-items: center; gap: 12px; padding: 12px 15px;
+    text-decoration: none; color: white; border-bottom: 1px solid var(--solid-border);
+}
+.search-item:hover { background: rgba(99, 102, 241, 0.15); color: #6366f1; }
+.search-item img { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; }
+.search-item .info h5 { margin: 0; font-size: 0.9rem; font-weight: bold; }
+.search-item .info span { font-size: 0.8rem; color: #10b981; }
     </style>
 
     <script>
