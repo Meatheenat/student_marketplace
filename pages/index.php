@@ -418,7 +418,7 @@ $products = $stmt->fetchAll();
             // หน่วงเวลา 300ms เพื่อไม่ให้ยิง API ถี่เกินไป (ประหยัด Resource เซิร์ฟเวอร์)
             debounceTimer = setTimeout(() => {
                 // เรียกไฟล์ API ที่เราสร้างไว้ในขั้นตอนก่อนหน้า
-                fetch(`<?= BASE_URL ?>api/search_suggestions.php?q=${encodeURIComponent(q)}`)
+                fetch(`<?= BASE_URL ?>ajax/search_suggestions.php?q=${encodeURIComponent(q)}`)
                     .then(res => res.json())
                     .then(data => {
                         if (data && data.length > 0) {
