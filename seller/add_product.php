@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $title       = trim($_POST['title']);
     $price       = (float)$_POST['price'];
     $category_id = (int)$_POST['category_id'];
-    $p_status    = $_POST['product_status']; // สถานะสต็อกสินค้า
+    $p_status    = $_POST['product_status']; 
     $description = trim($_POST['description']);
     $image_url   = $product['image_url'] ?? '';
 
@@ -51,20 +51,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['flash_type'] = "warning";
     } else {
         
-        // -------------------------------------------------------------
-        // 🛠️ ส่วนที่เพิ่มใหม่: จัดการรูปภาพหลายรูป (ไม่แตะฟังก์ชันเดิมมึง)
-        // -------------------------------------------------------------
         $uploadedImages = [];
         $main_image_index = isset($_POST['main_image_index']) ? (int)$_POST['main_image_index'] : 0;
 
-        // เช็คว่ามีการอัปโหลดไฟล์เข้ามาไหม (ใช้แบบ array)
         if (!empty($_FILES['product_images']['name'][0])) {
             $fileCount = count($_FILES['product_images']['name']);
             
             for ($i = 0; $i < $fileCount; $i++) {
-                if ($i >= 5) break; // บังคับสูงสุด 5 รูป
+                if ($i >= 5) break; 
                 
-                // จำลอง $_FILES แบบเดี่ยวเพื่อส่งเข้าฟังก์ชัน uploadImage เดิมของมึง
                 $singleFile = [
                     'name'     => $_FILES['product_images']['name'][$i],
                     'type'     => $_FILES['product_images']['type'][$i],
@@ -73,34 +68,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'size'     => $_FILES['product_images']['size'][$i]
                 ];
                 
-                $uploadedFile = uploadImage($singleFile); // ฟังก์ชันเดิมมึงเป๊ะๆ ไม่แก้เลย
+                $uploadedFile = uploadImage($singleFile); 
                 if ($uploadedFile) {
                     $uploadedImages[] = $uploadedFile;
-                    // ถ้ารูปนี้ตรงกับ Index ที่ติ๊กเลือกว่าเป็น "รูปหลัก" ให้โยนชื่อเข้า $image_url เดิม
                     if ($i === $main_image_index) {
                         $image_url = $uploadedFile;
                     }
                 }
             }
             
-            // กันเหนียว: ถ้าอัปโหลดสำเร็จแต่ Index ไม่ตรง ให้เอารูปแรกเป็นรูปหลัก
             if (empty($image_url) && !empty($uploadedImages)) {
                 $image_url = $uploadedImages[0];
             }
         }
 
-        // -------------------------------------------------------------
-        // 🛠️ SQL เดิมของมึง (ไม่ลด ไม่แก้ โค้ดมึงอยู่ครบ 100%)
-        // -------------------------------------------------------------
         if ($product_id > 0) {
-            // เมื่อแก้ไข: รีเซ็ตสถานะเป็น 'pending' เพื่อให้แอดมินตรวจใหม่
             $sql = "UPDATE products SET title = ?, price = ?, category_id = ?, status = 'pending', product_status = ?, description = ?, image_url = ? 
                     WHERE id = ? AND shop_id = ?";
             $params = [$title, $price, $category_id, $p_status, $description, $image_url, $product_id, $shop_id];
             $success_msg = "แก้ไขข้อมูลสำเร็จ! สินค้าเข้าสู่สถานะรอแอดมินตรวจสอบอีกครั้ง";
             $admin_notify_msg = "🔄 [Admin] มีการแก้ไขข้อมูลสินค้า!\n📦 สินค้า: $title\n🏪 ร้านค้า: $shop_name\n🔗 ตรวจสอบ: https://hosting.bncc.ac.th/s673190104/student_marketplace/admin/manage_products.php";
         } else {
-            // เมื่อเพิ่มใหม่: ตั้งค่าเริ่มต้นเป็น 'pending'
             $sql = "INSERT INTO products (title, price, category_id, status, product_status, description, image_url, shop_id) 
                     VALUES (?, ?, ?, 'pending', ?, ?, ?, ?)";
             $params = [$title, $price, $category_id, $p_status, $description, $image_url, $shop_id];
@@ -110,26 +98,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $stmt_save = $db->prepare($sql);
         if ($stmt_save->execute($params)) {
-            
-            // -------------------------------------------------------------
-            // 🛠️ ส่วนที่เพิ่มใหม่: เอาชื่อรูปทั้งหมด 5 รูปไปเก็บลงตาราง product_images
-            // -------------------------------------------------------------
             $current_p_id = ($product_id > 0) ? $product_id : $db->lastInsertId();
             if (!empty($uploadedImages)) {
-                // ถ้าเป็นโหมดแก้ไข ลบรูปย่อยของเก่าทิ้งก่อนลงใหม่
                 if ($product_id > 0) {
                     $db->prepare("DELETE FROM product_images WHERE product_id = ?")->execute([$product_id]);
                 }
                 foreach ($uploadedImages as $idx => $path) {
-                    $is_main = ($path === $image_url) ? 1 : 0; // มาร์คว่ารูปไหนคือรูปหลัก
+                    $is_main = ($path === $image_url) ? 1 : 0; 
                     $db->prepare("INSERT INTO product_images (product_id, image_path, is_main) VALUES (?, ?, ?)")
                        ->execute([$current_p_id, $path, $is_main]);
                 }
             }
-
-            // 🔔 ส่งแจ้งเตือนหา Admin ทุกคนทันที (ฟังก์ชันเดิมมึง)
             notifyAllAdmins($admin_notify_msg);
-
             $_SESSION['flash_message'] = $success_msg;
             $_SESSION['flash_type'] = "success";
             redirect('dashboard.php');
@@ -139,90 +119,98 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 
 <style>
-    /* อัปเกรด CSS เพื่อ UX/UI ที่ฉลาดขึ้น */
+    /* 🎨 CSS ใหม่ที่แก้ความโง่ของเวอร์ชันก่อน */
     .upload-box {
         transition: all 0.3s ease;
         position: relative;
-        overflow: hidden;
     }
-    .upload-box:hover {
-        border-color: #6c5ce7 !important; 
-        box-shadow: 0 0 15px rgba(108, 92, 231, 0.2);
+    
+    /* คอนเทนเนอร์ใส่รูปเล็ก ใช้ Flex เพื่อให้รูปขนาดคงที่ไม่บีบกันจนพัง */
+    #thumbnails_container {
+        display: none;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 15px;
+        justify-content: center;
     }
+
     .thumb-item {
         position: relative;
+        width: 75px; /* ล็อกขนาดไปเลย จะได้ไม่เล็กเกินไป */
+        height: 75px;
         opacity: 0;
         transform: translateY(10px);
-        animation: fadeUp 0.4s ease forwards;
-        transition: transform 0.2s;
+        animation: fadeUp 0.3s ease forwards;
     }
-    .thumb-item:hover {
-        transform: scale(1.05);
-    }
+
     .thumb-img {
         width: 100%;
-        aspect-ratio: 1;
+        height: 100%;
         object-fit: cover;
         border-radius: 8px;
         cursor: pointer;
-        transition: all 0.3s ease;
+        border: 2px solid transparent;
+        transition: all 0.2s ease;
     }
     
-    /* ปุ่ม X สำหรับลบรูปทีละรูป */
+    .thumb-item:hover .thumb-img {
+        opacity: 0.8;
+    }
+
+    /* ปุ่ม X ปรับให้เล็กกะทัดรัด แปะพอดีมุม */
     .remove-btn {
         position: absolute;
-        top: -8px;
-        right: -8px;
+        top: -6px;
+        right: -6px;
         background: #ff4757;
         color: white;
-        width: 24px;
-        height: 24px;
+        width: 20px;
+        height: 20px;
         border-radius: 50%;
         font-size: 14px;
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        line-height: 18px;
+        text-align: center;
         cursor: pointer;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        transition: transform 0.2s, background 0.2s;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.4);
         z-index: 10;
+        transition: transform 0.2s;
     }
     .remove-btn:hover {
-        transform: scale(1.2);
+        transform: scale(1.15);
         background: #ff6b81;
     }
 
-    /* ป้ายกำกับ "หน้าปก" เพื่อให้ดูรู้เรื่องไม่ต้องเดา */
+    /* ป้าย "หน้าปก" เป็นแถบคาดด้านล่าง เนียนๆ ไม่บังรูป */
     .cover-badge {
         position: absolute;
-        bottom: 5px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(95, 66, 228, 0.9);
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: rgba(6, 199, 85, 0.95);
         color: white;
         font-size: 0.7rem;
-        padding: 2px 8px;
-        border-radius: 10px;
-        white-space: nowrap;
+        font-weight: bold;
+        text-align: center;
+        padding: 2px 0;
+        border-bottom-left-radius: 6px;
+        border-bottom-right-radius: 6px;
         pointer-events: none;
         opacity: 0;
-        transition: opacity 0.3s;
     }
+
+    /* เมื่อถูกตั้งเป็นหน้าปก */
     .thumb-item.is-cover .cover-badge {
         opacity: 1;
-        background: #06C755; /* สีเขียวเด่นๆ ถ้าถูกเลือกเป็นหน้าปก */
     }
     .thumb-item.is-cover .thumb-img {
-        border: 3px solid #06C755 !important;
+        border-color: #06C755;
     }
 
     #image_preview {
         animation: fadeUp 0.5s ease forwards;
-        transition: opacity 0.3s;
     }
     @keyframes fadeUp {
-        to { opacity: 1; transform: translateY(0) scale(1); }
+        to { opacity: 1; transform: translateY(0); }
     }
 </style>
 
@@ -251,8 +239,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <input type="file" name="product_images[]" id="product_image" accept="image/*" multiple style="display: none;">
                     </label>
 
-                    <div id="thumbnails_container" style="display: none; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 20px; padding: 10px 0;">
-                        </div>
+                    <div id="thumbnails_container"></div>
                     
                 </div>
                 <div style="text-align: center; margin-top: 10px;">
@@ -306,9 +293,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <script>
-// 🚀 อัปเกรดระบบอัปโหลดให้ฉลาดขึ้นตามสั่ง (ลบทีละรูป + ป้ายกำกับชัดเจน)
 let accumulatedFiles = new DataTransfer(); 
-let currentMainIndex = 0; // จำว่ารูปไหนคือหน้าปก
+let currentMainIndex = 0; 
 
 const fileInput = document.getElementById('product_image');
 const preview = document.getElementById('image_preview');
@@ -318,7 +304,6 @@ const thumbsContainer = document.getElementById('thumbnails_container');
 fileInput.addEventListener('change', function() {
     const newFiles = this.files;
     
-    // สะสมไฟล์ ไม่ให้เกิน 5 รูป
     for(let i = 0; i < newFiles.length; i++) {
         if(accumulatedFiles.files.length < 5) {
             accumulatedFiles.items.add(newFiles[i]);
@@ -330,7 +315,6 @@ fileInput.addEventListener('change', function() {
     
     fileInput.files = accumulatedFiles.files;
     
-    // ถ้ารูปหน้าปกที่เคยเลือกโดนลบไป หรือเพิ่งอัปโหลดครั้งแรก ให้รูปแรกเป็นปกเสมอ
     if(currentMainIndex >= fileInput.files.length) {
         currentMainIndex = 0;
     }
@@ -342,17 +326,15 @@ function renderUI() {
     if (fileInput.files.length > 0) {
         placeholder.style.display = 'none';
         preview.style.display = 'block';
-        thumbsContainer.style.display = 'grid';
+        thumbsContainer.style.display = 'flex';
         thumbsContainer.innerHTML = ''; 
         
-        // อัปเดตรูปใหญ่ให้ตรงกับรูปที่เป็นหน้าปก (Main Index)
         preview.style.opacity = '0';
         setTimeout(() => {
             preview.src = URL.createObjectURL(fileInput.files[currentMainIndex]);
             preview.style.opacity = '1';
         }, 100);
         
-        // วาด Thumbnail 
         for(let i = 0; i < fileInput.files.length; i++) {
             const objectUrl = URL.createObjectURL(fileInput.files[i]);
             
@@ -360,15 +342,14 @@ function renderUI() {
             thumbDiv.className = `thumb-item ${i === currentMainIndex ? 'is-cover' : ''}`;
             thumbDiv.style.animationDelay = (i * 0.05) + 's'; 
             
-            // 1. ปุ่ม X ลบรูป
+            // ปุ่ม X ลบรูป
             const removeBtn = document.createElement('div');
             removeBtn.className = 'remove-btn';
             removeBtn.innerHTML = '×';
             removeBtn.onclick = (e) => {
-                e.stopPropagation(); // กันไม่ให้ไปโดนคลิกเลือกหน้าปก
+                e.stopPropagation(); 
                 e.preventDefault();
                 
-                // สร้าง DataTransfer ใหม่ แล้วก๊อปทุกไฟล์ยกเว้นไฟล์ที่โดนลบ
                 const dt = new DataTransfer();
                 for(let j = 0; j < fileInput.files.length; j++) {
                     if(j !== i) dt.items.add(fileInput.files[j]);
@@ -376,37 +357,35 @@ function renderUI() {
                 accumulatedFiles = dt;
                 fileInput.files = accumulatedFiles.files;
                 
-                // ถ้าลบรูปที่เป็นหน้าปกอยู่ ให้เซ็ตหน้าปกกลับไปที่รูปแรกสุด
                 if(i === currentMainIndex) currentMainIndex = 0;
-                // ถ้าลบรูปที่อยู่หน้าหน้าปก ให้เลื่อนตำแหน่งหน้าปกลงมา 1
                 else if(i < currentMainIndex) currentMainIndex--;
 
                 renderUI();
             };
 
-            // 2. ตัวรูปภาพ
+            // ตัวรูป
             const img = document.createElement('img');
             img.className = 'thumb-img';
             img.src = objectUrl;
-            img.style.border = '2px solid transparent';
             
-            // 3. ป้ายกำกับ "หน้าปก" และ Input ซ่อนไว้ส่งค่า Backend
+            // ป้าย "หน้าปก" แบบแถบคาดล่าง
             const badge = document.createElement('div');
             badge.className = 'cover-badge';
-            badge.innerHTML = '⭐ หน้าปก';
+            badge.innerHTML = 'หน้าปก';
 
+            // Radio ซ่อนส่งค่าไป Backend
             const radio = document.createElement('input');
             radio.type = 'radio';
             radio.name = 'main_image_index';
             radio.value = i;
-            radio.style.display = 'none'; // ซ่อนความโง่ของ Radio ไว้ให้มิด
+            radio.style.display = 'none';
             if(i === currentMainIndex) radio.checked = true;
 
-            // กดที่รูปย่อยเพื่อตั้งเป็นหน้าปก
+            // กดที่รูประบุหน้าปก
             img.onclick = (e) => {
                 e.preventDefault();
-                currentMainIndex = i; // อัปเดต Index หน้าปก
-                renderUI(); // วาด UI ใหม่เพื่อให้ป้ายและกรอบสีเขียวย้ายตาม
+                currentMainIndex = i; 
+                renderUI(); 
             };
 
             thumbDiv.appendChild(removeBtn);
@@ -416,7 +395,6 @@ function renderUI() {
             thumbsContainer.appendChild(thumbDiv);
         }
     } else {
-        // กรณีลบรูปจนเกลี้ยง
         placeholder.style.display = 'block';
         preview.style.display = 'none';
         thumbsContainer.style.display = 'none';
