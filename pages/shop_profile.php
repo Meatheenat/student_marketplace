@@ -2,6 +2,7 @@
 /**
  * Student Marketplace - Shop Profile Page
  * [SOLID HIGH-CONTRAST REDESIGN + CHAT BUTTON + HIDDEN DELETED PRODUCTS]
+ * [ADDED: FOLLOW SYSTEM & AJAX INTEGRATION]
  */
 require_once '../includes/header.php';
 require_once '../includes/functions.php';
@@ -34,8 +35,15 @@ if (!$shop) {
     exit;
 }
 
+// 🎯 🛠️ [เพิ่มใหม่] เช็กสถานะการติดตามร้านค้าจากตาราง follows
+$is_following = false;
+if ($current_user_id > 0) {
+    $follow_check = $db->prepare("SELECT id FROM follows WHERE user_id = ? AND shop_id = ?");
+    $follow_check->execute([$current_user_id, $shop_id]);
+    $is_following = $follow_check->fetch() ? true : false;
+}
+
 // 3. ดึงสินค้าทั้งหมดของร้านนี้ (ซ่อนอันที่โดน Soft Delete)
-// 🎯 🛠️ เพิ่ม AND p.is_deleted = 0 ตรงนี้
 $prod_sql = "SELECT p.*, c.category_name 
              FROM products p 
              JOIN categories c ON p.category_id = c.id 
@@ -175,6 +183,20 @@ $pageTitle = "ร้าน " . $shop['shop_name'];
     .btn-ig-solid { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); color: white !important; }
     .btn-chat-solid { background: var(--solid-primary); color: white !important; box-shadow: 0 5px 15px rgba(79, 70, 229, 0.3); }
 
+    /* 🎯 🛠️ ปุ่มติดตามแบบใหม่ (Follow Button) */
+    .btn-follow-solid {
+        background: var(--solid-card);
+        border: 2px solid var(--solid-primary);
+        color: var(--solid-primary);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .btn-follow-solid.following {
+        background: var(--solid-bg);
+        border-color: var(--solid-border);
+        color: var(--solid-text);
+    }
+    .btn-follow-solid:hover { transform: scale(1.05); }
+
     /* 🧱 Product Card */
     .section-title {
         font-size: 1.8rem;
@@ -275,9 +297,21 @@ $pageTitle = "ร้าน " . $shop['shop_name'];
         <div class="shop-info-solid">
             <h1><?php echo e($shop['shop_name']); ?></h1>
             
-            <div class="owner-badge">
-                <i class="fas fa-user-graduate text-primary"></i> 
-                เจ้าของร้าน: <?php echo e($shop['fullname']); ?> (<?php echo e($shop['class_room']); ?>)
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <div class="owner-badge">
+                    <i class="fas fa-user-graduate text-primary"></i> 
+                    เจ้าของร้าน: <?php echo e($shop['fullname']); ?> (<?php echo e($shop['class_room']); ?>)
+                </div>
+
+                <?php if ($current_user_id > 0 && $current_user_id != $shop['user_id']): ?>
+                <button id="followBtn" data-shop="<?php echo $shop['id']; ?>" class="contact-btn-solid btn-follow-solid <?php echo $is_following ? 'following' : ''; ?>" style="padding: 8px 20px; border-radius: 12px; height: 40px; margin-top: 2px;">
+                    <?php if($is_following): ?>
+                        <i class="fas fa-check"></i> กำลังติดตาม
+                    <?php else: ?>
+                        <i class="fas fa-plus"></i> ติดตามร้านนี้
+                    <?php endif; ?>
+                </button>
+                <?php endif; ?>
             </div>
             
             <p class="shop-desc"><?php echo nl2br(e($shop['description'])); ?></p>
@@ -354,6 +388,51 @@ $pageTitle = "ร้าน " . $shop['shop_name'];
     }, { threshold: 0.1 });
 
     document.querySelectorAll('.product-box').forEach(box => observer.observe(box));
+
+    // 🎯 🛠️ [เพิ่มใหม่] JavaScript สำหรับปุ่มติดตามร้านค้า (AJAX)
+    const followBtn = document.getElementById('followBtn');
+    if (followBtn) {
+        followBtn.addEventListener('click', function() {
+            const shopId = this.dataset.shop;
+            const btn = this;
+            
+            // ป้องกันการกดรัวๆ
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+
+            const formData = new FormData();
+            formData.append('shop_id', shopId);
+
+            fetch('../auth/toggle_follow.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+
+                if(data.status === 'followed') {
+                    btn.classList.add('following');
+                    btn.innerHTML = '<i class="fas fa-check"></i> กำลังติดตาม';
+                    // ถ้ามีฟังก์ชัน showToast ใน header ให้เรียกใช้
+                    if(typeof showToast === 'function') {
+                        showToast('สำเร็จ!', 'คุณเริ่มติดตามร้านค้านี้แล้ว');
+                    }
+                } else if(data.status === 'unfollowed') {
+                    btn.classList.remove('following');
+                    btn.innerHTML = '<i class="fas fa-plus"></i> ติดตามร้านนี้';
+                } else {
+                    alert(data.message || 'เกิดข้อผิดพลาด');
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                console.error("Follow Error:", err);
+            });
+        });
+    }
 </script>
 
 <?php require_once '../includes/footer.php'; ?>

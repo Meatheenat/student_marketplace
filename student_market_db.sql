@@ -221,3 +221,16 @@ CREATE TABLE product_images (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
+INSERT INTO categories (category_name) 
+VALUES ('อื่นๆ (Others)');
+-- ตารางสำหรับเก็บการติดตามร้านค้า
+CREATE TABLE IF NOT EXISTS follows (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL, -- คนกดตาม
+    shop_id INT NOT NULL, -- ร้านที่ถูกตาม
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_follow (user_id, shop_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (shop_id) REFERENCES shops(id) ON DELETE CASCADE
+);
+
