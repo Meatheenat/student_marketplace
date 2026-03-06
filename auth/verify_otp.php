@@ -16,10 +16,42 @@ if (!$is_registration && !$is_password_reset) {
 }
 
 $email = $is_registration ? $_SESSION['verify_email'] : $_SESSION['reset_email'];
+$db = getDB();
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// 🟢 [NEW] ระบบส่งรหัส OTP ใหม่ (Resend OTP)
+if (isset($_GET['action']) && $_GET['action'] === 'resend') {
+    $new_otp = rand(100000, 999999);
+    
+    if ($is_registration) {
+        // อัปเดต OTP ใหม่ใน Session
+        $_SESSION['temp_register_data']['otp_code'] = $new_otp;
+        
+        // 🚀 ส่งอีเมลจริง
+        if (function_exists('sendOTPToEmail')) {
+            sendOTPToEmail($email, $new_otp);
+        }
+        
+        $_SESSION['flash_message'] = "ส่งรหัส OTP ชุดใหม่ไปยังอีเมลของคุณแล้ว!";
+        $_SESSION['flash_type'] = "info";
+    } elseif ($is_password_reset) {
+        // อัปเดต OTP ใหม่สำหรับลืมรหัสผ่าน
+        $expires = date("Y-m-d H:i:s", strtotime('+15 minutes'));
+        $db->prepare("UPDATE password_resets SET otp = ?, expires_at = ? WHERE email = ?")->execute([$new_otp, $expires, $email]);
+        
+        // 🚀 ส่งอีเมลจริง
+        if (function_exists('sendOTPToEmail')) {
+            sendOTPToEmail($email, $new_otp);
+        }
+
+        $_SESSION['flash_message'] = "ส่งรหัส OTP ชุดใหม่ไปยังอีเมลของคุณแล้ว!";
+        $_SESSION['flash_type'] = "info";
+    }
+    redirect('verify_otp.php');
+}
+
+// 🟢 ระบบตรวจสอบตอนกดยืนยัน (Submit OTP)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['otp'])) {
     $otp_input = trim($_POST['otp']);
-    $db = getDB();
 
     if ($is_password_reset) {
         // ----------------------------------------------------
@@ -52,10 +84,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // ตรวจสอบว่า OTP ที่กรอก ตรงกับ OTP ที่เก็บไว้ใน Session หรือไม่
         if ($otp_input === (string)$_SESSION['temp_register_data']['otp_code']) {
             
-            // ดึงข้อมูลผู้สมัครจาก Session ออกมา
+            // ดึงข้อมูลผู้สมัครจาก Session ออกมาเตรียม INSERT
             $userData = $_SESSION['temp_register_data'];
             
-            // ตรวจสอบความซ้ำซ้อนใน DB อีกรอบเพื่อความชัวร์ ป้องกันคนสมัครซ้อนกันระหว่างรอ OTP
+            // เช็กความซ้ำซ้อนใน DB อีกรอบเผื่อมีคนชิงสมัครระหว่างรอ OTP
             $checkStmt = $db->prepare("SELECT id FROM users WHERE email = ? OR student_id = ?");
             $checkStmt->execute([$userData['email'], $userData['student_id']]);
             
@@ -66,8 +98,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 unset($_SESSION['verify_email']);
                 redirect('register.php');
             } else {
-                // 🟢 ถ้ารหัสถูกต้อง และไม่มีใครแย่งสมัคร ให้ INSERT ลงตาราง users ได้เลย!
-                // *หมายเหตุ: คอลัมน์ otp_code และ is_verified ไม่จำเป็นต้องใช้สำหรับ Flow สมัครสมาชิกแบบนี้แล้ว แต่เผื่อคุณใช้กับระบบอื่น ผมจะปล่อยโครงสร้างเดิมไว้
+                // 🟢 ถ้ารหัสถูกต้อง และไม่ซ้ำ ให้ INSERT ลงตาราง users ได้เลย
+                // *ปล่อยให้ is_verified เป็นค่าเริ่มต้น (อาจจะ 1 ไปเลย) ตามโครงสร้างตารางที่คุณตั้งไว้
                 $sql = "INSERT INTO users (student_id, fullname, class_room, department, email, password, role) VALUES (?, ?, ?, ?, ?, ?, ?)";
                 $insertStmt = $db->prepare($sql);
                 
@@ -328,11 +360,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="footer-links">
             <p style="font-size: 0.85rem; color: var(--text-muted);">
                 ไม่ได้รับรหัสใช่หรือไม่? <br>
-                <?php if ($is_password_reset): ?>
-                    <a href="forgot_password.php" class="resend-link">ส่งรหัสใหม่อีกครั้ง</a>
-                <?php else: ?>
-                    <a href="register.php" class="resend-link">ลงทะเบียนใหม่อีกครั้ง</a>
-                <?php endif; ?>
+                <a href="verify_otp.php?action=resend" class="resend-link">ส่งรหัสใหม่อีกครั้ง</a>
             </p>
         </div>
     </div>

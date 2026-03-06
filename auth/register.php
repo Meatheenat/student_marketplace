@@ -68,10 +68,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'otp_code' => $otp_code
             ];
             
-            // ⚠️ [Todo]: เรียกฟังก์ชันส่งอีเมล หรือ LINE ส่ง $otp_code แจ้งผู้ใช้ตรงนี้
-            // sendRegistrationOTP($email, $otp_code);
+            // 🚀 เรียกฟังก์ชันส่งอีเมลจริง
+            sendOTPToEmail($email, $otp_code);
 
-            $_SESSION['flash_message'] = "ระบบได้ส่งรหัส OTP ไปที่อีเมลของคุณแล้ว กรุณายืนยันตัวตนเพื่อเสร็จสิ้นการสมัคร (รหัสคือ: $otp_code)";
+            // เก็บ Email เพื่อส่งไปตรวจสอบในหน้า Verify
+            $_SESSION['verify_email'] = $email;
+
+            $_SESSION['flash_message'] = "ระบบได้ส่งรหัส OTP ไปที่อีเมลของคุณแล้ว กรุณาเช็กกล่องข้อความเพื่อยืนยันตัวตน";
             $_SESSION['flash_type'] = "info";
             
             // สลับให้ Redirect ไปหน้ากรอก OTP ทันที
