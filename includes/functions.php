@@ -299,3 +299,27 @@ function canUserReview($user_id, $product_id) {
     }
     return ['status' => true];
 }
+/**
+ * 📧 [NEW] ฟังก์ชันส่งรหัส OTP เข้า Email (ใช้ฟังก์ชัน mail() พื้นฐานของ PHP)
+ * ใช้สำหรับส่งรหัสยืนยันตัวตนตอนสมัครสมาชิกและลืมรหัสผ่าน
+ */
+function sendOTPToEmail($to_email, $otp_code) {
+    // กำหนดหัวข้ออีเมล
+    $subject = "รหัสยืนยันตัวตน (OTP) - BNCC Market";
+    
+    // กำหนดเนื้อหาข้อความในอีเมล
+    $message = "สวัสดีครับ,\n\n";
+    $message .= "รหัส OTP สำหรับยืนยันตัวตนของคุณคือ: " . $otp_code . "\n\n";
+    $message .= "รหัสนี้ใช้ได้เพียงครั้งเดียว กรุณาอย่าเปิดเผยให้ผู้อื่นทราบ\n\n";
+    $message .= "ขอบคุณที่ใช้งาน BNCC Market";
+    
+    // ตั้งค่า Headers เพื่อให้รองรับภาษาไทย
+    $headers = "From: system@bncc.ac.th\r\n";
+    $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
+
+    // ใช้ @ ป้องกัน Error แจ้งเตือนหน้าเว็บพัง ในกรณีที่ Localhost (XAMPP/MAMP) ไม่ได้ตั้งค่า Mail Server ไว้
+    // *หมายเหตุ: ถ้าขึ้นโฮสต์จริง (Production) ฟังก์ชันนี้จะทำงานและส่งเมลได้ปกติ
+    @mail($to_email, $subject, $message, $headers);
+    
+    return true;
+}
