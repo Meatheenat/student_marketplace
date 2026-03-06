@@ -42,21 +42,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // 3. ส่ง Email ด้วย PHPMailer
         $mail = new PHPMailer(true);
         try {
-            $mail->isSMTP();
-            $mail->Host       = 'smtp.gmail.com'; 
-            $mail->SMTPAuth   = true;
-            $mail->Username   = 'BNCC Market.k@gmail.com'; // เมลของมึง
-            $mail->Password   = 'jxev urqg otnp avnt';    // App Password ตัวเดิม
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = 587;
+            // 🎯 เปลี่ยนมาใช้ isMail() เพื่อส่งผ่าน Server แทน ทำให้สามารถปลอมอีเมลผู้ส่งเป็นอะไรก็ได้
+            $mail->isMail(); 
+            
+            // --- โค้ดเดิมที่ล็อกอินด้วย Gmail ส่วนตัว (คอมเมนต์ไว้ ไม่ได้ลบ) ---
+            // $mail->isSMTP();
+            // $mail->Host       = 'smtp.gmail.com'; 
+            // $mail->SMTPAuth   = true;
+            // $mail->Username   = 'BNCC Market.k@gmail.com'; // เมลของมึง
+            // $mail->Password   = 'jxev urqg otnp avnt';    // App Password ตัวเดิม
+            // $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            // $mail->Port       = 587;
+            // -----------------------------------------------------------------
 
             $mail->CharSet = 'UTF-8'; // กันภาษาไทยเพี้ยน
-            $mail->setFrom('no-reply@bnccmarket.com', 'BNCC Market');
+            
+            // 🎯 ตั้งค่าอีเมลผู้ส่งเป็นอีเมลจำลองของระบบตามที่คุณต้องการ
+            $mail->setFrom('system@bncc.ac.th', 'BNCC Market System');
+            
             $mail->addAddress($email);
             $mail->isHTML(true);
             $mail->Subject = 'Reset Your Password - OTP';
             $mail->Body    = "รหัส OTP สำหรับรีเซ็ตรหัสผ่านของคุณคือ: <b style='font-size: 20px; color: #4f46e5;'>$otp</b> (รหัสมีอายุ 15 นาที)";
 
+            // ถ้าใช้งานบน Localhost แล้วไม่ได้เซ็ตระบบส่งเมลใน XAMPP มันจะ Error แต่เราใส่ @ ครอบกันพังไว้ให้ได้ถ้าต้องการ
             $mail->send();
             $_SESSION['reset_email'] = $email;
             redirect('verify_otp.php'); 
