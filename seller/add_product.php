@@ -119,28 +119,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 
 <style>
-    /* 🎨 CSS ใหม่ที่แก้ความโง่ของเวอร์ชันก่อน */
+    /* 🎨 CSS แก้มือ ปรับขนาดให้สวยหรูดูแพง */
     .upload-box {
         transition: all 0.3s ease;
         position: relative;
     }
     
-    /* คอนเทนเนอร์ใส่รูปเล็ก ใช้ Flex เพื่อให้รูปขนาดคงที่ไม่บีบกันจนพัง */
     #thumbnails_container {
         display: none;
         flex-wrap: wrap;
-        gap: 12px;
-        margin-top: 15px;
+        gap: 15px;
+        margin-top: 20px;
         justify-content: center;
     }
 
+    /* ขยายขนาดรูป Thumbnail ให้ดูรู้เรื่อง ไม่เล็กเกินไป */
     .thumb-item {
         position: relative;
-        width: 75px; /* ล็อกขนาดไปเลย จะได้ไม่เล็กเกินไป */
-        height: 75px;
+        width: 90px; 
+        height: 90px;
         opacity: 0;
         transform: translateY(10px);
         animation: fadeUp 0.3s ease forwards;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
 
     .thumb-img {
@@ -157,48 +159,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         opacity: 0.8;
     }
 
-    /* ปุ่ม X ปรับให้เล็กกะทัดรัด แปะพอดีมุม */
+    /* ปุ่ม X แบบมินิมอล ไม่บังรูป */
     .remove-btn {
         position: absolute;
-        top: -6px;
-        right: -6px;
+        top: -8px;
+        right: -8px;
         background: #ff4757;
         color: white;
-        width: 20px;
-        height: 20px;
+        width: 22px;
+        height: 22px;
         border-radius: 50%;
         font-size: 14px;
-        line-height: 18px;
-        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         cursor: pointer;
         box-shadow: 0 2px 4px rgba(0,0,0,0.4);
         z-index: 10;
-        transition: transform 0.2s;
+        transition: transform 0.2s, background 0.2s;
     }
     .remove-btn:hover {
         transform: scale(1.15);
         background: #ff6b81;
     }
 
-    /* ป้าย "หน้าปก" เป็นแถบคาดด้านล่าง เนียนๆ ไม่บังรูป */
+    /* ป้าย "หน้าปก" คาดล่างสวยๆ ไม่กวนสายตา */
     .cover-badge {
         position: absolute;
         bottom: 0;
         left: 0;
         width: 100%;
-        background: rgba(6, 199, 85, 0.95);
+        background: rgba(6, 199, 85, 0.9);
         color: white;
-        font-size: 0.7rem;
+        font-size: 0.75rem;
         font-weight: bold;
         text-align: center;
-        padding: 2px 0;
+        padding: 4px 0;
         border-bottom-left-radius: 6px;
         border-bottom-right-radius: 6px;
         pointer-events: none;
         opacity: 0;
+        transition: opacity 0.2s;
     }
 
-    /* เมื่อถูกตั้งเป็นหน้าปก */
     .thumb-item.is-cover .cover-badge {
         opacity: 1;
     }
@@ -212,7 +215,69 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     @keyframes fadeUp {
         to { opacity: 1; transform: translateY(0); }
     }
+
+    /* 🌟 CSS สำหรับ Custom Popup แทนที่ Alert โง่ๆ */
+    .custom-modal-overlay {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+    .custom-modal-overlay.show {
+        opacity: 1;
+        visibility: visible;
+    }
+    .custom-modal-content {
+        background: var(--bg-card, #1e1e2f); /* ใช้สีโทนดาร์กตามเว็บมึง */
+        color: white;
+        padding: 30px;
+        border-radius: 16px;
+        text-align: center;
+        width: 90%;
+        max-width: 400px;
+        transform: scale(0.8);
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        border: 1px solid var(--border-color, #333);
+    }
+    .custom-modal-overlay.show .custom-modal-content {
+        transform: scale(1);
+    }
+    .custom-modal-icon {
+        font-size: 3rem;
+        color: #ff4757;
+        margin-bottom: 15px;
+    }
+    .custom-modal-btn {
+        background: #5f42e4;
+        color: white;
+        border: none;
+        padding: 10px 30px;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        margin-top: 20px;
+        transition: background 0.3s;
+    }
+    .custom-modal-btn:hover {
+        background: #4a33b8;
+    }
 </style>
+
+<div class="custom-modal-overlay" id="customAlertModal">
+    <div class="custom-modal-content">
+        <div class="custom-modal-icon"><i class="fas fa-exclamation-circle"></i></div>
+        <h3 style="margin-bottom: 10px;">แจ้งเตือน</h3>
+        <p id="customAlertMessage" style="color: var(--text-muted, #ccc); margin-bottom: 0;">ข้อความ</p>
+        <button class="custom-modal-btn" onclick="closeCustomAlert()">ตกลง</button>
+    </div>
+</div>
 
 <div style="max-width: 800px; margin: 0 auto;">
     <div style="margin-bottom: 30px;">
@@ -301,16 +366,30 @@ const preview = document.getElementById('image_preview');
 const placeholder = document.getElementById('upload_placeholder');
 const thumbsContainer = document.getElementById('thumbnails_container');
 
+// 🌟 ฟังก์ชันเรียกใช้ Custom Alert แทน alert() ของบราวเซอร์
+function showCustomAlert(msg) {
+    document.getElementById('customAlertMessage').innerText = msg;
+    document.getElementById('customAlertModal').classList.add('show');
+}
+function closeCustomAlert() {
+    document.getElementById('customAlertModal').classList.remove('show');
+}
+
 fileInput.addEventListener('change', function() {
     const newFiles = this.files;
+    let limitReached = false;
     
     for(let i = 0; i < newFiles.length; i++) {
         if(accumulatedFiles.files.length < 5) {
             accumulatedFiles.items.add(newFiles[i]);
         } else {
-            alert("เพิ่มได้สูงสุด 5 รูปเท่านั้นครับ!");
+            limitReached = true;
             break;
         }
+    }
+    
+    if (limitReached) {
+        showCustomAlert("คุณสามารถเพิ่มรูปภาพได้สูงสุดเพียง 5 รูปเท่านั้นครับ!");
     }
     
     fileInput.files = accumulatedFiles.files;
@@ -346,6 +425,7 @@ function renderUI() {
             const removeBtn = document.createElement('div');
             removeBtn.className = 'remove-btn';
             removeBtn.innerHTML = '×';
+            removeBtn.title = 'ลบรูปภาพนี้';
             removeBtn.onclick = (e) => {
                 e.stopPropagation(); 
                 e.preventDefault();
@@ -368,10 +448,10 @@ function renderUI() {
             img.className = 'thumb-img';
             img.src = objectUrl;
             
-            // ป้าย "หน้าปก" แบบแถบคาดล่าง
+            // ป้าย "หน้าปก" แบบแถบคาดล่าง (ไม่บังรูปกลางจอแล้ว)
             const badge = document.createElement('div');
             badge.className = 'cover-badge';
-            badge.innerHTML = 'หน้าปก';
+            badge.innerHTML = '<i class="fas fa-star" style="font-size: 0.6rem;"></i> หน้าปก';
 
             // Radio ซ่อนส่งค่าไป Backend
             const radio = document.createElement('input');
