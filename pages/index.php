@@ -2,6 +2,7 @@
 /**
  * Student Marketplace - Home Page
  * [SOLID CENTERED EDITION - BOLD PRICE & ANIMATED]
+ * [UPDATED: USER BADGES & SHOP RECOMMENDATIONS]
  * Project: BNCC Student Marketplace
  */
 require_once '../includes/functions.php';
@@ -27,12 +28,13 @@ $sort_by = isset($_GET['sort']) ? $_GET['sort'] : 'newest';
 $cat_stmt = $db->query("SELECT * FROM categories ORDER BY id ASC");
 $categories = $cat_stmt->fetchAll();
 
-// --- 2. SQL Query ---
-$sql = "SELECT p.*, s.shop_name, s.status as shop_status, c.category_name,
+// --- 2. SQL Query (🎯 🛠️ เพิ่ม JOIN users เพื่อดึง role ของเจ้าของร้านมาโชว์ Badge)
+$sql = "SELECT p.*, s.shop_name, s.status as shop_status, c.category_name, u.role as owner_role,
                IFNULL(AVG(r.rating), 0) as avg_rating,
                COUNT(r.id) as review_count
         FROM products p
         JOIN shops s ON p.shop_id = s.id
+        JOIN users u ON s.user_id = u.id
         JOIN categories c ON p.category_id = c.id
         LEFT JOIN reviews r ON p.id = r.product_id AND r.is_deleted = 0
         WHERE s.status = 'approved' AND p.status = 'approved' AND p.is_deleted = 0";
@@ -361,7 +363,10 @@ $products = $stmt->fetchAll();
                                               style="cursor: pointer; transition: 0.2s;" 
                                               onmouseover="this.style.color='var(--solid-primary)'" 
                                               onmouseout="this.style.color='inherit'">
-                                            <i class="fas fa-store"></i> <?= e($p['shop_name']) ?>
+                                            <i class="fas fa-store"></i> 
+                                            <?= e($p['shop_name']) ?> 
+                                            <?= getShopBadge($p['shop_id']) ?> 
+                                            <?= getUserBadge($p['owner_role']) ?>
                                         </span>
                                         <span><i class="fas fa-eye"></i> <?= number_format($p['views']) ?></span>
                                     </div>

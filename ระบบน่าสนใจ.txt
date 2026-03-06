@@ -8,3 +8,8 @@ Social Share (Open Graph): กดแชร์สินค้าไปที่ L
 Search Auto-Complete: ในช่องค้นหาสินค้า พิมพ์ตัวอักษรแค่ "กระ..." ระบบจะโชว์ดรอปดาวน์แนะนำ "กระเป๋า", "กระติกน้ำ" ขึ้นมาทันที
 
 User Roles & Badges (ป้ายยศ): โชว์ป้ายสวยๆ ท้ายชื่อ เช่น "🥇 ร้านค้าแนะนำ", "🛡️ Admin", "🎓 Teacher" ให้ดูน่าเชื่อถือ
+shop_profile.php 
+
+product_detail.php
+
+index.php

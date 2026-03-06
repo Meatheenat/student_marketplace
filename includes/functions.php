@@ -251,4 +251,69 @@ function notifyShopFollowers($shop_id, $message, $link = '#') {
         sendNotification($follower_id, 'system', $message, $link);
     }
 }
+/**
+ * 🥇 [NEW] ฟังก์ชันดึงป้ายยศ (User Roles & Badges)
+ * แสดงป้าย Admin, Teacher หรือ ป้ายร้านค้าแนะนำ
+ */
+function getUserBadge($role) {
+    if ($role === 'admin') {
+        return '<span class="badge" style="background:#ef4444; color:white; border-radius:6px; padding:3px 8px; font-size:0.75rem; font-weight:bold; margin-left:5px;"><i class="fas fa-shield-alt"></i> Admin</span>';
+    }
+    if ($role === 'teacher') {
+        return '<span class="badge" style="background:#6366f1; color:white; border-radius:6px; padding:3px 8px; font-size:0.75rem; font-weight:bold; margin-left:5px;"><i class="fas fa-graduation-cap"></i> Teacher</span>';
+    }
+    return '';
+}
+
+/**
+ * 🥇 [NEW] ฟังก์ชันตรวจสอบและดึงป้าย "ร้านค้าแนะนำ"
+ * เงื่อนไข: ร้านที่คนติดตามมากที่สุด และมีคะแนนรีวิวเฉลี่ยสูงที่สุดในเว็บ
+ */
+function getShopBadge($shop_id) {
+    $db = getDB();
+    
+    // 1. หา Shop ID ที่มีคนติดตามสูงที่สุด (Followers)
+    $top_follow = $db->query("SELECT shop_id FROM follows GROUP BY shop_id ORDER BY COUNT(id) DESC LIMIT 1")->fetchColumn();
+    
+    // 2. หา Shop ID ที่มีคะแนนรีวิวเฉลี่ยสูงที่สุด (ต้องมีรีวิวอย่างน้อย 3 รายการเพื่อความน่าเชื่อถือ)
+    $top_rating = $db->query("SELECT p.shop_id FROM reviews r JOIN products p ON r.product_id = p.id WHERE r.is_deleted = 0 GROUP BY p.shop_id HAVING COUNT(r.id) >= 3 ORDER BY AVG(r.rating) DESC LIMIT 1")->fetchColumn();
+
+    // ถ้าร้านนี้ได้อันดับ 1 ทั้งสองอย่าง
+    if ($shop_id == $top_follow && $shop_id == $top_rating) {
+        return '<span class="badge" style="background: linear-gradient(45deg, #fbbf24, #f59e0b); color:#000; border-radius:6px; padding:4px 10px; font-size:0.8rem; font-weight:900; box-shadow:0 4px 12px rgba(251,191,36,0.3); border:1px solid #000; margin-left:8px;"><i class="fas fa-medal"></i> ร้านค้าแนะนำ</span>';
+    }
+    return '';
+}
+
+/**
+ * 🛡️ [NEW] ฟังก์ชันกันสแปมรีวิว (Anti-Spam Review System)
+ * 1. กันการรีวิวซ้ำในสินค้าเดิม
+ * 2. ระบบ Cooldown: ต้องเว้นระยะเวลา 5 นาทีก่อนรีวิวชิ้นต่อไป
+ */
+function canUserReview($user_id, $product_id) {
+    $db = getDB();
+    
+    // 1. เช็กว่าเคยรีวิวสินค้านี้ไปแล้วหรือยัง
+    $check_exists = $db->prepare("SELECT id FROM reviews WHERE user_id = ? AND product_id = ? AND is_deleted = 0");
+    $check_exists->execute([$user_id, $product_id]);
+    if ($check_exists->fetch()) {
+        return ['status' => false, 'message' => 'คุณเคยรีวิวสินค้านี้ไปแล้ว'];
+    }
+
+    // 2. Cooldown System: เช็กเวลาที่รีวิวล่าสุด
+    $check_time = $db->prepare("SELECT created_at FROM reviews WHERE user_id = ? ORDER BY created_at DESC LIMIT 1");
+    $check_time->execute([$user_id]);
+    $last_review = $check_time->fetchColumn();
+
+    if ($last_review) {
+        $cooldown = 5 * 60; // 5 นาที (ในหน่วยวินาที)
+        $time_diff = time() - strtotime($last_review);
+        if ($time_diff < $cooldown) {
+            $wait = ceil(($cooldown - $time_diff) / 60);
+            return ['status' => false, 'message' => "คุณรีวิวเร็วเกินไป โปรดรออีก $wait นาทีเพื่อกันสแปม"];
+        }
+    }
+
+    return ['status' => true];
+}
 ?>

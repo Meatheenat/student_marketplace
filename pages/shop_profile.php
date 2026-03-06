@@ -2,7 +2,7 @@
 /**
  * Student Marketplace - Shop Profile Page
  * [SOLID HIGH-CONTRAST REDESIGN + CHAT BUTTON + HIDDEN DELETED PRODUCTS]
- * [ADDED: FOLLOW SYSTEM & AJAX INTEGRATION]
+ * [ADDED: FOLLOW SYSTEM & AJAX INTEGRATION + USER BADGES]
  */
 require_once '../includes/header.php';
 require_once '../includes/functions.php';
@@ -17,8 +17,8 @@ if ($shop_id <= 0) {
     redirect('index.php');
 }
 
-// 2. ดึงข้อมูลร้านค้าและเจ้าของร้าน
-$shop_sql = "SELECT s.*, u.fullname, u.class_room 
+// 2. ดึงข้อมูลร้านค้าและเจ้าของร้าน (🎯 เพิ่ม u.role เข้ามาใน Query เพื่อใช้ดึง Badge)
+$shop_sql = "SELECT s.*, u.fullname, u.class_room, u.role 
              FROM shops s 
              JOIN users u ON s.user_id = u.id 
              WHERE s.id = ? AND s.status = 'approved'";
@@ -300,12 +300,12 @@ $pageTitle = "ร้าน " . $shop['shop_name'];
         </div>
 
         <div class="shop-info-solid">
-            <h1><?php echo e($shop['shop_name']); ?></h1>
+            <h1><?php echo e($shop['shop_name']); ?> <?php echo getShopBadge($shop['id']); ?></h1>
             
             <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
                 <div class="owner-badge" style="margin-bottom: 0;">
                     <i class="fas fa-user-graduate text-primary"></i> 
-                    เจ้าของร้าน: <?php echo e($shop['fullname']); ?> (<?php echo e($shop['class_room']); ?>)
+                    เจ้าของร้าน: <?php echo e($shop['fullname']); ?> (<?php echo e($shop['class_room']); ?>) <?php echo getUserBadge($shop['role']); ?>
                 </div>
 
                 <div class="owner-badge" style="margin-bottom: 0; background: rgba(99, 102, 241, 0.1);">

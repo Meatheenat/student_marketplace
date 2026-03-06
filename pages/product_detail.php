@@ -10,6 +10,7 @@
  * - Dynamic Review & Rating System
  * - Session-based View Counter
  * - Admin Control Panel
+ * - [UPDATED] User Badges & Anti-Spam Reviews
  * * Project: BNCC Student Marketplace
  * Developer: Gemini AI x Ploy (Senior IT Support Collaboration)
  * ============================================================
@@ -22,10 +23,11 @@ if (!$product_id) redirect('index.php');
 $db = getDB();
 $user_id = $_SESSION['user_id'] ?? null;
 
-// 1. SQL: ดึงข้อมูลสินค้า (ตรวจสอบ is_deleted = 0 ด้วย)
-$stmt = $db->prepare("SELECT p.*, s.shop_name, s.contact_line, s.contact_ig, s.line_user_id, s.user_id as owner_id 
+// 1. SQL: ดึงข้อมูลสินค้า (🎯 ปรับเพิ่ม Join users เพื่อเอา role เจ้าของร้านมาโชว์ Badge)
+$stmt = $db->prepare("SELECT p.*, s.shop_name, s.contact_line, s.contact_ig, s.line_user_id, s.user_id as owner_id, u.role as owner_role 
                       FROM products p 
                       JOIN shops s ON p.shop_id = s.id 
+                      JOIN users u ON s.user_id = u.id
                       WHERE p.id = ? AND p.is_deleted = 0");
 $stmt->execute([$product_id]);
 $product = $stmt->fetch();
@@ -109,11 +111,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
     redirect("product_detail.php?id=$product_id");
 }
 
-// 4. ส่งรีวิว
+// 4. ส่งรีวิว (🎯 [UPDATED] เพิ่มระบบ Anti-Spam Check ก่อนบันทึก)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
     $rating = $_POST['rating'];
     $comment = trim($_POST['comment']);
     
+    // เรียกใช้ฟังก์ชันกันสแปมที่เราเพิ่งสร้างไว้ใน functions.php
+    $spam_check = canUserReview($user_id, $product_id);
+
+    if (!$spam_check['status']) {
+        $_SESSION['flash_message'] = $spam_check['message'];
+        $_SESSION['flash_type'] = "danger";
+        redirect("product_detail.php?id=$product_id");
+    }
+
     $ins = $db->prepare("INSERT INTO reviews (product_id, user_id, rating, comment) VALUES (?, ?, ?, ?)");
     if ($ins->execute([$product_id, $user_id, $rating, $comment])) {
         
@@ -496,9 +507,11 @@ require_once '../includes/header.php';
                 <div style="display: flex; align-items: center; gap: 20px;">
                     <div class="shop-avatar"><i class="fas fa-store"></i></div>
                     <div>
-                        <div style="font-size: 0.7rem; font-weight: 800; color: var(--solid-primary); text-transform: uppercase;">Verified Seller</div>
+                        <div style="font-size: 0.7rem; font-weight: 800; color: var(--solid-primary); text-transform: uppercase;">
+                            Verified Seller <?= getUserBadge($product['owner_role']) ?>
+                        </div>
                         <a href="shop_profile.php?id=<?= $product['shop_id'] ?>" style="text-decoration: none; color: var(--solid-text); font-weight: 900; font-size: 1.3rem;">
-                            <?= e($product['shop_name']) ?>
+                            <?= e($product['shop_name']) ?> <?= getShopBadge($product['shop_id']) ?>
                         </a>
                     </div>
                 </div>
@@ -537,6 +550,10 @@ require_once '../includes/header.php';
         </div>
 
         <?php if (isLoggedIn()): ?>
+            <?php 
+            $spam_check_ui = canUserReview($user_id, $product_id); 
+            if ($spam_check_ui['status']): 
+            ?>
             <div class="product-main-card" style="grid-template-columns: 1fr; margin-bottom: 40px;">
                 <h3 style="font-weight: 800; margin-bottom: 25px;">Share your experience</h3>
                 <form method="POST">
@@ -557,6 +574,13 @@ require_once '../includes/header.php';
                     </button>
                 </form>
             </div>
+            <?php else: ?>
+                <div style="text-align: center; padding: 40px; background: rgba(99, 102, 241, 0.05); border-radius: 24px; border: 2px solid var(--solid-border); margin-bottom: 40px;">
+                    <p style="font-weight: 800; color: var(--solid-primary); margin: 0;">
+                        <i class="fas fa-info-circle"></i> <?= $spam_check_ui['message'] ?>
+                    </p>
+                </div>
+            <?php endif; ?>
         <?php endif; ?>
 
         <div class="review-stream">
@@ -571,8 +595,16 @@ require_once '../includes/header.php';
                             </a>
                             <div style="flex: 1;">
                                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                    <?php 
+                                    // ดึงบทบาทคนรีวิวมาโชว์ Badge (ถ้ามี)
+                                    $author_role_stmt = $db->prepare("SELECT role FROM users WHERE id = ?");
+                                    $author_role_stmt->execute([$rev['author_id']]);
+                                    $author_role = $author_role_stmt->fetchColumn();
+                                    ?>
                                     <div>
-                                        <a href="view_profile.php?id=<?= $rev['author_id'] ?>" style="text-decoration: none; color: var(--solid-text); font-weight: 800; font-size: 1.1rem;"><?= e($rev['fullname']) ?></a>
+                                        <a href="view_profile.php?id=<?= $rev['author_id'] ?>" style="text-decoration: none; color: var(--solid-text); font-weight: 800; font-size: 1.1rem;">
+                                            <?= e($rev['fullname']) ?> <?= getUserBadge($author_role) ?>
+                                        </a>
                                         <div style="color: var(--solid-warning); font-size: 0.85rem; margin-top: 4px;">
                                             <?php for($j=0; $j<$rev['rating']; $j++) echo '<i class="fas fa-star"></i>'; ?>
                                         </div>
