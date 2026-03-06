@@ -1,119 +1,90 @@
 <?php
 /**
- * ==========================================================================================
- * 💎 BNCC MARKET - ULTIMATE PREMIUM PRODUCT DETAIL SYSTEM (PRO VERSION 2026)
- * ==========================================================================================
- * [TARGET LINE COUNT: 850+ LINES | FULL FEATURE INTEGRATION]
- * * 🛠️ CORE ARCHITECTURE:
- * - High-Contrast Glassmorphism UI System (Solid Edge Design)
- * - Dynamic Multi-Image Gallery (Optimized for 5-Image Support)
- * - Session-based View Counter (Anti-Inflate Analytics)
- * - Advanced Order Management System (Real-time DB Integration)
- * - Anti-Spam Review Guard (Cooldown + Duplicate Prevention)
- * - Global Badge Authority System (Admin, Teacher, Recommended Shop)
- * - Administrative Multi-Action Control Panel
- * * 📁 DEPENDENCIES:
- * - includes/functions.php (Required: canUserReview, getUserBadge, getShopBadge)
- * - includes/header.php & includes/footer.php
- * - config/database.php
- * * ------------------------------------------------------------------------------------------
- * Project: BNCC Student Marketplace
- * Developer: Gemini AI x Ploy Collaboration (IT Support Specialist Edition)
- * ==========================================================================================
+ * ============================================================
+ * 💎 BNCC MARKET - PREMIUM PRODUCT DETAIL SYSTEM (5-IMAGE SUPPORT)
+ * ============================================================
+ * Features: 
+ * - High-Contrast Solid UI
+ * - Multiple Image Slider (Gallery)
+ * - Advanced Order Management Integration
+ * - Dynamic Review & Rating System
+ * - Session-based View Counter
+ * - Admin Control Panel
+ * - [UPDATED] User Badges & Anti-Spam Reviews
+ * * Project: BNCC Student Marketplace
+ * Developer: Gemini AI x Ploy (Senior IT Support Collaboration)
+ * ============================================================
  */
-
-// ------------------------------------------------------------------------------------------
-// 🚀 SECTION 1: SYSTEM INITIALIZATION & DATA FETCHING
-// ------------------------------------------------------------------------------------------
-
 require_once '../includes/functions.php';
 
-// 🛡️ Security Check: Ensure Product ID is present and valid
-$product_id = isset($_GET['id']) ? (int)$_GET['id'] : null;
-if (!$product_id || $product_id <= 0) {
-    header("Location: index.php");
-    exit;
-}
+$product_id = $_GET['id'] ?? null;
+if (!$product_id) redirect('index.php');
 
 $db = getDB();
 $user_id = $_SESSION['user_id'] ?? null;
-$user_role = $_SESSION['role'] ?? 'guest';
 
-// 🔍 Fetch Primary Product Data with User Role Integration
-$sql = "SELECT p.*, s.shop_name, s.contact_line, s.contact_ig, s.line_user_id, 
-               s.user_id as owner_id, u.role as owner_role, u.fullname as owner_name, u.class_room
-        FROM products p 
-        JOIN shops s ON p.shop_id = s.id 
-        JOIN users u ON s.user_id = u.id
-        WHERE p.id = ? AND p.is_deleted = 0";
-$stmt = $db->prepare($sql);
+// 1. SQL: ดึงข้อมูลสินค้า (🎯 ปรับเพิ่ม Join users เพื่อเอา role เจ้าของร้านมาโชว์ Badge)
+$stmt = $db->prepare("SELECT p.*, s.shop_name, s.contact_line, s.contact_ig, s.line_user_id, s.user_id as owner_id, u.role as owner_role 
+                      FROM products p 
+                      JOIN shops s ON p.shop_id = s.id 
+                      JOIN users u ON s.user_id = u.id
+                      WHERE p.id = ? AND p.is_deleted = 0");
 $stmt->execute([$product_id]);
 $product = $stmt->fetch();
 
-// 🚨 Handle Non-existent or Suspended Products
+// 🚨 ถ้าโดนลบไปแล้ว ให้เด้งกลับ
 if (!$product) {
-    $_SESSION['flash_message'] = "ขออภัย ไม่พบสินค้านี้ในระบบ หรือถูกระงับการขายชั่วคราว";
-    $_SESSION['flash_type'] = "warning";
-    header("Location: index.php");
-    exit;
+    redirect('index.php');
 }
 
-// 🖼️ Fetch Gallery Images (Strict 5-Image Limit)
-$img_sql = "SELECT image_path, is_main FROM product_images WHERE product_id = ? ORDER BY is_main DESC, id ASC LIMIT 5";
-$img_stmt = $db->prepare($img_sql);
+// -------------------------------------------------------------------
+// 🎯 🛠️ [เพิ่มใหม่] SQL: ดึงรูปภาพทั้งหมดจากตาราง product_images
+// -------------------------------------------------------------------
+$img_stmt = $db->prepare("SELECT image_path, is_main FROM product_images WHERE product_id = ? ORDER BY is_main DESC, id ASC");
 $img_stmt->execute([$product_id]);
-$gallery = $img_stmt->fetchAll();
+$product_images = $img_stmt->fetchAll();
 
-// 🛠️ Legacy Support: If no separate gallery entry exists, use main image
-if (count($gallery) === 0) {
-    $gallery[] = ['image_path' => $product['image_url'], 'is_main' => 1];
-}
-$main_image_src = $gallery[0]['image_path'];
-
-// ------------------------------------------------------------------------------------------
-// 📈 SECTION 2: ANALYTICS & SOCIAL PROOF
-// ------------------------------------------------------------------------------------------
-
-// 👁️ Session-Based View Counter (Prevents artificial inflation)
-if (!isset($_SESSION['view_log'])) {
-    $_SESSION['view_log'] = [];
-}
-if (!in_array($product_id, $_SESSION['view_log'])) {
-    $db->prepare("UPDATE products SET views = views + 1 WHERE id = ?")->execute([$product_id]);
-    $_SESSION['view_log'][] = $product_id;
-    $product['views'] += 1;
+// ถ้าไม่มีรูปในตาราง product_images ให้ดึงจากตาราง products (รองรับข้อมูลเก่า)
+if (count($product_images) === 0) {
+    $product_images[] = ['image_path' => $product['image_url'], 'is_main' => 1];
 }
 
-// ⭐ Aggregate Rating Summary
-$rev_sum_sql = "SELECT AVG(rating) as avg_rating, COUNT(id) as count_reviews 
-                FROM reviews 
-                WHERE product_id = ? AND is_deleted = 0";
-$rev_sum_stmt = $db->prepare($rev_sum_sql);
-$rev_sum_stmt->execute([$product_id]);
-$r_data = $rev_sum_stmt->fetch();
+// กำหนดรูปหลัก (รูปแรกที่จะโชว์)
+$main_image = $product_images[0]['image_path'];
 
-$avg_p_rating = round($r_data['avg_rating'] ?? 0, 1);
-$total_p_reviews = $r_data['count_reviews'];
+// -------------------------------------------------------------------
 
-// 🏷️ Fetch Dynamic Product Tags
-$tags_sql = "SELECT t.tag_name FROM tags t JOIN product_tag_map ptm ON t.id = ptm.tag_id WHERE ptm.product_id = ?";
-$tags_stmt = $db->prepare($tags_sql);
-$tags_stmt->execute([$product_id]);
-$tags_list = $tags_stmt->fetchAll();
+// 🎯 🛠️ ระบบนับยอดวิวแบบกันปั๊ม (Session Based)
+if (!isset($_SESSION['viewed_products'])) {
+    $_SESSION['viewed_products'] = []; 
+}
 
-// ❤️ Wishlist Status Checker
-$is_liked = false;
+if (!in_array($product_id, $_SESSION['viewed_products'])) {
+    $update_views = $db->prepare("UPDATE products SET views = views + 1 WHERE id = ?");
+    $update_views->execute([$product_id]);
+    $_SESSION['viewed_products'][] = $product_id;
+}
+
+// 2. คำนวณเรตติ้ง
+$rating_summary_stmt = $db->prepare("SELECT AVG(rating) as avg_rating, COUNT(*) as total_reviews FROM reviews WHERE product_id = ? AND is_deleted = 0");
+$rating_summary_stmt->execute([$product_id]);
+$rating_info = $rating_summary_stmt->fetch();
+$avg_p_rating = round($rating_info['avg_rating'] ?? 0, 1);
+$total_p_reviews = $rating_info['total_reviews'];
+
+$tag_stmt = $db->prepare("SELECT t.tag_name FROM tags t JOIN product_tag_map ptm ON t.id = ptm.tag_id WHERE ptm.product_id = ?");
+$tag_stmt->execute([$product_id]);
+$product_tags = $tag_stmt->fetchAll();
+
+// 3. ตรวจสอบ Wishlist
+$is_wishlisted = false;
 if (isLoggedIn()) {
-    $check_w = $db->prepare("SELECT id FROM wishlist WHERE user_id = ? AND product_id = ?");
-    $check_w->execute([$user_id, $product_id]);
-    $is_liked = $check_w->fetch() ? true : false;
+    $check_wish = $db->prepare("SELECT id FROM wishlist WHERE user_id = ? AND product_id = ?");
+    $check_wish->execute([$user_id, $product_id]);
+    $is_wishlisted = $check_wish->fetch() ? true : false;
 }
 
-// ------------------------------------------------------------------------------------------
-// 🛒 SECTION 3: TRANSACTIONAL LOGIC (ORDERS & REVIEWS)
-// ------------------------------------------------------------------------------------------
-
-// 💳 Order Submission Logic
+// 🎯 🛠️ ประมวลผลการสั่งซื้อสินค้า
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
     if (!isLoggedIn()) redirect('../auth/login.php');
     
@@ -121,641 +92,604 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
         $_SESSION['flash_message'] = "คุณไม่สามารถสั่งซื้อสินค้าของร้านตัวเองได้";
         $_SESSION['flash_type'] = "error";
     } else {
-        $db->beginTransaction();
-        try {
-            $stmt_ord = $db->prepare("INSERT INTO orders (buyer_id, shop_id, product_id, status) VALUES (?, ?, ?, 'pending')");
-            $stmt_ord->execute([$user_id, $product['shop_id'], $product_id]);
+        $ins_order = $db->prepare("INSERT INTO orders (buyer_id, shop_id, product_id) VALUES (?, ?, ?)");
+        if ($ins_order->execute([$user_id, $product['shop_id'], $product_id])) {
             
-            // Notification dispatch
-            $notif_text = "🛒 ออเดอร์ใหม่: {$product['title']} จากคุณ {$_SESSION['fullname']}";
-            sendNotification($product['owner_id'], 'order', $notif_text, "../seller/dashboard.php");
+            // แจ้งเตือนกระดิ่งบนเว็บ (ส่งให้เจ้าของร้าน)
+            $notif_msg = "🛒 มีคำสั่งซื้อใหม่สำหรับสินค้า {$product['title']} จากคุณ {$_SESSION['fullname']}";
+            sendNotification($product['owner_id'], 'order', $notif_msg, "../seller/dashboard.php");
 
+            // แจ้งเตือนคนขายผ่าน LINE (ถ้าผูกไว้)
             if (!empty($product['line_user_id'])) {
-                sendLineMessagingAPI($product['line_user_id'], $notif_text);
+                $msg = "🛒 มีคำสั่งซื้อใหม่!\nสินค้า: " . $product['title'] . "\nจากคุณ: " . $_SESSION['fullname'] . "\nกรุณาตรวจสอบในหน้า Dashboard ของคุณ";
+                sendLineMessagingAPI($product['line_user_id'], $msg);
             }
-            $db->commit();
-            $_SESSION['flash_message'] = "ส่งคำสั่งซื้อสำเร็จ! โปรดรอเจ้าของร้านติดต่อกลับ";
+            $_SESSION['flash_message'] = "ส่งคำสั่งซื้อสำเร็จ! กรุณารอผู้ขายยืนยันและติดต่อกลับ";
             $_SESSION['flash_type'] = "success";
-        } catch (Exception $ex) {
-            $db->rollBack();
-            $_SESSION['flash_message'] = "ระบบขัดข้อง: " . $ex->getMessage();
-            $_SESSION['flash_type'] = "danger";
         }
     }
     redirect("product_detail.php?id=$product_id");
 }
 
-// 🛡️ Review Submission with Anti-Spam Guard
+// 4. ส่งรีวิว (🎯 [UPDATED] เพิ่มระบบ Anti-Spam Check ก่อนบันทึก)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
-    if (!isLoggedIn()) redirect('../auth/login.php');
-
-    $rating_val = (int)$_POST['rating'];
-    $comment_val = trim($_POST['comment']);
+    $rating = $_POST['rating'];
+    $comment = trim($_POST['comment']);
     
-    // 🛑 Anti-Spam Verification (Calls functions.php)
-    $spam_gate = canUserReview($user_id, $product_id);
+    // เรียกใช้ฟังก์ชันกันสแปมที่เราเพิ่งสร้างไว้ใน functions.php
+    $spam_check = canUserReview($user_id, $product_id);
 
-    if (!$spam_gate['status']) {
-        $_SESSION['flash_message'] = $spam_gate['message'];
+    if (!$spam_check['status']) {
+        $_SESSION['flash_message'] = $spam_check['message'];
         $_SESSION['flash_type'] = "danger";
-    } else {
-        $sql_rev = "INSERT INTO reviews (product_id, user_id, rating, comment, created_at) VALUES (?, ?, ?, ?, NOW())";
-        $stmt_rev = $db->prepare($sql_rev);
-        if ($stmt_rev->execute([$product_id, $user_id, $rating_val, $comment_val])) {
-            
-            $notif_rev = "⭐ รีวิวใหม่ ({$rating_val} ดาว) สำหรับ {$product['title']}";
-            sendNotification($product['owner_id'], 'review', $notif_rev, "product_detail.php?id=$product_id");
-            
-            $_SESSION['flash_message'] = "ขอบคุณสำหรับการรีวิวสินค้า!";
-            $_SESSION['flash_type'] = "success";
-        }
+        redirect("product_detail.php?id=$product_id");
     }
-    redirect("product_detail.php?id=$product_id");
+
+    $ins = $db->prepare("INSERT INTO reviews (product_id, user_id, rating, comment) VALUES (?, ?, ?, ?)");
+    if ($ins->execute([$product_id, $user_id, $rating, $comment])) {
+        
+        // แจ้งเตือนกระดิ่งเมื่อมีคนมารีวิว
+        $notif_msg = "⭐ มีรีวิวใหม่ ({$rating} ดาว) ในสินค้า {$product['title']}";
+        sendNotification($product['owner_id'], 'review', $notif_msg, "product_detail.php?id=$product_id");
+
+        if (!empty($product['line_user_id'])) {
+            $message = "📢 มีรีวิวใหม่ถึงสินค้าของคุณ!\n"
+                     . "📦 สินค้า: " . $product['title'] . "\n"
+                     . "⭐️ คะแนน: " . $rating . " ดาว\n"
+                     . "💬 ความเห็น: " . $comment . "\n"
+                     . "🔗 ดูรีวิว: http://localhost/student_marketplace/pages/product_detail.php?id=" . $product_id;
+            sendLineMessagingAPI($product['line_user_id'], $message);
+        }
+        $_SESSION['flash_message'] = "ขอบคุณสำหรับรีวิว! ระบบได้แจ้งเตือนผู้ขายเรียบร้อยแล้ว";
+        $_SESSION['flash_type'] = "success";
+        redirect("product_detail.php?id=$product_id");
+    }
 }
 
-// 💬 Fetch Detailed Review List
-$rev_list_sql = "SELECT r.*, u.fullname, u.profile_img, u.role as author_role 
-                 FROM reviews r 
-                 JOIN users u ON r.user_id = u.id 
-                 WHERE r.product_id = ? AND r.is_deleted = 0 
-                 ORDER BY r.created_at DESC";
-$rev_list_stmt = $db->prepare($rev_list_sql);
-$rev_list_stmt->execute([$product_id]);
-$all_reviews = $rev_list_stmt->fetchAll();
+// 5. ดึงรีวิวที่ยังไม่โดนลบ
+$rev_stmt = $db->prepare("
+    SELECT r.*, u.fullname, u.profile_img, u.id as author_id 
+    FROM reviews r 
+    JOIN users u ON r.user_id = u.id 
+    WHERE r.product_id = ? AND r.is_deleted = 0
+    ORDER BY r.created_at DESC
+");
+$rev_stmt->execute([$product_id]);
+$all_reviews = $rev_stmt->fetchAll();
 
-$pageTitle = $product['title'] . " | BNCC Market";
 require_once '../includes/header.php';
 ?>
 
 <style>
+    /* ============================================================
+       🛠️ SOLID DESIGN SYSTEM - HIGH FIDELITY
+       ============================================================ */
     :root {
-        --b-bg: #0f172a;
-        --b-card: #1e293b;
-        --b-border: rgba(255,255,255,0.08);
-        --b-primary: #6366f1;
-        --b-accent: #fbbf24;
-        --b-text: #f8fafc;
-        --b-text-muted: #94a3b8;
-        --b-danger: #ef4444;
-        --b-success: #10b981;
-        --b-glass: rgba(15, 23, 42, 0.7);
-        --b-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        --solid-bg: #f8fafc;
+        --solid-card: #ffffff;
+        --solid-text: #0f172a;
+        --solid-border: #cbd5e1;
+        --solid-primary: #4f46e5;
+        --solid-secondary: #10b981;
+        --solid-danger: #ef4444;
+        --solid-warning: #fbbf24;
+    }
+
+    .dark-theme {
+        --solid-bg: #0b0e14;
+        --solid-card: #161b26;
+        --solid-text: #ffffff;
+        --solid-border: #2d3748;
+        --solid-primary: #6366f1;
     }
 
     body {
-        background-color: var(--b-bg) !important;
-        color: var(--b-text);
-        font-family: 'Prompt', sans-serif;
-        font-weight: 400;
-        -webkit-font-smoothing: antialiased;
+        background-color: var(--solid-bg) !important;
+        color: var(--solid-text);
+        transition: background 0.3s ease;
     }
 
-    .master-product-container {
-        max-width: 1300px;
-        margin: 60px auto;
-        padding: 0 40px;
-        animation: globalEntrance 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    /* 📦 Main Container Animation */
+    .product-master-wrapper {
+        max-width: 1100px;
+        margin: 40px auto;
+        padding: 0 20px;
+        opacity: 0;
+        transform: translateY(20px);
+        animation: revealPage 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
-    @keyframes globalEntrance {
-        from { opacity: 0; transform: translateY(40px); }
+    @keyframes revealPage {
         to { opacity: 1; transform: translateY(0); }
     }
 
-    /* 🏰 Main Product Layout Grid */
-    .product-core-card {
+    /* 🖼️ Product Section Card */
+    .product-main-card {
         display: grid;
-        grid-template-columns: 1.15fr 0.85fr;
-        gap: 70px;
-        background: var(--b-card);
-        border: 2px solid var(--b-border);
-        border-radius: 50px;
-        padding: 60px;
-        box-shadow: var(--b-shadow);
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 50px;
+        background: var(--solid-card);
+        border: 2px solid var(--solid-border);
+        border-radius: 32px;
+        padding: 40px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+        margin-bottom: 50px;
+    }
+
+    /* ============================================================
+       🛠️ GALLERY SYSTEM STYLES (รูปเลื่อน)
+       ============================================================ */
+    .gallery-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    /* รูปใหญ่ */
+    .img-showcase {
         position: relative;
-        overflow: hidden;
-    }
-
-    .product-core-card::after {
-        content: '';
-        position: absolute;
-        bottom: -150px;
-        left: -150px;
-        width: 400px;
-        height: 400px;
-        background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
-        z-index: 0;
-    }
-
-    /* 🖼️ Gallery Engine Styles */
-    .gallery-engine { position: relative; z-index: 1; }
-
-    .gallery-view-port {
-        width: 100%;
-        aspect-ratio: 1/1;
-        border-radius: 40px;
+        border-radius: 24px;
         overflow: hidden;
         background: #000;
-        border: 2px solid var(--b-border);
-        position: relative;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        border: 1px solid var(--solid-border);
+        height: 450px; /* ลดความสูงลงนิดนึงเพื่อแบ่งที่ให้ Thumbnail */
+        cursor: zoom-in;
     }
 
-    .gallery-view-port img {
+    .img-showcase img {
         width: 100%;
         height: 100%;
         object-fit: cover;
-        transition: 0.8s cubic-bezier(0.2, 1, 0.3, 1);
+        transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.3s ease;
     }
 
-    .gallery-view-port:hover img { transform: scale(1.15); }
+    .img-showcase:hover img { transform: scale(1.05); }
+    
+    .img-animating {
+        opacity: 0.5;
+        transform: scale(0.98);
+    }
 
-    .gallery-thumb-rail {
+    /* รูปรองด้านล่าง (Thumbnails) */
+    .thumbnail-track {
         display: flex;
-        gap: 18px;
-        margin-top: 30px;
+        gap: 12px;
         overflow-x: auto;
-        padding: 10px 5px;
-        scrollbar-width: none;
+        padding-bottom: 5px; /* เผื่อที่ให้ Scrollbar ถ้าจอเล็ก */
     }
 
-    .gallery-thumb-rail::-webkit-scrollbar { display: none; }
+    .thumbnail-track::-webkit-scrollbar { height: 6px; }
+    .thumbnail-track::-webkit-scrollbar-thumb { background: var(--solid-border); border-radius: 10px; }
 
-    .thumb-item {
-        width: 100px;
-        height: 100px;
-        border-radius: 22px;
-        border: 4px solid transparent;
+    .thumb-btn {
+        width: 80px;
+        height: 80px;
+        flex-shrink: 0;
+        border-radius: 16px;
+        border: 3px solid transparent;
         overflow: hidden;
         cursor: pointer;
-        opacity: 0.45;
-        transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        flex-shrink: 0;
+        opacity: 0.6;
+        transition: all 0.3s ease;
     }
 
-    .thumb-item img { width: 100%; height: 100%; object-fit: cover; }
-    .thumb-item:hover { opacity: 0.9; transform: translateY(-8px); }
-    .thumb-item.active {
-        border-color: var(--b-primary);
+    .thumb-btn img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .thumb-btn:hover { opacity: 0.9; transform: translateY(-3px); }
+    .thumb-btn.active {
+        border-color: var(--solid-primary);
         opacity: 1;
-        transform: scale(1.1);
-        box-shadow: 0 12px 25px rgba(99, 102, 241, 0.4);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
     }
 
-    /* 📝 Content Typography & Badges */
-    .content-hub { position: relative; z-index: 1; }
-    
-    .product-cat-label {
-        color: var(--b-primary);
+    /* Info Side */
+    .product-title-h1 {
+        font-size: 2.8rem;
         font-weight: 900;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 3px;
+        letter-spacing: -1.5px;
+        line-height: 1.1;
         margin-bottom: 15px;
-        display: block;
+        color: var(--solid-text);
     }
 
-    .product-main-h1 {
-        font-size: 4.2rem;
-        font-weight: 950;
-        letter-spacing: -3px;
-        line-height: 0.9;
-        margin-bottom: 20px;
-        color: var(--b-text);
-        text-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    }
-
-    .product-price-xl {
-        font-size: 3.5rem;
-        font-weight: 950;
-        color: var(--b-accent);
-        margin: 40px 0;
+    .price-large {
+        font-size: 2.5rem;
+        font-weight: 900;
+        color: var(--solid-primary);
+        margin: 25px 0;
         display: flex;
-        align-items: center;
-        gap: 15px;
-        text-shadow: 0 8px 20px rgba(251, 191, 36, 0.2);
-    }
-
-    /* 🥇 Premium Badges */
-    .badge-gold-medal {
-        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-        color: #000;
-        padding: 8px 20px;
-        border-radius: 15px;
-        font-weight: 950;
-        font-size: 0.9rem;
-        display: inline-flex;
         align-items: center;
         gap: 10px;
-        box-shadow: 0 10px 30px rgba(251, 191, 36, 0.4);
-        border: 1px solid rgba(0,0,0,0.1);
-        text-transform: uppercase;
     }
 
-    .badge-staff {
-        background: rgba(99, 102, 241, 0.15);
-        border: 1.5px solid var(--b-primary);
-        color: var(--b-primary);
-        padding: 5px 14px;
-        border-radius: 10px;
-        font-size: 0.75rem;
-        font-weight: 800;
+    /* 🏷️ Tags & Badges */
+    .tag-pill {
+        background: var(--solid-bg);
+        border: 1px solid var(--solid-border);
+        color: var(--solid-text);
+        padding: 6px 16px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 700;
         text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
-    /* 🔘 Interactive Buttons */
-    .btn-order-giant {
+    /* 🔘 Action Buttons */
+    .btn-buy-now {
         flex: 1;
-        background: var(--b-primary);
+        padding: 20px;
+        border-radius: 18px;
+        background: var(--solid-primary);
         color: #fff !important;
+        font-weight: 800;
+        font-size: 1.2rem;
         border: none;
-        padding: 26px;
-        border-radius: 28px;
-        font-weight: 950;
-        font-size: 1.5rem;
         cursor: pointer;
-        transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        box-shadow: 0 20px 40px rgba(99, 102, 241, 0.35);
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 15px;
-        text-decoration: none;
+        gap: 12px;
+        box-shadow: 0 10px 25px rgba(79, 70, 229, 0.3);
+        transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
-    .btn-order-giant:hover {
-        transform: translateY(-10px) scale(1.02);
-        box-shadow: 0 25px 55px rgba(99, 102, 241, 0.5);
-        filter: brightness(1.1);
+    .btn-buy-now:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(79, 70, 229, 0.5);
     }
 
-    .btn-sq-action {
-        width: 85px;
-        height: 85px;
-        border-radius: 28px;
-        border: 2px solid var(--b-border);
-        background: rgba(255,255,255,0.02);
-        color: #fff;
-        font-size: 2rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    .btn-chat-seller {
+        padding: 20px 30px;
+        border-radius: 18px;
+        background: var(--solid-card);
+        border: 2px solid var(--solid-border);
+        color: var(--solid-text);
+        font-weight: 800;
+        font-size: 1.2rem;
         cursor: pointer;
-        transition: 0.4s;
-    }
-
-    .btn-sq-action:hover {
-        background: var(--b-card);
-        border-color: var(--b-primary);
-        color: var(--b-primary);
-        transform: scale(1.1) rotate(5deg);
-    }
-
-    /* 🏪 Shop Identity System */
-    .shop-portal-card {
-        background: var(--b-glass);
-        border: 2.5px solid var(--b-border);
-        border-radius: 40px;
-        padding: 40px;
-        margin-top: 60px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        backdrop-filter: blur(25px);
-        border-left: 8px solid var(--b-primary);
-    }
-
-    .shop-avatar-giant {
-        width: 85px;
-        height: 85px;
-        background: linear-gradient(135deg, #6366f1, #4f46e5);
-        border-radius: 25px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2.5rem;
-        color: #fff;
-        box-shadow: 0 15px 30px rgba(99, 102, 241, 0.4);
-    }
-
-    .shop-link-title {
-        font-size: 2.2rem;
-        font-weight: 950;
-        color: #fff;
-        text-decoration: none;
         transition: 0.3s;
     }
 
-    .shop-link-title:hover { color: var(--b-primary); text-shadow: 0 0 20px rgba(99, 102, 241, 0.3); }
+    .btn-chat-seller:hover { background: var(--solid-bg); border-color: var(--solid-primary); color: var(--solid-primary); }
 
-    /* ⭐ Ultimate Review Cards */
-    .review-master-hub { margin-top: 120px; }
-    
-    .review-solid-entry {
-        background: var(--b-card);
-        border: 2px solid var(--b-border);
-        border-radius: 40px;
-        padding: 50px;
-        margin-bottom: 40px;
-        transition: 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
-        position: relative;
-    }
-
-    .review-solid-entry:hover {
-        border-color: var(--b-primary);
-        transform: scale(1.02) translateX(15px);
-        box-shadow: 0 30px 60px rgba(0,0,0,0.4);
-    }
-
-    .reviewer-meta-box { display: flex; align-items: center; gap: 25px; margin-bottom: 30px; }
-    .reviewer-avatar-img { width: 75px; height: 75px; border-radius: 28px; object-fit: cover; border: 4px solid var(--b-border); }
-
-    .rating-star-group { display: flex; gap: 8px; color: var(--b-accent); font-size: 1.1rem; }
-
-    /* 🛡️ Review Anti-Spam Styling */
-    .spam-blocker-shield {
-        text-align: center;
-        padding: 100px 50px;
-        background: rgba(99, 102, 241, 0.03);
-        border-radius: 50px;
-        border: 3px dashed var(--b-border);
-        margin-bottom: 60px;
-    }
-
-    .spam-blocker-shield i { font-size: 5rem; color: var(--b-primary); opacity: 0.4; margin-bottom: 30px; }
-
-    /* 🚨 Glass Modals System */
-    .modal-universal-bg {
-        position: fixed; inset: 0;
-        background: rgba(15, 23, 42, 0.95);
-        z-index: 1000000;
-        display: none;
+    /* 🏪 Shop Card Area */
+    .shop-portal {
+        background: var(--solid-bg);
+        border: 2px solid var(--solid-border);
+        border-radius: 24px;
+        padding: 25px;
+        margin-top: 40px;
+        display: flex;
         align-items: center;
-        justify-content: center;
-        backdrop-filter: blur(30px);
+        justify-content: space-between;
     }
 
-    .modal-universal-card {
-        background: var(--b-card);
-        border: 3px solid var(--b-border);
-        border-radius: 50px;
-        width: 95%;
-        max-width: 600px;
-        padding: 70px;
-        box-shadow: 0 60px 120px rgba(0,0,0,0.9);
-        animation: modalInDynamics 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    .shop-avatar {
+        width: 60px; height: 60px;
+        background: var(--solid-primary);
+        color: #fff;
+        border-radius: 16px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.5rem;
     }
 
-    @keyframes modalInDynamics {
-        from { transform: scale(0.7) translateY(50px); opacity: 0; }
-        to { transform: scale(1) translateY(0); opacity: 1; }
+    /* ⭐ Review System */
+    .star-rating-solid {
+        display: flex;
+        flex-direction: row-reverse;
+        justify-content: flex-end;
+        gap: 10px;
     }
 
-    /* 📱 Responsive Engineering */
-    @media (max-width: 1100px) {
-        .product-core-card { grid-template-columns: 1fr; padding: 45px; }
-        .product-main-h1 { font-size: 3.2rem; }
+    .star-rating-solid input { display: none; }
+    .star-rating-solid label {
+        font-size: 2.2rem;
+        color: #cbd5e1;
+        cursor: pointer;
+        transition: 0.2s;
     }
 
-    @media (max-width: 768px) {
-        .master-product-container { padding: 0 20px; }
-        .product-core-card { padding: 30px; border-radius: 35px; }
-        .product-main-h1 { font-size: 2.6rem; }
-        .shop-portal-card { flex-direction: column; gap: 30px; text-align: center; }
+    .star-rating-solid input:checked ~ label,
+    .star-rating-solid label:hover,
+    .star-rating-solid label:hover ~ label { color: var(--solid-warning); }
+
+    .review-card-solid {
+        background: var(--solid-card);
+        border: 2px solid var(--solid-border);
+        border-radius: 24px;
+        padding: 30px;
+        margin-bottom: 20px;
+        transition: 0.3s;
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+
+    .review-card-solid.show { opacity: 1; transform: translateX(0); }
+
+    /* 📱 Responsive Adjustments */
+    @media (max-width: 992px) {
+        .product-main-card { grid-template-columns: 1fr; padding: 25px; }
+        .img-showcase { height: 400px; }
+    }
+
+    /* 🚨 Admin & Modal Styles */
+    .modal-overlay {
+        position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%;
+        background: rgba(15, 23, 42, 0.9); display: none; align-items: center; justify-content: center;
+    }
+    .modal-solid {
+        background: var(--solid-card); padding: 40px; border-radius: 32px; width: 90%; max-width: 480px;
+        border: 2px solid var(--solid-border);
     }
 </style>
 
-<div class="master-product-container">
+<div class="product-master-wrapper">
     
-    <div class="product-core-card">
-        
-        <div class="gallery-engine">
-            <div class="gallery-view-port">
-                <img id="activeGalleryImg" src="../assets/images/products/<?= e($main_image_src) ?>" alt="<?= e($product['title']) ?>">
-                
-                <div style="position: absolute; top: 35px; left: 35px; background: rgba(0,0,0,0.8); backdrop-filter: blur(15px); padding: 12px 25px; border-radius: 20px; font-weight: 950; font-size: 1rem; border: 1.5px solid rgba(255,255,255,0.15);">
-                    <i class="fas fa-star" style="color: var(--b-accent);"></i> <?= $avg_p_rating ?> <span style="font-weight: 500; opacity: 0.6; margin-left: 5px;">(<?= $total_p_reviews ?> รีวิว)</span>
-                </div>
+    <?php echo displayFlashMessage(); ?>
 
-                <div style="position: absolute; bottom: 35px; right: 35px; background: rgba(255,255,255,0.95); color: #000; padding: 12px 25px; border-radius: 20px; font-weight: 950; font-size: 0.9rem; box-shadow: 0 15px 35px rgba(0,0,0,0.4);">
-                    <i class="fas fa-chart-line" style="margin-right: 8px;"></i> <?= number_format($product['views']) ?> VIEWS
+    <div class="product-main-card">
+        
+        <div class="gallery-wrapper">
+            <div class="img-showcase">
+                <img id="mainDisplayImage" src="../assets/images/products/<?= e($main_image) ?>" alt="<?= e($product['title']) ?>">
+                
+                <?php if ($total_p_reviews > 0): ?>
+                    <div style="position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.8); color: #fff; padding: 8px 15px; border-radius: 12px; font-weight: 800; font-size: 0.9rem;">
+                        <i class="fas fa-star" style="color: var(--solid-warning);"></i> <?= $avg_p_rating ?>
+                    </div>
+                <?php endif; ?>
+
+                <div style="position: absolute; bottom: 20px; right: 20px; background: rgba(255,255,255,0.9); color: #000; padding: 8px 15px; border-radius: 12px; font-weight: 800; font-size: 0.8rem;">
+                    <i class="fas fa-eye"></i> <?= number_format($product['views']) ?> Views
                 </div>
             </div>
 
-            <?php if (count($gallery) > 1): ?>
-            <div class="gallery-thumb-rail">
-                <?php foreach ($gallery as $idx => $img): ?>
-                    <div class="thumb-item <?= $idx === 0 ? 'active' : '' ?>" 
-                         onclick="primeGalleryImage('../assets/images/products/<?= e($img['image_path']) ?>', this)">
-                        <img src="../assets/images/products/<?= e($img['image_path']) ?>" alt="Product Thumb <?= $idx+1 ?>">
+            <?php if (count($product_images) > 1): ?>
+            <div class="thumbnail-track">
+                <?php foreach ($product_images as $idx => $img): ?>
+                    <div class="thumb-btn <?= $idx === 0 ? 'active' : '' ?>" 
+                         onclick="changeMainImage('../assets/images/products/<?= e($img['image_path']) ?>', this)">
+                        <img src="../assets/images/products/<?= e($img['image_path']) ?>" alt="Thumbnail">
                     </div>
                 <?php endforeach; ?>
             </div>
             <?php endif; ?>
         </div>
 
-        <div class="content-hub">
-            <div class="p-header">
-                <span class="product-cat-label">BNCC MARKET EXCLUSIVE</span>
-                <h1 class="product-main-h1"><?= e($product['title']) ?></h1>
-                
-                <div style="display: flex; gap: 15px; margin-top: 25px; flex-wrap: wrap;">
-                    <?php foreach ($tags_list as $tag): ?>
-                        <span style="background: rgba(99, 102, 241, 0.15); border: 2px solid rgba(99, 102, 241, 0.3); color: #c7d2fe; padding: 8px 18px; border-radius: 16px; font-size: 0.85rem; font-weight: 900;">#<?= e($tag['tag_name']) ?></span>
-                    <?php endforeach; ?>
+        <div class="product-details-content">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+                <div>
+                    <h1 class="product-title-h1"><?= e($product['title']) ?></h1>
+                    <p style="color: var(--text-muted); font-weight: 600;">BNCC Student Collection</p>
                 </div>
-            </div>
-
-            <div class="product-price-xl">
-                ฿<?= number_format($product['price'], 2) ?>
-                <span>สุทธิ (NET)</span>
-            </div>
-
-            <div style="margin-bottom: 55px; padding-bottom: 45px; border-bottom: 2px dashed var(--b-border);">
-                <h6 style="text-transform: uppercase; font-weight: 950; font-size: 0.85rem; opacity: 0.4; letter-spacing: 3px; margin-bottom: 25px; display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-align-left" style="color: var(--b-primary);"></i> Product Description
-                </h6>
-                <p style="font-size: 1.3rem; line-height: 2.1; opacity: 0.95; font-weight: 500; text-align: justify; color: #cbd5e1;">
-                    <?= nl2br(e($product['description'])) ?>
-                </p>
-            </div>
-
-            <form method="POST" style="display: flex; gap: 25px; align-items: center;">
-                <?php if ($user_id && $user_id != $product['owner_id']): ?>
-                    <button type="submit" name="place_order" class="btn-order-giant" onclick="return confirm('คุณต้องการส่งคำสั่งซื้อสินค้านี้ใช่หรือไม่?')">
-                        <i class="fas fa-bolt"></i> PROCEED ORDER
-                    </button>
-                    <a href="chat.php?user=<?= $product['owner_id'] ?>" class="btn-sq-action" title="ทักแชทสอบถาม"><i class="fas fa-comment-alt"></i></a>
-                <?php elseif (!$user_id): ?>
-                    <a href="../auth/login.php" class="btn-order-giant">LOGIN TO UNLOCK PURCHASE</a>
-                <?php endif; ?>
-
-                <button type="button" id="wishlistTrigger" data-id="<?= $product['id'] ?>" class="btn-sq-action" style="color: <?= $is_liked ? 'var(--b-danger)' : 'var(--b-text)' ?>;">
-                    <i class="<?= $is_liked ? 'fas' : 'far' ?> fa-heart"></i>
+                <button id="main-wish-btn" data-id="<?= $product['id'] ?>" 
+                        style="background: var(--solid-bg); border: 2px solid var(--solid-border); width: 60px; height: 60px; border-radius: 50%; cursor: pointer; transition: 0.3s; font-size: 1.5rem; color: <?= $is_wishlisted ? 'var(--solid-danger)' : 'var(--solid-border)' ?>;">
+                    <i class="<?= $is_wishlisted ? 'fas' : 'far' ?> fa-heart"></i>
                 </button>
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-bottom: 30px; flex-wrap: wrap;">
+                <?php foreach ($product_tags as $tag): ?>
+                    <span class="tag-pill">#<?= e($tag['tag_name']) ?></span>
+                <?php endforeach; ?>
+            </div>
+
+            <div class="price-large">
+                <span>฿<?= number_format($product['price'], 2) ?></span>
+            </div>
+
+            <div style="margin-bottom: 40px;">
+                <label style="display: block; font-weight: 900; text-transform: uppercase; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 1px;">Description</label>
+                <p style="font-size: 1.1rem; line-height: 1.8; color: var(--solid-text);"><?= nl2br(e($product['description'])) ?></p>
+            </div>
+
+            <form method="POST" style="display: flex; gap: 15px; margin-bottom: 40px;">
+                <?php if ($user_id && $user_id != $product['owner_id']): ?>
+                    <button type="submit" name="place_order" class="btn-buy-now" onclick="return confirm('ยืนยันคำสั่งซื้อ?')">
+                        <i class="fas fa-shopping-bag"></i> ORDER NOW
+                    </button>
+                    <a href="chat.php?user=<?= $product['owner_id'] ?>" class="btn-chat-seller">
+                        <i class="fas fa-comment-alt"></i>
+                    </a>
+                <?php elseif (!$user_id): ?>
+                    <a href="../auth/login.php" class="btn-buy-now" style="text-decoration: none;">
+                        <i class="fas fa-user-lock"></i> LOGIN TO PURCHASE
+                    </a>
+                <?php endif; ?>
             </form>
 
-            <div class="shop-portal-card">
-                <div style="display: flex; align-items: center; gap: 28px;">
-                    <div class="shop-avatar-giant"><i class="fas fa-store"></i></div>
+            <div class="shop-portal">
+                <div style="display: flex; align-items: center; gap: 20px;">
+                    <div class="shop-avatar"><i class="fas fa-store"></i></div>
                     <div>
-                        <span style="font-size: 0.75rem; font-weight: 900; color: var(--b-primary); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px; display: block;">
-                            Verified Merchant <?= getUserBadge($product['owner_role']) ?>
-                        </span>
-                        <div style="display: flex; align-items: center; gap: 18px; flex-wrap: wrap;">
-                            <a href="shop_profile.php?id=<?= $product['shop_id'] ?>" class="shop-link-title"><?= e($product['shop_name']) ?></a>
-                            <?= getShopBadge($product['shop_id']) ?> </div>
-                        <div style="font-size: 0.85rem; font-weight: 800; opacity: 0.5; margin-top: 8px;">
-                            <i class="fas fa-user-circle"></i> <?= e($product['owner_name']) ?> | ห้อง: <?= e($product['class_room']) ?>
+                        <div style="font-size: 0.7rem; font-weight: 800; color: var(--solid-primary); text-transform: uppercase;">
+                            Verified Seller <?= getUserBadge($product['owner_role']) ?>
                         </div>
+                        <a href="shop_profile.php?id=<?= $product['shop_id'] ?>" style="text-decoration: none; color: var(--solid-text); font-weight: 900; font-size: 1.3rem;">
+                            <?= e($product['shop_name']) ?> <?= getShopBadge($product['shop_id']) ?>
+                        </a>
                     </div>
                 </div>
                 
-                <div style="display: flex; gap: 20px;">
+                <div style="display: flex; gap: 8px;">
                     <?php if(!empty($product['contact_line'])): ?>
-                        <a href="https://line.me/ti/p/~<?= e($product['contact_line']) ?>" target="_blank" style="color: var(--b-success); font-size: 2.2rem; transition: 0.3s;" onmouseover="this.style.transform='rotate(15deg) scale(1.2)'"><i class="fab fa-line"></i></a>
+                        <a href="https://line.me/ti/p/~<?= e($product['contact_line']) ?>" target="_blank" style="color: #06c755; font-size: 1.5rem;"><i class="fab fa-line"></i></a>
                     <?php endif; ?>
                     <?php if(!empty($product['contact_ig'])): ?>
-                        <a href="https://www.instagram.com/<?= e($product['contact_ig']) ?>/" target="_blank" style="color: #ec4899; font-size: 2.2rem; transition: 0.3s;" onmouseover="this.style.transform='rotate(-15deg) scale(1.2)'"><i class="fab fa-instagram"></i></a>
+                        <a href="https://www.instagram.com/<?= e($product['contact_ig']) ?>/" target="_blank" style="color: #e1306c; font-size: 1.5rem;"><i class="fab fa-instagram"></i></a>
                     <?php endif; ?>
                 </div>
             </div>
 
-            <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'teacher'])): ?>
-                <div style="margin-top: 60px; padding: 40px; border-radius: 40px; border: 3px dashed var(--b-danger); background: rgba(239, 68, 68, 0.04); position: relative;">
-                    <div style="position: absolute; top: -18px; left: 40px; background: var(--b-danger); color: #fff; padding: 6px 20px; border-radius: 12px; font-weight: 950; font-size: 0.75rem; letter-spacing: 1px;">STAFF CONTROL PANEL</div>
-                    <h5 style="color: var(--b-danger); font-weight: 950; margin-bottom: 25px; font-size: 1.1rem;"><i class="fas fa-user-shield"></i> Security & Moderation Hub</h5>
-                    <div style="display: flex; gap: 20px;">
-                        <button onclick="activateModal('suspendModal')" class="btn-order-giant" style="background: var(--b-danger); padding: 18px; font-size: 1.1rem; box-shadow: none;">SUSPEND PRODUCT</button>
-                        <a href="../admin/inspect_item.php?id=<?= $product_id ?>" class="btn-sq-action" style="width: 70px; height: 70px; background: #000;"><i class="fas fa-search-plus"></i></a>
-                    </div>
+            <?php if (isset($_SESSION['role']) && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'teacher')): ?>
+                <div style="margin-top: 25px; padding: 20px; border-radius: 20px; border: 2px dashed var(--solid-danger); background: rgba(239, 68, 68, 0.05);">
+                    <h4 style="color: var(--solid-danger); font-weight: 800; margin-bottom: 15px; font-size: 0.85rem;">ADMINISTRATOR PANEL</h4>
+                    <button onclick="openDeleteProductModal()" class="btn-buy-now" style="background: var(--solid-danger); padding: 12px; font-size: 0.95rem;">
+                        <i class="fas fa-ban"></i> SUSPEND PRODUCT
+                    </button>
                 </div>
             <?php endif; ?>
             
-            <button onclick="primeReport('<?= $product['shop_id'] ?>', 'shop')" style="background: none; border: none; color: #ef4444; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 12px; font-weight: 900; margin-top: 50px; opacity: 0.5; transition: 0.4s;" onmouseover="this.style.opacity='1'; this.style.letterSpacing='1px';">
-                <i class="fas fa-exclamation-circle"></i> REPORT THIS MERCHANT FOR TERMS VIOLATION
+            <button onclick="openReportModal(<?= $product['shop_id'] ?>, 'shop')" style="background: none; border: none; color: var(--solid-danger); font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 700; margin-top: 20px; opacity: 0.6;">
+                <i class="fas fa-flag"></i> REPORT THIS SHOP
             </button>
         </div>
     </div>
 
-    <div class="review-master-hub">
-        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 70px;">
-            <div>
-                <h2 style="font-size: 3.5rem; font-weight: 950; letter-spacing: -2px; line-height: 1;">Student Reviews</h2>
-                <p style="font-weight: 700; opacity: 0.4; margin-top: 10px;">ขุมทรัพย์ทางความคิดจากเพื่อนสมาชิก BNCC</p>
-            </div>
-            <div style="background: var(--b-accent); color: #000; padding: 15px 45px; border-radius: 60px; font-weight: 950; font-size: 1.6rem; box-shadow: 0 15px 40px rgba(251, 191, 36, 0.4); display: flex; align-items: center; gap: 15px;">
-                <i class="fas fa-star"></i> <?= $avg_p_rating ?>
+    <div class="reviews-master-box">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
+            <h2 style="font-size: 2rem; font-weight: 900; letter-spacing: -1px;">Customer Reviews (<?= count($all_reviews) ?>)</h2>
+            <div style="background: var(--solid-warning); color: #000; padding: 8px 20px; border-radius: 50px; font-weight: 900; font-size: 1.1rem;">
+                ★ <?= $avg_p_rating ?>
             </div>
         </div>
 
         <?php if (isLoggedIn()): ?>
             <?php 
-            $spam_report = canUserReview($user_id, $product_id); 
-            if ($spam_report['status']): 
+            $spam_check_ui = canUserReview($user_id, $product_id); 
+            if ($spam_check_ui['status']): 
             ?>
-            <div class="review-solid-entry" style="border: 3.5px solid var(--b-primary); background: rgba(99, 102, 241, 0.02);">
-                <h3 style="font-weight: 950; margin-bottom: 40px; font-size: 1.8rem; display: flex; align-items: center; gap: 15px;">
-                    <i class="fas fa-pen-nib" style="color: var(--b-primary);"></i> Write a Review
-                </h3>
+            <div class="product-main-card" style="grid-template-columns: 1fr; margin-bottom: 40px;">
+                <h3 style="font-weight: 800; margin-bottom: 25px;">Share your experience</h3>
                 <form method="POST">
-                    <div style="margin-bottom: 45px;">
-                        <label style="display: block; font-weight: 900; font-size: 0.9rem; opacity: 0.5; margin-bottom: 20px; text-transform: uppercase;">Overall Rating</label>
-                        <div class="star-rating-xl">
+                    <div style="margin-bottom: 25px;">
+                        <label class="field-label" style="margin-left: 0;">Rating Score</label>
+                        <div class="star-rating-solid">
                             <?php for($i=5; $i>=1; $i--): ?>
-                                <input type="radio" id="ux_star<?= $i ?>" name="rating" value="<?= $i ?>" required>
-                                <label for="ux_star<?= $i ?>"><i class="fas fa-star"></i></label>
+                                <input type="radio" id="star<?= $i ?>" name="rating" value="<?= $i ?>" required>
+                                <label for="star<?= $i ?>"><i class="fas fa-star"></i></label>
                             <?php endfor; ?>
                         </div>
                     </div>
                     <div class="form-group">
-                        <textarea name="comment" required placeholder="Tell your friends what you think about this product... How was the quality? Did it match your expectations?" style="width: 100%; min-height: 220px; border-radius: 35px; padding: 35px; border: 3px solid var(--b-border); background: rgba(0,0,0,0.4); color: #fff; font-weight: 600; font-size: 1.25rem; outline: none; transition: 0.4s; box-shadow: inset 0 10px 20px rgba(0,0,0,0.2);" onfocus="this.style.borderColor='var(--b-primary)'; this.style.boxShadow='0 0 30px rgba(99, 102, 241, 0.2)';"></textarea>
+                        <textarea name="comment" class="form-control" required placeholder="Tell us what you think about this product..." style="min-height: 150px; border-radius: 20px; padding: 20px; border-width: 2px; background: var(--solid-bg); font-weight: 600;"></textarea>
                     </div>
-                    <button type="submit" name="submit_review" class="btn-order-giant" style="width: auto; padding: 22px 80px; margin-top: 45px; font-size: 1.2rem;">
-                        <i class="fas fa-paper-plane"></i> PUBLISH REVIEW
+                    <button type="submit" name="submit_review" class="btn-buy-now" style="width: auto; padding: 15px 50px; margin-top: 20px;">
+                        POST REVIEW
                     </button>
                 </form>
             </div>
             <?php else: ?>
-                <div class="spam-blocker-shield">
-                    <i class="fas fa-shield-virus"></i>
-                    <h4 style="font-weight: 950; color: var(--b-primary); margin: 0; font-size: 1.6rem; letter-spacing: -0.5px;"><?= $spam_report['message'] ?></h4>
-                    <p style="opacity: 0.5; font-weight: 700; margin-top: 15px;">ระบบป้องกันการสแปมของ BNCC Marketplace เปิดใช้งานอยู่</p>
+                <div style="text-align: center; padding: 40px; background: rgba(99, 102, 241, 0.05); border-radius: 24px; border: 2px solid var(--solid-border); margin-bottom: 40px;">
+                    <p style="font-weight: 800; color: var(--solid-primary); margin: 0;">
+                        <i class="fas fa-info-circle"></i> <?= $spam_check_ui['message'] ?>
+                    </p>
                 </div>
             <?php endif; ?>
         <?php endif; ?>
 
-        <div class="review-stream-container">
+        <div class="review-stream">
             <?php if (count($all_reviews) > 0): ?>
                 <?php foreach ($all_reviews as $idx => $rev): 
-                    $p_path = !empty($rev['profile_img']) ? "../assets/images/profiles/" . $rev['profile_img'] : "../assets/images/profiles/default_profile.png";
+                    $avatar = !empty($rev['profile_img']) ? "../assets/images/profiles/" . $rev['profile_img'] : "../assets/images/profiles/default_profile.png";
                 ?>
-                    <div class="review-solid-entry stagger-reveal">
-                        <div class="review-header">
-                            <div class="reviewer-meta-box">
-                                <a href="view_profile.php?id=<?= $rev['author_id'] ?>">
-                                    <img src="<?= $p_path ?>" class="reviewer-avatar-img">
-                                </a>
-                                <div>
-                                    <h5 style="font-weight: 950; margin: 0; font-size: 1.5rem; display: flex; align-items: center; gap: 12px;">
-                                        <?= e($rev['fullname']) ?> <?= getUserBadge($rev['author_role']) ?>
-                                    </h5>
-                                    <div class="rating-star-group" style="margin-top: 8px;">
-                                        <?php for($k=0; $k<$rev['rating']; $k++) echo '<i class="fas fa-star"></i>'; ?>
-                                        <?php for($k=$rev['rating']; $k<5; $k++) echo '<i class="fas fa-star" style="opacity:0.1;"></i>'; ?>
+                    <div class="review-card-solid stagger-reveal" style="transition-delay: <?= $idx * 0.1 ?>s;">
+                        <div style="display: flex; gap: 20px;">
+                            <a href="view_profile.php?id=<?= $rev['author_id'] ?>">
+                                <img src="<?= $avatar ?>" style="width: 65px; height: 65px; border-radius: 20px; object-fit: cover; border: 2px solid var(--solid-border);">
+                            </a>
+                            <div style="flex: 1;">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                    <?php 
+                                    // ดึงบทบาทคนรีวิวมาโชว์ Badge (ถ้ามี)
+                                    $author_role_stmt = $db->prepare("SELECT role FROM users WHERE id = ?");
+                                    $author_role_stmt->execute([$rev['author_id']]);
+                                    $author_role = $author_role_stmt->fetchColumn();
+                                    ?>
+                                    <div>
+                                        <a href="view_profile.php?id=<?= $rev['author_id'] ?>" style="text-decoration: none; color: var(--solid-text); font-weight: 800; font-size: 1.1rem;">
+                                            <?= e($rev['fullname']) ?> <?= getUserBadge($author_role) ?>
+                                        </a>
+                                        <div style="color: var(--solid-warning); font-size: 0.85rem; margin-top: 4px;">
+                                            <?php for($j=0; $j<$rev['rating']; $j++) echo '<i class="fas fa-star"></i>'; ?>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: 10px;">
+                                        <button onclick="openReportModal(<?= $rev['id'] ?>, 'comment')" class="toolbar-icon" style="color: var(--solid-border);"><i class="fas fa-flag"></i></button>
+                                        <?php if (isset($_SESSION['role']) && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'teacher')): ?>
+                                            <button onclick="openDeleteCommentModal(<?= $rev['id'] ?>, '<?= e($rev['fullname']) ?>')" style="color: var(--solid-danger); background: none; border: none; cursor: pointer; font-size: 1.2rem;"><i class="fas fa-trash-alt"></i></button>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
-                            </div>
-                            <div style="text-align: right;">
-                                <span style="display: block; font-size: 0.9rem; font-weight: 900; opacity: 0.3;"><?= date('d M Y - H:i', strtotime($rev['created_at'])) ?></span>
-                                <?php if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'teacher'])): ?>
-                                    <button onclick="triggerReviewDeletion('<?= $rev['id'] ?>')" style="background: none; border: none; color: var(--b-danger); font-size: 1.5rem; margin-top: 20px; cursor: pointer; transition: 0.4s;" onmouseover="this.style.transform='scale(1.3) rotate(15deg)'"><i class="fas fa-trash-alt"></i></button>
-                                <?php endif; ?>
+                                <p style="margin-top: 15px; font-size: 1.05rem; line-height: 1.7; color: var(--solid-text);"><?= nl2br(e($rev['comment'])) ?></p>
+                                <div style="margin-top: 20px; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); opacity: 0.6;">
+                                    PUBLISHED AT: <?= date('d M Y - H:i', strtotime($rev['created_at'])) ?>
+                                </div>
                             </div>
                         </div>
-                        <p style="margin-top: 35px; font-size: 1.4rem; line-height: 2; font-weight: 500; color: #e2e8f0; border-left: 4px solid var(--b-border); padding-left: 25px;">
-                            <?= nl2br(e($rev['comment'])) ?>
-                        </p>
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
-                <div style="text-align: center; padding: 150px 20px; border: 5px dashed var(--b-border); border-radius: 50px; opacity: 0.3;">
-                    <i class="fas fa-comment-medical" style="font-size: 6rem; margin-bottom: 40px;"></i>
-                    <h3 style="font-weight: 950; font-size: 2.2rem;">สินค้านี้ยังไม่มีเสียงตอบรับ</h3>
-                    <p style="font-weight: 800; font-size: 1.2rem;">เป็นคนแรกที่รีวิวเพื่อช่วยเพื่อนตัดสินใจ!</p>
+                <div style="text-align: center; padding: 100px 20px; border: 3px dashed var(--solid-border); border-radius: 32px;">
+                    <i class="fas fa-comment-slash" style="font-size: 4rem; opacity: 0.1;"></i>
+                    <h3 style="margin-top: 20px; font-weight: 800; opacity: 0.4;">No reviews yet.</h3>
                 </div>
             <?php endif; ?>
         </div>
     </div>
 </div>
 
-<div id="reportModal" class="modal-universal-bg">
-    <div class="modal-universal-card">
-        <h2 style="font-weight: 950; margin-bottom: 20px; color: var(--b-danger); display: flex; align-items: center; gap: 20px;"><i class="fas fa-shield-alt"></i> CONTENT REPORT</h2>
-        <p style="opacity: 0.7; margin-bottom: 40px; font-weight: 700; font-size: 1.2rem;">ช่วยปกป้องความปลอดภัยของเพื่อนนักศึกษาด้วยการแจ้งเบาะแส</p>
+<div id="reportModal" class="modal-overlay">
+    <div class="modal-solid">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <div style="width: 80px; height: 80px; background: rgba(239,68,68,0.1); color: var(--solid-danger); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 2.2rem;">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <h3 style="font-size: 1.6rem; font-weight: 900;">Report Content</h3>
+            <p style="color: var(--text-muted); font-weight: 600;">ช่วยให้ BNCC Market ปลอดภัยขึ้น</p>
+        </div>
         <form action="../auth/submit_report.php" method="POST">
-            <input type="hidden" name="target_id" id="rep_target_val">
-            <input type="hidden" name="target_type" id="rep_type_val">
+            <input type="hidden" name="target_id" id="report_target_id">
+            <input type="hidden" name="target_type" id="report_target_type">
             <input type="hidden" name="product_id" value="<?= $product_id ?>">
-            <textarea name="reason" required placeholder="อธิบายสาเหตุที่คุณแจ้งรายงาน (เช่น ข้อมูลเท็จ, สินค้าอันตราย)..." style="width: 100%; min-height: 200px; border-radius: 30px; padding: 30px; background: rgba(0,0,0,0.4); border: 2.5px solid var(--b-border); color: #fff; font-weight: 600; font-size: 1.15rem;"></textarea>
-            <div style="display: flex; gap: 25px; margin-top: 50px;">
-                <button type="button" onclick="deactivateModal('reportModal')" class="btn-sq-action" style="flex: 1; font-size: 1.1rem; border-radius: 25px;">CANCEL</button>
-                <button type="submit" class="btn-order-giant" style="flex: 2; background: var(--b-danger); border-radius: 25px; box-shadow: 0 15px 35px rgba(239, 68, 68, 0.4);">SUBMIT REPORT</button>
+            <div class="form-group">
+                <textarea name="reason" class="form-control" required style="width:100%; min-height:130px; border-radius: 18px; padding: 20px; border: 2px solid var(--solid-border); background: var(--solid-bg); font-weight: 600;" placeholder="เหตุผลที่ต้องการรายงาน..."></textarea>
+            </div>
+            <div style="display:flex; gap:12px; margin-top: 30px;">
+                <button type="button" onclick="closeReportModal()" class="btn-chat-seller" style="flex:1; font-size: 1rem; padding: 15px;">CANCEL</button>
+                <button type="submit" class="btn-buy-now" style="flex:1; font-size: 1rem; padding: 15px; background: var(--solid-danger);">SUBMIT REPORT</button>
             </div>
         </form>
     </div>
 </div>
 
-<div id="suspendModal" class="modal-universal-bg">
-    <div class="modal-universal-card" style="border-color: var(--b-danger);">
-        <h2 style="font-weight: 950; color: var(--b-danger); margin-bottom: 25px; display: flex; align-items: center; gap: 20px;"><i class="fas fa-ban"></i> SUSPEND LISTING</h2>
-        <p style="font-weight: 700; margin-bottom: 40px; font-size: 1.2rem;">ระงับการเข้าถึงสินค้านี้ทันที (เจ้าของร้านจะได้รับแจ้งเหตุผล)</p>
-        <form action="../admin/action_suspend_item.php" method="POST">
+<div id="deleteCommentModal" class="modal-overlay">
+    <div class="modal-solid" style="border-color: var(--solid-danger);">
+        <h3 style="color: var(--solid-danger); font-weight: 900; margin-bottom: 10px;"><i class="fas fa-trash-alt"></i> DELETE COMMENT</h3>
+        <p style="font-weight: 600; margin-bottom: 25px;">User: <span id="target_user_name" style="color: var(--solid-primary);"></span></p>
+        <form action="../admin/admin_delete_comment.php" method="POST">
+            <input type="hidden" name="comment_id" id="delete_comment_id">
             <input type="hidden" name="product_id" value="<?= $product_id ?>">
-            <textarea name="admin_reason" required placeholder="เหตุผลที่เป็นทางการในการระงับรายการนี้..." style="width: 100%; min-height: 180px; border-radius: 30px; padding: 30px; background: rgba(0,0,0,0.4); border: 2.5px solid var(--b-border); color: #fff; font-weight: 600; font-size: 1.15rem;"></textarea>
-            <div style="display: flex; gap: 25px; margin-top: 50px;">
-                <button type="button" onclick="deactivateModal('suspendModal')" class="btn-sq-action" style="flex: 1; border-radius: 25px;">BACK</button>
-                <button type="submit" class="btn-order-giant" style="flex: 2; background: var(--b-danger); border-radius: 25px;">CONFIRM SUSPEND</button>
+            <div class="form-group">
+                <label style="display:block; margin-bottom:10px; font-weight:800; font-size: 0.8rem;">REASON (LOGGING REQUIRED):</label>
+                <textarea name="reason" class="form-control" required style="width:100%; min-height:120px; border-radius:18px; padding:15px; border: 2px solid var(--solid-border); background: var(--solid-bg);" placeholder="Describe why this comment is being removed..."></textarea>
+            </div>
+            <div style="display:flex; gap:12px; margin-top: 30px;">
+                <button type="button" onclick="closeDeleteCommentModal()" class="btn-chat-seller" style="flex:1;">CANCEL</button>
+                <button type="submit" class="btn-buy-now" style="flex:1; background: var(--solid-danger);">CONFIRM DELETE</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="deleteProductModal" class="modal-overlay">
+    <div class="modal-solid" style="border-color: var(--solid-danger);">
+        <h3 style="color: var(--solid-danger); font-weight: 900; margin-bottom: 10px;"><i class="fas fa-box-open"></i> SUSPEND PRODUCT</h3>
+        <p style="font-weight: 600; margin-bottom: 25px;">สินค้านี้จะถูกซ่อนจากสาธารณะทันที</p>
+        <form action="../admin/admin_delete_product.php" method="POST">
+            <input type="hidden" name="product_id" value="<?= $product_id ?>">
+            <div class="form-group">
+                <label style="display:block; margin-bottom:10px; font-weight:800; font-size: 0.8rem;">SUSPENSION REASON:</label>
+                <textarea name="reason" class="form-control" required style="width:100%; min-height:120px; border-radius:18px; padding:15px; border: 2px solid var(--solid-border); background: var(--solid-bg);" placeholder="เช่น ขัดต่อกฎระเบียบ, ขายของต้องห้าม..."></textarea>
+            </div>
+            <div style="display:flex; gap:12px; margin-top: 30px;">
+                <button type="button" onclick="closeDeleteProductModal()" class="btn-chat-seller" style="flex:1;">CANCEL</button>
+                <button type="submit" class="btn-buy-now" style="flex:1; background: var(--solid-danger);">REMOVE NOW</button>
             </div>
         </form>
     </div>
@@ -763,120 +697,95 @@ require_once '../includes/header.php';
 
 <script>
     /**
-     * 🖼️ Advanced Gallery Switcher Engine
-     * Transitions main display with smooth opacity and scale dynamics
+     * 🎯 🛠️ ฟังก์ชันสำหรับเปลี่ยนรูปภาพ (Gallery Slider Animation)
      */
-    function primeGalleryImage(url, node) {
-        const stage = document.getElementById('activeGalleryImg');
-        const thumbs = document.querySelectorAll('.thumb-item');
+    function changeMainImage(imgUrl, clickedThumb) {
+        const mainImage = document.getElementById('mainDisplayImage');
         
-        // UI Feedback: Handle active state class switching
-        thumbs.forEach(t => t.classList.remove('active'));
-        node.classList.add('active');
+        // 1. ลบ Active ออกจากทุกปุ่ม แล้วใส่ให้อันที่โดนคลิก
+        document.querySelectorAll('.thumb-btn').forEach(btn => btn.classList.remove('active'));
+        clickedThumb.classList.add('active');
+
+        // 2. ใส่คลาสให้รูปเฟดจางลง + ย่อลงนิดนึง
+        mainImage.classList.add('img-animating');
         
-        // Render: Smooth fade transition
-        stage.style.opacity = '0.2';
-        stage.style.transform = 'scale(0.97) rotate(-2deg)';
-        
+        // 3. รอ 150ms ให้แอนิเมชันวิ่งไปครึ่งนึง ค่อยสลับ Source รูป
         setTimeout(() => {
-            stage.src = url;
-            stage.style.opacity = '1';
-            stage.style.transform = 'scale(1) rotate(0deg)';
-        }, 220);
+            mainImage.src = imgUrl;
+            // ถอดคลาสออกเพื่อให้รูปเด้งกลับมาสว่าง
+            mainImage.classList.remove('img-animating');
+        }, 150);
     }
 
     /**
-     * ❤️ Wishlist AJAX Management
-     * High-speed interaction using Fetch API with direct icon feedback
+     * 🚀 REVEAL ANIMATIONS (Intersection Observer)
      */
-    const wishBtn = document.getElementById('wishlistTrigger');
-    if (wishBtn) {
-        wishBtn.addEventListener('click', function() {
-            const btn = this;
-            const icon = btn.querySelector('i');
-            const pId = btn.dataset.id;
-            
-            // Interaction feedback (Pulse effect)
-            btn.style.transform = "scale(0.7) rotate(15deg)";
-            
-            fetch('../auth/toggle_wishlist.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'product_id=' + pId
-            })
-            .then(res => res.json())
-            .then(data => {
-                btn.style.transform = "scale(1) rotate(0deg)";
-                if (data.status === 'added') {
-                    icon.className = 'fas fa-heart';
-                    btn.style.color = '#ef4444';
-                    if(typeof showToast === 'function') showToast('Wishlist', 'เพิ่มสินค้าลงในรายการโปรดแล้ว');
-                } else if (data.status === 'removed') {
-                    icon.className = 'far fa-heart';
-                    btn.style.color = '#fff';
-                    if(typeof showToast === 'function') showToast('Wishlist', 'นำสินค้าออกจากรายการโปรด');
-                } else {
-                    alert(data.message || 'เกิดข้อผิดพลาด');
-                }
-            })
-            .catch(error => {
-                console.error("Critical: Wishlist Logic Fail", error);
-                btn.style.transform = "scale(1)";
-            });
-        });
-    }
-
-    /**
-     * 👁️ Universal Modal Controller
-     * Handles display logic and state for all premium overlays
-     */
-    function activateModal(id) {
-        const modal = document.getElementById(id);
-        modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden'; // Lock scrolling
-    }
-
-    function deactivateModal(id) {
-        const modal = document.getElementById(id);
-        modal.style.display = 'none';
-        document.body.style.overflow = 'auto'; // Restore scrolling
-    }
-
-    function primeReport(id, type) {
-        document.getElementById('rep_target_val').value = id;
-        document.getElementById('rep_type_val').value = type;
-        activateModal('reportModal');
-    }
-
-    /**
-     * 🚀 Intersection Observer Animation Engine
-     * Orchestrates the reveal of review cards on scroll
-     */
-    const observerX = new IntersectionObserver((entries) => {
-        entries.forEach((entry, idx) => {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry, index) => {
             if (entry.isIntersecting) {
-                // Cascading reveal delay
                 setTimeout(() => {
-                    entry.target.style.opacity = '1';
-                    entry.target.style.transform = 'translateY(0) scale(1)';
-                }, idx * 120);
+                    entry.target.classList.add('show');
+                }, index * 100);
             }
         });
-    }, { threshold: 0.15 });
+    }, { threshold: 0.1 });
 
-    document.querySelectorAll('.stagger-reveal').forEach(el => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(40px) scale(0.95)';
-        el.style.transition = '0.8s cubic-bezier(0.19, 1, 0.22, 1)';
-        observerX.observe(el);
+    document.querySelectorAll('.stagger-reveal').forEach(el => observer.observe(el));
+
+    /**
+     * 👁️ MODAL CONTROLS
+     */
+    function openReportModal(id, type) {
+        document.getElementById('report_target_id').value = id;
+        document.getElementById('report_target_type').value = type;
+        document.getElementById('reportModal').style.display = 'flex';
+    }
+    function closeReportModal() { document.getElementById('reportModal').style.display = 'none'; }
+
+    function openDeleteCommentModal(id, name) {
+        document.getElementById('delete_comment_id').value = id;
+        document.getElementById('target_user_name').innerText = name;
+        document.getElementById('deleteCommentModal').style.display = 'flex';
+    }
+    function closeDeleteCommentModal() { document.getElementById('deleteCommentModal').style.display = 'none'; }
+
+    function openDeleteProductModal() { document.getElementById('deleteProductModal').style.display = 'flex'; }
+    function closeDeleteProductModal() { document.getElementById('deleteProductModal').style.display = 'none'; }
+
+    /**
+     * ❤️ WISHLIST DYNAMIC ACTION
+     */
+    document.getElementById('main-wish-btn').addEventListener('click', function() {
+        const btn = this;
+        const icon = btn.querySelector('i');
+        const productId = btn.dataset.id;
+        
+        btn.style.transform = "scale(0.8)";
+        setTimeout(() => btn.style.transform = "scale(1)", 150);
+
+        fetch('../auth/toggle_wishlist.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'product_id=' + productId
+        }).then(res => res.json()).then(data => {
+            if (data.status === 'added') { 
+                icon.classList.replace('far', 'fas'); 
+                btn.style.color = 'var(--solid-danger)'; 
+            }
+            else if (data.status === 'removed') { 
+                icon.classList.replace('fas', 'far'); 
+                btn.style.color = 'var(--solid-border)'; 
+            }
+        }).catch(err => console.error("Wishlist Error:", err));
     });
 
-    // Outside click dismissal logic for all modals
     window.onclick = function(event) {
-        if (event.target.classList.contains('modal-universal-bg')) {
-            event.target.style.display = 'none';
-            document.body.style.overflow = 'auto';
-        }
+        const reportM = document.getElementById('reportModal');
+        const commentM = document.getElementById('deleteCommentModal');
+        const productM = document.getElementById('deleteProductModal');
+        if (event.target == reportM) closeReportModal();
+        if (event.target == commentM) closeDeleteCommentModal();
+        if (event.target == productM) closeDeleteProductModal();
     }
 </script>
 
