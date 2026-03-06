@@ -112,7 +112,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
 }
 
 // 4. ส่งรีวิว (🎯 [UPDATED] เพิ่มระบบ Anti-Spam Check ก่อนบันทึก)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) 
+    // 4.1 แก้ไขรีวิวของตัวเอง
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_review'])) {
+    $review_id = (int)$_POST['review_id'];
+    $rating = (int)$_POST['rating'];
+    $comment = trim($_POST['comment']);
+    $stmt = $db->prepare("UPDATE reviews SET rating = ?, comment = ? WHERE id = ? AND user_id = ?");
+    if ($stmt->execute([$rating, $comment, $review_id, $user_id])) {
+        $_SESSION['flash_message'] = "แก้ไขรีวิวเรียบร้อยแล้ว";
+        $_SESSION['flash_type'] = "success";
+    }
+    redirect("product_detail.php?id=$product_id");
+}
+
+// 4.2 ลบรีวิวของตัวเอง (Soft Delete)
+if (isset($_GET['delete_review_id'])) {
+    $rev_id = (int)$_GET['delete_review_id'];
+    $stmt = $db->prepare("UPDATE reviews SET is_deleted = 1 WHERE id = ? AND user_id = ?");
+    if ($stmt->execute([$rev_id, $user_id])) {
+        $_SESSION['flash_message'] = "ลบรีวิวของคุณแล้ว";
+        $_SESSION['flash_type'] = "success";
+    }
+    redirect("product_detail.php?id=$product_id");
+}
+    {
     $rating = $_POST['rating'];
     $comment = trim($_POST['comment']);
     
@@ -127,7 +151,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
 
     $ins = $db->prepare("INSERT INTO reviews (product_id, user_id, rating, comment) VALUES (?, ?, ?, ?)");
     if ($ins->execute([$product_id, $user_id, $rating, $comment])) {
-        
+        // 🟢 แก้ไขรีวิว (Update Logic)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_review_action'])) {
+    $rev_id = (int)$_POST['review_id'];
+    $new_rating = (int)$_POST['rating'];
+    $new_comment = trim($_POST['comment']);
+    $db->prepare("UPDATE reviews SET rating = ?, comment = ? WHERE id = ? AND user_id = ?")->execute([$new_rating, $new_comment, $rev_id, $user_id]);
+    $_SESSION['flash_message'] = "แก้ไขรีวิวแล้ว";
+    $_SESSION['flash_type'] = "success";
+    redirect("product_detail.php?id=$product_id");
+}
+
+// 🔴 ลบรีวิว (Soft Delete Logic)
+if (isset($_GET['soft_delete_review'])) {
+    $del_id = (int)$_GET['soft_delete_review'];
+    $db->prepare("UPDATE reviews SET is_deleted = 1 WHERE id = ? AND user_id = ?")->execute([$del_id, $user_id]);
+    $_SESSION['flash_message'] = "ลบรีวิวเรียบร้อย";
+    $_SESSION['flash_type'] = "success";
+    redirect("product_detail.php?id=$product_id");
+}
         // แจ้งเตือนกระดิ่งเมื่อมีคนมารีวิว
         $notif_msg = "⭐ มีรีวิวใหม่ ({$rating} ดาว) ในสินค้า {$product['title']}";
         sendNotification($product['owner_id'], 'review', $notif_msg, "product_detail.php?id=$product_id");
@@ -633,6 +675,19 @@ require_once '../includes/header.php';
                                         <?php if (isset($_SESSION['role']) && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'teacher')): ?>
                                             <button onclick="openDeleteCommentModal(<?= $rev['id'] ?>, '<?= e($rev['fullname']) ?>')" style="color: var(--solid-danger); background: none; border: none; cursor: pointer; font-size: 1.2rem;"><i class="fas fa-trash-alt"></i></button>
                                         <?php endif; ?>
+                                        <?php if ($user_id == $rev['author_id']): ?>
+    <div style="margin-top: 10px; display: flex; gap: 15px;">
+        <button type="button" onclick="openEditReviewModal(<?= $rev['id'] ?>, <?= $rev['rating'] ?>, '<?= e(str_replace(["\r", "\n"], '\n', $rev['comment'])) ?>')" 
+                style="background:none; border:none; color:var(--solid-primary); font-size:0.85rem; cursor:pointer; font-weight:800; padding:0;">
+            <i class="fas fa-edit"></i> แก้ไขรีวิว
+        </button>
+        <a href="product_detail.php?id=<?= $product_id ?>&soft_delete_review=<?= $rev['id'] ?>" 
+           onclick="return confirm('จะลบรีวิวนี้จริงๆ หรอ?')"
+           style="text-decoration:none; color:var(--solid-danger); font-size:0.85rem; font-weight:800;">
+            <i class="fas fa-trash"></i> ลบทิ้ง
+        </a>
+    </div>
+<?php endif; ?>
                                     </div>
                                 </div>
                                 <p style="margin-top: 15px; font-size: 1.05rem; line-height: 1.7; color: var(--solid-text);"><?= nl2br(e($rev['comment'])) ?></p>
@@ -710,6 +765,25 @@ require_once '../includes/header.php';
                 <button type="button" onclick="closeDeleteProductModal()" class="btn-chat-seller" style="flex:1;">CANCEL</button>
                 <button type="submit" class="btn-buy-now" style="flex:1; background: var(--solid-danger);">REMOVE NOW</button>
             </div>
+            <div id="editReviewModal" class="modal-overlay">
+    <div class="modal-solid">
+        <h3 style="font-weight: 900; margin-bottom: 20px;"><i class="fas fa-pen"></i> แก้ไขรีวิว</h3>
+        <form method="POST">
+            <input type="hidden" name="review_id" id="edit_target_id">
+            <div style="margin-bottom: 15px;">
+                <label style="display:block; font-weight:800; margin-bottom:5px;">คะแนน</label>
+                <select name="rating" id="edit_target_rating" class="form-control" style="border-radius:10px;">
+                    <option value="5">5 ดาว</option><option value="4">4 ดาว</option><option value="3">3 ดาว</option><option value="2">2 ดาว</option><option value="1">1 ดาว</option>
+                </select>
+            </div>
+            <textarea name="comment" id="edit_target_comment" class="form-control" required style="min-height: 120px; border-radius: 15px; padding: 15px;"></textarea>
+            <div style="display:flex; gap:12px; margin-top: 25px;">
+                <button type="button" onclick="document.getElementById('editReviewModal').style.display='none'" class="btn-chat-seller" style="flex:1;">ยกเลิก</button>
+                <button type="submit" name="edit_review_trigger" class="btn-buy-now" style="flex:1;">บันทึก</button>
+            </div>
+        </form>
+    </div>
+</div>
         </form>
     </div>
 </div>
@@ -806,6 +880,12 @@ require_once '../includes/header.php';
         if (event.target == commentM) closeDeleteCommentModal();
         if (event.target == productM) closeDeleteProductModal();
     }
+    function openEditReviewModal(id, rating, comment) {
+    document.getElementById('target_rev_id').value = id;
+    document.getElementById('target_rev_rating').value = rating;
+    document.getElementById('target_rev_comment').value = comment;
+    document.getElementById('editReviewModal').style.display = 'flex';
+}
 </script>
 
 <?php require_once '../includes/footer.php'; ?>
