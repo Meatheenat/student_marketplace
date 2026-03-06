@@ -1,15 +1,16 @@
 <?php
 /**
  * ============================================================
- * 💎 BNCC MARKET - PREMIUM PRODUCT DETAIL SYSTEM
+ * 💎 BNCC MARKET - PREMIUM PRODUCT DETAIL SYSTEM (5-IMAGE SUPPORT)
  * ============================================================
  * Features: 
- * - High-Contrast Solid UI (No Blur/No Seamless)
+ * - High-Contrast Solid UI
+ * - Multiple Image Slider (Gallery)
  * - Advanced Order Management Integration
  * - Dynamic Review & Rating System
  * - Session-based View Counter
  * - Admin Control Panel
- * * Project: BNCC Student Marketplace [Cite: User Summary]
+ * * Project: BNCC Student Marketplace
  * Developer: Gemini AI x Ploy (Senior IT Support Collaboration)
  * ============================================================
  */
@@ -33,6 +34,23 @@ $product = $stmt->fetch();
 if (!$product) {
     redirect('index.php');
 }
+
+// -------------------------------------------------------------------
+// 🎯 🛠️ [เพิ่มใหม่] SQL: ดึงรูปภาพทั้งหมดจากตาราง product_images
+// -------------------------------------------------------------------
+$img_stmt = $db->prepare("SELECT image_path, is_main FROM product_images WHERE product_id = ? ORDER BY is_main DESC, id ASC");
+$img_stmt->execute([$product_id]);
+$product_images = $img_stmt->fetchAll();
+
+// ถ้าไม่มีรูปในตาราง product_images ให้ดึงจากตาราง products (รองรับข้อมูลเก่า)
+if (count($product_images) === 0) {
+    $product_images[] = ['image_path' => $product['image_url'], 'is_main' => 1];
+}
+
+// กำหนดรูปหลัก (รูปแรกที่จะโชว์)
+$main_image = $product_images[0]['image_path'];
+
+// -------------------------------------------------------------------
 
 // 🎯 🛠️ ระบบนับยอดวิวแบบกันปั๊ม (Session Based)
 if (!isset($_SESSION['viewed_products'])) {
@@ -187,24 +205,75 @@ require_once '../includes/header.php';
         margin-bottom: 50px;
     }
 
-    /* Image Side */
+    /* ============================================================
+       🛠️ GALLERY SYSTEM STYLES (รูปเลื่อน)
+       ============================================================ */
+    .gallery-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    /* รูปใหญ่ */
     .img-showcase {
         position: relative;
         border-radius: 24px;
         overflow: hidden;
         background: #000;
         border: 1px solid var(--solid-border);
-        height: 500px;
+        height: 450px; /* ลดความสูงลงนิดนึงเพื่อแบ่งที่ให้ Thumbnail */
+        cursor: zoom-in;
     }
 
     .img-showcase img {
         width: 100%;
         height: 100%;
         object-fit: cover;
-        transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.3s ease;
     }
 
     .img-showcase:hover img { transform: scale(1.05); }
+    
+    .img-animating {
+        opacity: 0.5;
+        transform: scale(0.98);
+    }
+
+    /* รูปรองด้านล่าง (Thumbnails) */
+    .thumbnail-track {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        padding-bottom: 5px; /* เผื่อที่ให้ Scrollbar ถ้าจอเล็ก */
+    }
+
+    .thumbnail-track::-webkit-scrollbar { height: 6px; }
+    .thumbnail-track::-webkit-scrollbar-thumb { background: var(--solid-border); border-radius: 10px; }
+
+    .thumb-btn {
+        width: 80px;
+        height: 80px;
+        flex-shrink: 0;
+        border-radius: 16px;
+        border: 3px solid transparent;
+        overflow: hidden;
+        cursor: pointer;
+        opacity: 0.6;
+        transition: all 0.3s ease;
+    }
+
+    .thumb-btn img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .thumb-btn:hover { opacity: 0.9; transform: translateY(-3px); }
+    .thumb-btn.active {
+        border-color: var(--solid-primary);
+        opacity: 1;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
 
     /* Info Side */
     .product-title-h1 {
@@ -354,18 +423,31 @@ require_once '../includes/header.php';
 
     <div class="product-main-card">
         
-        <div class="img-showcase">
-            <img src="../assets/images/products/<?= $product['image_url'] ?>" alt="<?= e($product['title']) ?>">
-            
-            <?php if ($total_p_reviews > 0): ?>
-                <div style="position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.8); color: #fff; padding: 8px 15px; border-radius: 12px; font-weight: 800; font-size: 0.9rem;">
-                    <i class="fas fa-star" style="color: var(--solid-warning);"></i> <?= $avg_p_rating ?>
-                </div>
-            <?php endif; ?>
+        <div class="gallery-wrapper">
+            <div class="img-showcase">
+                <img id="mainDisplayImage" src="../assets/images/products/<?= e($main_image) ?>" alt="<?= e($product['title']) ?>">
+                
+                <?php if ($total_p_reviews > 0): ?>
+                    <div style="position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.8); color: #fff; padding: 8px 15px; border-radius: 12px; font-weight: 800; font-size: 0.9rem;">
+                        <i class="fas fa-star" style="color: var(--solid-warning);"></i> <?= $avg_p_rating ?>
+                    </div>
+                <?php endif; ?>
 
-            <div style="position: absolute; bottom: 20px; right: 20px; background: rgba(255,255,255,0.9); color: #000; padding: 8px 15px; border-radius: 12px; font-weight: 800; font-size: 0.8rem;">
-                <i class="fas fa-eye"></i> <?= number_format($product['views']) ?> Views
+                <div style="position: absolute; bottom: 20px; right: 20px; background: rgba(255,255,255,0.9); color: #000; padding: 8px 15px; border-radius: 12px; font-weight: 800; font-size: 0.8rem;">
+                    <i class="fas fa-eye"></i> <?= number_format($product['views']) ?> Views
+                </div>
             </div>
+
+            <?php if (count($product_images) > 1): ?>
+            <div class="thumbnail-track">
+                <?php foreach ($product_images as $idx => $img): ?>
+                    <div class="thumb-btn <?= $idx === 0 ? 'active' : '' ?>" 
+                         onclick="changeMainImage('../assets/images/products/<?= e($img['image_path']) ?>', this)">
+                        <img src="../assets/images/products/<?= e($img['image_path']) ?>" alt="Thumbnail">
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
         </div>
 
         <div class="product-details-content">
@@ -583,6 +665,27 @@ require_once '../includes/header.php';
 
 <script>
     /**
+     * 🎯 🛠️ ฟังก์ชันสำหรับเปลี่ยนรูปภาพ (Gallery Slider Animation)
+     */
+    function changeMainImage(imgUrl, clickedThumb) {
+        const mainImage = document.getElementById('mainDisplayImage');
+        
+        // 1. ลบ Active ออกจากทุกปุ่ม แล้วใส่ให้อันที่โดนคลิก
+        document.querySelectorAll('.thumb-btn').forEach(btn => btn.classList.remove('active'));
+        clickedThumb.classList.add('active');
+
+        // 2. ใส่คลาสให้รูปเฟดจางลง + ย่อลงนิดนึง
+        mainImage.classList.add('img-animating');
+        
+        // 3. รอ 150ms ให้แอนิเมชันวิ่งไปครึ่งนึง ค่อยสลับ Source รูป
+        setTimeout(() => {
+            mainImage.src = imgUrl;
+            // ถอดคลาสออกเพื่อให้รูปเด้งกลับมาสว่าง
+            mainImage.classList.remove('img-animating');
+        }, 150);
+    }
+
+    /**
      * 🚀 REVEAL ANIMATIONS (Intersection Observer)
      */
     const observer = new IntersectionObserver((entries) => {
@@ -625,7 +728,6 @@ require_once '../includes/header.php';
         const icon = btn.querySelector('i');
         const productId = btn.dataset.id;
         
-        // Micro-animation during click
         btn.style.transform = "scale(0.8)";
         setTimeout(() => btn.style.transform = "scale(1)", 150);
 
@@ -645,7 +747,6 @@ require_once '../includes/header.php';
         }).catch(err => console.error("Wishlist Error:", err));
     });
 
-    // Close modals on overlay click
     window.onclick = function(event) {
         const reportM = document.getElementById('reportModal');
         const commentM = document.getElementById('deleteCommentModal');
