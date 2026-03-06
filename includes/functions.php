@@ -161,6 +161,7 @@ function sendLineMessagingAPI($userId, $message) {
 
     $postData = json_encode($data);
     $ch = curl_init($url);
+    $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -226,5 +227,28 @@ function sendNotification($user_id, $type, $message, $link = '#') {
     $db = getDB();
     $stmt = $db->prepare("INSERT INTO notifications (user_id, type, message, link) VALUES (?, ?, ?, ?)");
     return $stmt->execute([$user_id, $type, $message, $link]);
+}
+
+/**
+ * 🎯 [ADDED] ฟังก์ชันเสริมสำหรับระบบติดตามร้านค้า (Follow System Helper)
+ * ดึงสถานะการติดตาม และแจ้งเตือนผู้ติดตามแบบกลุ่ม
+ */
+function isFollowing($user_id, $shop_id) {
+    $db = getDB();
+    $stmt = $db->prepare("SELECT id FROM follows WHERE user_id = ? AND shop_id = ?");
+    $stmt->execute([$user_id, $shop_id]);
+    return $stmt->fetch() ? true : false;
+}
+
+function notifyShopFollowers($shop_id, $message, $link = '#') {
+    $db = getDB();
+    // คิวรีดึงรายชื่อ User ID ของผู้ติดตามทั้งหมดของร้านนี้
+    $stmt = $db->prepare("SELECT user_id FROM follows WHERE shop_id = ?");
+    $stmt->execute([$shop_id]);
+    $followers = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+    foreach ($followers as $follower_id) {
+        sendNotification($follower_id, 'system', $message, $link);
+    }
 }
 ?>
