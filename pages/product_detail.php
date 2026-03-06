@@ -504,27 +504,46 @@ require_once '../includes/header.php';
             </form>
 
             <div class="shop-portal">
-                <div style="display: flex; align-items: center; gap: 20px;">
-                    <div class="shop-avatar"><i class="fas fa-store"></i></div>
-                    <div>
-                        <div style="font-size: 0.7rem; font-weight: 800; color: var(--solid-primary); text-transform: uppercase;">
-                            Verified Seller <?= getUserBadge($product['owner_role']) ?>
-                        </div>
-                        <a href="shop_profile.php?id=<?= $product['shop_id'] ?>" style="text-decoration: none; color: var(--solid-text); font-weight: 900; font-size: 1.3rem;">
-                            <?= e($product['shop_name']) ?> <?= getShopBadge($product['shop_id']) ?>
-                        </a>
-                    </div>
-                </div>
-                
-                <div style="display: flex; gap: 8px;">
-                    <?php if(!empty($product['contact_line'])): ?>
-                        <a href="https://line.me/ti/p/~<?= e($product['contact_line']) ?>" target="_blank" style="color: #06c755; font-size: 1.5rem;"><i class="fab fa-line"></i></a>
-                    <?php endif; ?>
-                    <?php if(!empty($product['contact_ig'])): ?>
-                        <a href="https://www.instagram.com/<?= e($product['contact_ig']) ?>/" target="_blank" style="color: #e1306c; font-size: 1.5rem;"><i class="fab fa-instagram"></i></a>
-                    <?php endif; ?>
-                </div>
+    <div style="display:flex; align-items:center; gap:20px;">
+        
+        <div class="shop-avatar">
+            <i class="fas fa-store"></i>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:4px;">
+            
+            <div style="font-size:0.7rem; font-weight:800; color:var(--solid-primary); text-transform:uppercase;">
+                VERIFIED SELLER <?= getUserBadge($product['owner_role']) ?>
             </div>
+
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <a href="shop_profile.php?id=<?= $product['shop_id'] ?>" 
+                   style="text-decoration:none; color:var(--solid-text); font-weight:900; font-size:1.3rem;">
+                    <?= e($product['shop_name']) ?>
+                </a>
+
+                <span style="display:inline-flex;">
+                    <?= getShopBadge($product['shop_id']) ?>
+                </span>
+            </div>
+
+        </div>
+    </div>
+    
+    <div style="display:flex; gap:10px; align-items:center;">
+        <?php if(!empty($product['contact_line'])): ?>
+            <a href="https://line.me/ti/p/~<?= e($product['contact_line']) ?>" target="_blank" style="color:#06c755; font-size:1.6rem;">
+                <i class="fab fa-line"></i>
+            </a>
+        <?php endif; ?>
+
+        <?php if(!empty($product['contact_ig'])): ?>
+            <a href="https://www.instagram.com/<?= e($product['contact_ig']) ?>/" target="_blank" style="color:#e1306c; font-size:1.6rem;">
+                <i class="fab fa-instagram"></i>
+            </a>
+        <?php endif; ?>
+    </div>
+</div>
 
             <?php if (isset($_SESSION['role']) && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'teacher')): ?>
                 <div style="margin-top: 25px; padding: 20px; border-radius: 20px; border: 2px dashed var(--solid-danger); background: rgba(239, 68, 68, 0.05);">
