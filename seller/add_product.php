@@ -139,17 +139,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 
 <style>
+    /* อัปเกรด CSS เพื่อ UX/UI ที่ฉลาดขึ้น */
     .upload-box {
         transition: all 0.3s ease;
         position: relative;
         overflow: hidden;
     }
     .upload-box:hover {
-        border-color: #6c5ce7 !important; /* เปลี่ยนสีขอบตอน Hover ให้เข้ากับปุ่มม่วงของมึง */
+        border-color: #6c5ce7 !important; 
         box-shadow: 0 0 15px rgba(108, 92, 231, 0.2);
-        transform: translateY(-2px);
     }
     .thumb-item {
+        position: relative;
         opacity: 0;
         transform: translateY(10px);
         animation: fadeUp 0.4s ease forwards;
@@ -158,6 +159,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     .thumb-item:hover {
         transform: scale(1.05);
     }
+    .thumb-img {
+        width: 100%;
+        aspect-ratio: 1;
+        object-fit: cover;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    /* ปุ่ม X สำหรับลบรูปทีละรูป */
+    .remove-btn {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background: #ff4757;
+        color: white;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        font-size: 14px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        transition: transform 0.2s, background 0.2s;
+        z-index: 10;
+    }
+    .remove-btn:hover {
+        transform: scale(1.2);
+        background: #ff6b81;
+    }
+
+    /* ป้ายกำกับ "หน้าปก" เพื่อให้ดูรู้เรื่องไม่ต้องเดา */
+    .cover-badge {
+        position: absolute;
+        bottom: 5px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(95, 66, 228, 0.9);
+        color: white;
+        font-size: 0.7rem;
+        padding: 2px 8px;
+        border-radius: 10px;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    .thumb-item.is-cover .cover-badge {
+        opacity: 1;
+        background: #06C755; /* สีเขียวเด่นๆ ถ้าถูกเลือกเป็นหน้าปก */
+    }
+    .thumb-item.is-cover .thumb-img {
+        border: 3px solid #06C755 !important;
+    }
+
     #image_preview {
         animation: fadeUp 0.5s ease forwards;
         transition: opacity 0.3s;
@@ -178,6 +237,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             <div class="upload-section">
                 <div class="upload-box" style="background: var(--bg-card); padding: 20px; border-radius: 16px; border: 2px dashed var(--border-color); text-align: center;">
+                    
                     <label style="display: block; cursor: pointer; margin-bottom: 0;" title="คลิกเพื่อเพิ่มรูปภาพ (สะสมได้ 5 รูป)">
                         <img id="image_preview" 
                              src="<?php echo ($product && $product['image_url']) ? '../assets/images/products/'.$product['image_url'] : ''; ?>" 
@@ -185,17 +245,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         
                         <div id="upload_placeholder" style="<?php echo ($product && $product['image_url']) ? 'display:none;' : 'padding: 40px 0;'; ?>">
                             <i class="fas fa-cloud-upload-alt" style="font-size: 3rem; color: var(--border-color); margin-bottom: 10px; transition: color 0.3s;"></i>
-                            <p style="color: var(--text-muted); font-size: 0.9rem;">คลิกเพื่อเลือกรูปภาพ<br><small>(คลิกเพิ่มทีละรูป หรือลากคลุมได้สูงสุด 5 รูป)</small></p>
+                            <p style="color: var(--text-muted); font-size: 0.9rem;">คลิกเพื่อเพิ่มรูปภาพ<br><small>(คลิกซ้ำเพื่อเพิ่ม หรือลากคลุมได้สูงสุด 5 รูป)</small></p>
                         </div>
                         
                         <input type="file" name="product_images[]" id="product_image" accept="image/*" multiple style="display: none;">
                     </label>
 
-                    <div id="thumbnails_container" style="display: none; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 15px;">
+                    <div id="thumbnails_container" style="display: none; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 20px; padding: 10px 0;">
                         </div>
-                    <div id="clear_images_btn" style="display: none; margin-top: 15px; font-size: 0.8rem; color: #ff7675; cursor: pointer; text-decoration: underline;">
-                        ล้างรูปภาพทั้งหมด
-                    </div>
+                    
+                </div>
+                <div style="text-align: center; margin-top: 10px;">
+                    <small style="color: var(--text-muted);">💡 <b>Tips:</b> คลิกที่รูปเล็กด้านล่างเพื่อเลือกเป็น <b>"รูปหน้าปก"</b></small>
                 </div>
             </div>
 
@@ -245,18 +306,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <script>
-// ใช้ DataTransfer เพื่อสะสมไฟล์ ไม่ให้มันรีเซ็ตเวลากดเลือกรูปใหม่
+// 🚀 อัปเกรดระบบอัปโหลดให้ฉลาดขึ้นตามสั่ง (ลบทีละรูป + ป้ายกำกับชัดเจน)
 let accumulatedFiles = new DataTransfer(); 
+let currentMainIndex = 0; // จำว่ารูปไหนคือหน้าปก
+
 const fileInput = document.getElementById('product_image');
 const preview = document.getElementById('image_preview');
 const placeholder = document.getElementById('upload_placeholder');
 const thumbsContainer = document.getElementById('thumbnails_container');
-const clearBtn = document.getElementById('clear_images_btn');
 
 fileInput.addEventListener('change', function() {
     const newFiles = this.files;
     
-    // วนลูปเก็บไฟล์ที่เพิ่งเลือกเข้ามาเพิ่ม (สูงสุด 5 รูป)
+    // สะสมไฟล์ ไม่ให้เกิน 5 รูป
     for(let i = 0; i < newFiles.length; i++) {
         if(accumulatedFiles.files.length < 5) {
             accumulatedFiles.items.add(newFiles[i]);
@@ -266,15 +328,13 @@ fileInput.addEventListener('change', function() {
         }
     }
     
-    // อัปเดต input ให้อมไฟล์ทั้งหมดที่เราสะสมไว้ (ส่งไป PHP ครบแน่นอน)
     fileInput.files = accumulatedFiles.files;
-    renderUI();
-});
-
-// ฟังก์ชันสำหรับเคลียร์รูปเผื่อผู้ใช้เลือกผิด
-clearBtn.addEventListener('click', function() {
-    accumulatedFiles = new DataTransfer();
-    fileInput.files = accumulatedFiles.files;
+    
+    // ถ้ารูปหน้าปกที่เคยเลือกโดนลบไป หรือเพิ่งอัปโหลดครั้งแรก ให้รูปแรกเป็นปกเสมอ
+    if(currentMainIndex >= fileInput.files.length) {
+        currentMainIndex = 0;
+    }
+    
     renderUI();
 });
 
@@ -283,68 +343,85 @@ function renderUI() {
         placeholder.style.display = 'none';
         preview.style.display = 'block';
         thumbsContainer.style.display = 'grid';
-        clearBtn.style.display = 'block';
-        thumbsContainer.innerHTML = ''; // ล้าง UI เดิมทิ้งเพื่อวาดใหม่
+        thumbsContainer.innerHTML = ''; 
         
-        // รูปแรกเป็นหน้าปก Default และเล่น Animation กระพริบเบาๆ
+        // อัปเดตรูปใหญ่ให้ตรงกับรูปที่เป็นหน้าปก (Main Index)
         preview.style.opacity = '0';
         setTimeout(() => {
-            preview.src = URL.createObjectURL(fileInput.files[0]);
+            preview.src = URL.createObjectURL(fileInput.files[currentMainIndex]);
             preview.style.opacity = '1';
         }, 100);
         
-        // วาดรูปย่อยพร้อม Animation Staggering (เด้งขึ้นมาทีละอัน)
+        // วาด Thumbnail 
         for(let i = 0; i < fileInput.files.length; i++) {
             const objectUrl = URL.createObjectURL(fileInput.files[i]);
             
             const thumbDiv = document.createElement('div');
-            thumbDiv.className = 'thumb-item'; // ดึง CSS Animation มาใช้
-            thumbDiv.style.animationDelay = (i * 0.1) + 's'; // หน่วงเวลาให้โผล่ทีละอัน
-            thumbDiv.style.textAlign = 'center';
+            thumbDiv.className = `thumb-item ${i === currentMainIndex ? 'is-cover' : ''}`;
+            thumbDiv.style.animationDelay = (i * 0.05) + 's'; 
             
+            // 1. ปุ่ม X ลบรูป
+            const removeBtn = document.createElement('div');
+            removeBtn.className = 'remove-btn';
+            removeBtn.innerHTML = '×';
+            removeBtn.onclick = (e) => {
+                e.stopPropagation(); // กันไม่ให้ไปโดนคลิกเลือกหน้าปก
+                e.preventDefault();
+                
+                // สร้าง DataTransfer ใหม่ แล้วก๊อปทุกไฟล์ยกเว้นไฟล์ที่โดนลบ
+                const dt = new DataTransfer();
+                for(let j = 0; j < fileInput.files.length; j++) {
+                    if(j !== i) dt.items.add(fileInput.files[j]);
+                }
+                accumulatedFiles = dt;
+                fileInput.files = accumulatedFiles.files;
+                
+                // ถ้าลบรูปที่เป็นหน้าปกอยู่ ให้เซ็ตหน้าปกกลับไปที่รูปแรกสุด
+                if(i === currentMainIndex) currentMainIndex = 0;
+                // ถ้าลบรูปที่อยู่หน้าหน้าปก ให้เลื่อนตำแหน่งหน้าปกลงมา 1
+                else if(i < currentMainIndex) currentMainIndex--;
+
+                renderUI();
+            };
+
+            // 2. ตัวรูปภาพ
             const img = document.createElement('img');
+            img.className = 'thumb-img';
             img.src = objectUrl;
-            img.style.width = '100%';
-            img.style.aspectRatio = '1';
-            img.style.objectFit = 'cover';
-            img.style.borderRadius = '6px';
-            img.style.border = (i === 0) ? '2px solid #5f42e4' : '2px solid transparent';
-            img.style.cursor = 'pointer';
-            img.style.transition = 'all 0.3s ease';
+            img.style.border = '2px solid transparent';
             
+            // 3. ป้ายกำกับ "หน้าปก" และ Input ซ่อนไว้ส่งค่า Backend
+            const badge = document.createElement('div');
+            badge.className = 'cover-badge';
+            badge.innerHTML = '⭐ หน้าปก';
+
             const radio = document.createElement('input');
             radio.type = 'radio';
             radio.name = 'main_image_index';
             radio.value = i;
-            if(i === 0) radio.checked = true;
-            radio.style.display = 'inline-block';
-            radio.style.marginTop = '4px';
+            radio.style.display = 'none'; // ซ่อนความโง่ของ Radio ไว้ให้มิด
+            if(i === currentMainIndex) radio.checked = true;
 
-            // กดที่รูปย่อยเพื่อพรีวิวและเลือกเป็นรูปหลัก
-            img.onclick = () => {
-                preview.style.opacity = '0.5';
-                setTimeout(() => {
-                    preview.src = objectUrl;
-                    preview.style.opacity = '1';
-                }, 150);
-                
-                radio.checked = true;
-                // อัปเดตกรอบสีม่วง
-                thumbsContainer.querySelectorAll('img').forEach(el => el.style.border = '2px solid transparent');
-                img.style.border = '2px solid #5f42e4';
+            // กดที่รูปย่อยเพื่อตั้งเป็นหน้าปก
+            img.onclick = (e) => {
+                e.preventDefault();
+                currentMainIndex = i; // อัปเดต Index หน้าปก
+                renderUI(); // วาด UI ใหม่เพื่อให้ป้ายและกรอบสีเขียวย้ายตาม
             };
 
+            thumbDiv.appendChild(removeBtn);
             thumbDiv.appendChild(img);
+            thumbDiv.appendChild(badge);
             thumbDiv.appendChild(radio);
             thumbsContainer.appendChild(thumbDiv);
         }
     } else {
-        // กรณีลบรูปหมด
+        // กรณีลบรูปจนเกลี้ยง
         placeholder.style.display = 'block';
         preview.style.display = 'none';
         thumbsContainer.style.display = 'none';
-        clearBtn.style.display = 'none';
         thumbsContainer.innerHTML = '';
+        currentMainIndex = 0;
     }
 }
 </script>
