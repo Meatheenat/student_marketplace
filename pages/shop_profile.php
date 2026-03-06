@@ -43,6 +43,11 @@ if ($current_user_id > 0) {
     $is_following = $follow_check->fetch() ? true : false;
 }
 
+// 🎯 🛠️ [เพิ่มใหม่] ดึงจำนวนผู้ติดตามทั้งหมดของร้านนี้
+$follower_count_stmt = $db->prepare("SELECT COUNT(*) FROM follows WHERE shop_id = ?");
+$follower_count_stmt->execute([$shop_id]);
+$total_followers = $follower_count_stmt->fetchColumn();
+
 // 3. ดึงสินค้าทั้งหมดของร้านนี้ (ซ่อนอันที่โดน Soft Delete)
 $prod_sql = "SELECT p.*, c.category_name 
              FROM products p 
@@ -297,14 +302,19 @@ $pageTitle = "ร้าน " . $shop['shop_name'];
         <div class="shop-info-solid">
             <h1><?php echo e($shop['shop_name']); ?></h1>
             
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <div class="owner-badge">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                <div class="owner-badge" style="margin-bottom: 0;">
                     <i class="fas fa-user-graduate text-primary"></i> 
                     เจ้าของร้าน: <?php echo e($shop['fullname']); ?> (<?php echo e($shop['class_room']); ?>)
                 </div>
 
+                <div class="owner-badge" style="margin-bottom: 0; background: rgba(99, 102, 241, 0.1);">
+                    <i class="fas fa-users text-primary"></i> 
+                    ผู้ติดตาม: <span id="follower_count" style="margin-left: 3px;"><?php echo number_format($total_followers); ?></span> คน
+                </div>
+
                 <?php if ($current_user_id > 0 && $current_user_id != $shop['user_id']): ?>
-                <button id="followBtn" data-shop="<?php echo $shop['id']; ?>" class="contact-btn-solid btn-follow-solid <?php echo $is_following ? 'following' : ''; ?>" style="padding: 8px 20px; border-radius: 12px; height: 40px; margin-top: 2px;">
+                <button id="followBtn" data-shop="<?php echo $shop['id']; ?>" class="contact-btn-solid btn-follow-solid <?php echo $is_following ? 'following' : ''; ?>" style="padding: 8px 20px; border-radius: 12px; height: 40px;">
                     <?php if($is_following): ?>
                         <i class="fas fa-check"></i> กำลังติดตาม
                     <?php else: ?>
@@ -314,7 +324,7 @@ $pageTitle = "ร้าน " . $shop['shop_name'];
                 <?php endif; ?>
             </div>
             
-            <p class="shop-desc"><?php echo nl2br(e($shop['description'])); ?></p>
+            <p class="shop-desc" style="margin-top: 20px;"><?php echo nl2br(e($shop['description'])); ?></p>
         </div>
 
         <div class="shop-contacts-solid">
@@ -395,8 +405,8 @@ $pageTitle = "ร้าน " . $shop['shop_name'];
         followBtn.addEventListener('click', function() {
             const shopId = this.dataset.shop;
             const btn = this;
+            const countEl = document.getElementById('follower_count'); // 🎯 🛠️ ตัวนับจำนวนคนติดตาม
             
-            // ป้องกันการกดรัวๆ
             btn.disabled = true;
             btn.style.opacity = '0.7';
 
@@ -412,16 +422,24 @@ $pageTitle = "ร้าน " . $shop['shop_name'];
                 btn.disabled = false;
                 btn.style.opacity = '1';
 
+                let currentCount = parseInt(countEl.innerText.replace(/,/g, ''));
+
                 if(data.status === 'followed') {
                     btn.classList.add('following');
                     btn.innerHTML = '<i class="fas fa-check"></i> กำลังติดตาม';
-                    // ถ้ามีฟังก์ชัน showToast ใน header ให้เรียกใช้
+                    
+                    // 🎯 🛠️ อัปเดตตัวเลขสดๆ
+                    countEl.innerText = (currentCount + 1).toLocaleString();
+
                     if(typeof showToast === 'function') {
                         showToast('สำเร็จ!', 'คุณเริ่มติดตามร้านค้านี้แล้ว');
                     }
                 } else if(data.status === 'unfollowed') {
                     btn.classList.remove('following');
                     btn.innerHTML = '<i class="fas fa-plus"></i> ติดตามร้านนี้';
+                    
+                    // 🎯 🛠️ อัปเดตตัวเลขสดๆ
+                    countEl.innerText = (currentCount - 1).toLocaleString();
                 } else {
                     alert(data.message || 'เกิดข้อผิดพลาด');
                 }
