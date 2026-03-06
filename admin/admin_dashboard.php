@@ -338,7 +338,12 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
                     <table class="table-solid">
                         <tbody>
                             <?php foreach($trashed_products as $t): 
-                                $deleted_date = new DateTime($t['deleted_at']); $expire_date = clone $deleted_date; $expire_date->modify('+30 days'); $now = new DateTime(); $days_left = $now->diff($expire_date)->days;
+                                // 🎯 แก้ไข: ดักค่าว่างไว้กัน Error DateTime
+                                $deleted_date = new DateTime($t['deleted_at'] ?? 'now'); 
+                                $expire_date = clone $deleted_date; 
+                                $expire_date->modify('+30 days'); 
+                                $now = new DateTime(); 
+                                $days_left = $now->diff($expire_date)->days;
                             ?>
                             <tr style="background: rgba(239, 68, 68, 0.05);">
                                 <td>
@@ -368,7 +373,12 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
                     <table class="table-solid">
                         <tbody>
                             <?php foreach($trashed_reviews as $tr): 
-                                $deleted_date = new DateTime($tr['deleted_at']); $expire_date = clone $deleted_date; $expire_date->modify('+30 days'); $now = new DateTime(); $days_left = $now->diff($expire_date)->days;
+                                // 🎯 แก้ไข: ดักค่าว่างไว้กัน Error DateTime
+                                $deleted_date = new DateTime($tr['deleted_at'] ?? 'now'); 
+                                $expire_date = clone $deleted_date; 
+                                $expire_date->modify('+30 days'); 
+                                $now = new DateTime(); 
+                                $days_left = $now->diff($expire_date)->days;
                             ?>
                             <tr style="background: rgba(239, 68, 68, 0.05);">
                                 <td>
