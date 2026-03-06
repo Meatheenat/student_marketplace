@@ -212,3 +212,12 @@ CREATE TABLE `shop_reviews` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ALTER TABLE reports ADD COLUMN is_deleted TINYINT(1) DEFAULT 0;
+-- สร้างตารางสำหรับเก็บรูปภาพสินค้าเพิ่มเติม
+CREATE TABLE product_images (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    product_id INT NOT NULL,
+    image_path VARCHAR(255) NOT NULL,
+    is_main TINYINT(1) DEFAULT 0, -- 1 คือรูปหลัก, 0 คือรูปเพิ่มเติม
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
