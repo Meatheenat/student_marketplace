@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $mail->isSMTP();
             $mail->Host       = 'smtp.gmail.com'; 
             $mail->SMTPAuth   = true;
-            $mail->Username   = 'meatheenat.k@gmail.com'; // เมลของมึง
+            $mail->Username   = 'BNCC Market.k@gmail.com'; // เมลของมึง
             $mail->Password   = 'jxev urqg otnp avnt';    // App Password ตัวเดิม
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
             $mail->Port       = 587;

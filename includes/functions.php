@@ -314,7 +314,7 @@ function sendOTPToEmail($to_email, $otp_code) {
     $message .= "ขอบคุณที่ใช้งาน BNCC Market";
     
     // ตั้งค่า Headers เพื่อให้รองรับภาษาไทย
-    $headers = "From: system@bncc.ac.th\r\n";
+    $headers = "From: BNCC Market@bncc.ac.th\r\n";
     $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
 
     // ใช้ @ ป้องกัน Error แจ้งเตือนหน้าเว็บพัง ในกรณีที่ Localhost (XAMPP/MAMP) ไม่ได้ตั้งค่า Mail Server ไว้
