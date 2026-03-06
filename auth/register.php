@@ -13,7 +13,7 @@ require_once '../vendor/autoload.php';   // สำหรับ Google API Client
 $client = new Google\Client();
 $client->setClientId('349397957892-6m9lu6a6gd4605i8f9vruei5s07lh6hv.apps.googleusercontent.com');
 $client->setClientSecret('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');
-$client->setRedirectUri('http://localhost/student_marketplace/auth/google_callback.php');
+$client->setRedirectUri('https://hosting.bncc.ac.th/s673190104/student_marketplace/auth/google_callback.php');
 $client->addScope("email");
 $client->addScope("profile");
 $client->setPrompt('select_account'); // บังคับเลือกบัญชีใหม่ทุกครั้ง
@@ -54,29 +54,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['flash_message'] = "อีเมลหรือรหัสนักเรียนนี้ถูกใช้งานไปแล้ว";
             $_SESSION['flash_type'] = "danger";
         } else {
-            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-            
-            // 🎯 [NEW] สร้างรหัส OTP 6 หลัก และเตรียมบันทึกสถานะ is_verified
+            // 🎯 [UPDATED] สุ่มรหัส OTP และเก็บข้อมูลทั้งหมดลง Session ไว้ก่อน (ยังไม่ INSERT ลงตาราง users)
             $otp_code = rand(100000, 999999);
             
-            // อัปเดต SQL ให้รองรับ otp_code และ is_verified = 0 (ยังไม่ยืนยัน)
-            $sql = "INSERT INTO users (student_id, fullname, class_room, department, email, password, role, otp_code, is_verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)";
-            $insertStmt = $db->prepare($sql);
+            $_SESSION['temp_register_data'] = [
+                'student_id' => $student_id,
+                'fullname' => $fullname,
+                'class_room' => $full_class_room,
+                'department' => $department,
+                'email' => $email,
+                'password' => password_hash($password, PASSWORD_DEFAULT),
+                'role' => $role,
+                'otp_code' => $otp_code
+            ];
             
-            if ($insertStmt->execute([$student_id, $fullname, $full_class_room, $department, $email, $hashedPassword, $role, $otp_code])) {
-                
-                // ⚠️ [Todo]: เรียกฟังก์ชันส่งอีเมล หรือ LINE ส่ง $otp_code แจ้งผู้ใช้ตรงนี้
-                // sendRegistrationOTP($email, $otp_code);
+            // ⚠️ [Todo]: เรียกฟังก์ชันส่งอีเมล หรือ LINE ส่ง $otp_code แจ้งผู้ใช้ตรงนี้
+            // sendRegistrationOTP($email, $otp_code);
 
-                // เก็บ Email เพื่อส่งไปตรวจสอบในหน้า Verify
-                $_SESSION['verify_email'] = $email;
-                
-                $_SESSION['flash_message'] = "ระบบได้ส่งรหัส OTP ไปที่อีเมลของคุณแล้ว กรุณายืนยันตัวตนเพื่อเสร็จสิ้นการสมัคร";
-                $_SESSION['flash_type'] = "info";
-                
-                // สลับให้ Redirect ไปหน้ากรอก OTP ทันที
-                redirect('verify_otp.php');
-            }
+            $_SESSION['flash_message'] = "ระบบได้ส่งรหัส OTP ไปที่อีเมลของคุณแล้ว กรุณายืนยันตัวตนเพื่อเสร็จสิ้นการสมัคร (รหัสคือ: $otp_code)";
+            $_SESSION['flash_type'] = "info";
+            
+            // สลับให้ Redirect ไปหน้ากรอก OTP ทันที
+            redirect('verify_otp.php');
         }
     }
 }

@@ -8,7 +8,7 @@ require_once '../includes/header.php';
 require_once '../includes/functions.php';
 
 // ดักจับว่ามาจาก Flow ไหน (Register หรือ Forgot Password)
-$is_registration = isset($_SESSION['verify_email']);
+$is_registration = isset($_SESSION['verify_email']) && isset($_SESSION['temp_register_data']);
 $is_password_reset = isset($_SESSION['reset_email']);
 
 if (!$is_registration && !$is_password_reset) {
@@ -49,20 +49,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // ----------------------------------------------------
         // 📝 Logic สำหรับ "สมัครสมาชิกใหม่" (Registration)
         // ----------------------------------------------------
-        $stmt = $db->prepare("SELECT id FROM users WHERE email = ? AND otp_code = ? AND is_verified = 0");
-        $stmt->execute([$email, $otp_input]);
-        $user = $stmt->fetch();
+        // ตรวจสอบว่า OTP ที่กรอก ตรงกับ OTP ที่เก็บไว้ใน Session หรือไม่
+        if ($otp_input === (string)$_SESSION['temp_register_data']['otp_code']) {
+            
+            // ดึงข้อมูลผู้สมัครจาก Session ออกมา
+            $userData = $_SESSION['temp_register_data'];
+            
+            // ตรวจสอบความซ้ำซ้อนใน DB อีกรอบเพื่อความชัวร์ ป้องกันคนสมัครซ้อนกันระหว่างรอ OTP
+            $checkStmt = $db->prepare("SELECT id FROM users WHERE email = ? OR student_id = ?");
+            $checkStmt->execute([$userData['email'], $userData['student_id']]);
+            
+            if ($checkStmt->rowCount() > 0) {
+                $_SESSION['flash_message'] = "อีเมลหรือรหัสนักเรียนนี้ถูกใช้งานไปแล้วระหว่างที่คุณกำลังยืนยัน OTP";
+                $_SESSION['flash_type'] = "danger";
+                unset($_SESSION['temp_register_data']);
+                unset($_SESSION['verify_email']);
+                redirect('register.php');
+            } else {
+                // 🟢 ถ้ารหัสถูกต้อง และไม่มีใครแย่งสมัคร ให้ INSERT ลงตาราง users ได้เลย!
+                // *หมายเหตุ: คอลัมน์ otp_code และ is_verified ไม่จำเป็นต้องใช้สำหรับ Flow สมัครสมาชิกแบบนี้แล้ว แต่เผื่อคุณใช้กับระบบอื่น ผมจะปล่อยโครงสร้างเดิมไว้
+                $sql = "INSERT INTO users (student_id, fullname, class_room, department, email, password, role) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                $insertStmt = $db->prepare($sql);
+                
+                if ($insertStmt->execute([
+                    $userData['student_id'], 
+                    $userData['fullname'], 
+                    $userData['class_room'], 
+                    $userData['department'], 
+                    $userData['email'], 
+                    $userData['password'], 
+                    $userData['role']
+                ])) {
+                    // ล้าง Session ทั้งหมดทิ้งหลังบันทึกสำเร็จ
+                    unset($_SESSION['temp_register_data']);
+                    unset($_SESSION['verify_email']);
 
-        if ($user) {
-            // อัปเดตสถานะเป็นยืนยันแล้ว และลบ OTP ทิ้ง
-            $update = $db->prepare("UPDATE users SET is_verified = 1, otp_code = NULL WHERE id = ?");
-            $update->execute([$user['id']]);
-
-            unset($_SESSION['verify_email']);
-            $_SESSION['flash_message'] = "ยืนยันบัญชีสำเร็จ! เข้าสู่ระบบได้เลย";
-            $_SESSION['flash_type'] = "success";
-            redirect('login.php');
+                    $_SESSION['flash_message'] = "ยืนยันบัญชีสำเร็จ! เข้าสู่ระบบได้เลย";
+                    $_SESSION['flash_type'] = "success";
+                    redirect('login.php');
+                } else {
+                     $_SESSION['flash_message'] = "เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง";
+                     $_SESSION['flash_type'] = "danger";
+                }
+            }
         } else {
+            // ถ้ารหัส OTP ผิด
             $_SESSION['flash_message'] = "รหัส OTP ไม่ถูกต้อง ลองใหม่อีกครั้ง";
             $_SESSION['flash_type'] = "danger";
         }
