@@ -14,6 +14,39 @@ require_once '../includes/functions.php';
 if (isLoggedIn()) redirect('../pages/index.php');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    
+    // ------------------------------------------------------------------
+    // 🛡️ [เพิ่มใหม่] ตรวจสอบ Cloudflare Turnstile ก่อนไปต่อ
+    // ------------------------------------------------------------------
+    $secret_key = '0x4AAAAAACoR11ccsBAXDbqrr_1J8UB8UXw'; // 🔐 Secret Key ของพี่
+    $turnstile_response = $_POST['cf-turnstile-response'] ?? '';
+
+    $verify_url = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
+    $data = [
+        'secret' => $secret_key,
+        'response' => $turnstile_response,
+        'remoteip' => $_SERVER['REMOTE_ADDR']
+    ];
+
+    $options = [
+        'http' => [
+            'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+            'method'  => 'POST',
+            'content' => http_build_query($data)
+        ]
+    ];
+    $context  = stream_context_create($options);
+    $response = file_get_contents($verify_url, false, $context);
+    $result = json_decode($response);
+
+    if (!$result->success) {
+        $_SESSION['flash_message'] = "กรุณายืนยันตัวตนว่าคุณไม่ใช่บอท";
+        $_SESSION['flash_type'] = "danger";
+        redirect('forgot_password.php');
+        exit(); // หยุดการทำงานทันทีถ้าเป็นบอท
+    }
+    // ------------------------------------------------------------------
+
     $email = trim($_POST['email']);
     $db = getDB();
 
@@ -298,6 +331,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <?php echo displayFlashMessage(); ?>
 
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
         <form method="POST">
             <div class="form-group">
                 <label class="field-label">COLLEGE EMAIL (@bncc.ac.th)</label>
@@ -306,6 +341,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <i class="fas fa-envelope input-icon"></i>
                 </div>
             </div>
+
+            <div class="cf-turnstile" data-sitekey="0x4AAAAAACoR1z-q8h6byzeX" style="margin-bottom: 20px; display: flex; justify-content: center; position: relative; z-index: 9999;"></div>
 
             <button type="submit" class="btn-login-main">
                 ส่งรหัส OTP <i class="fas fa-paper-plane" style="font-size: 0.9rem;"></i>
