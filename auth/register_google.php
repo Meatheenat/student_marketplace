@@ -320,15 +320,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <div class="login-card" id="tilt-card-premium">
         <div class="login-header">
-            <h2>Complete Profile</h2>
-            <p>ยินดีต้อนรับสมาชิกใหม่ผ่าน Google 👋</p>
+            <h2>BNCC Market</h2>
+            <p>สร้างบัญชีเพื่อเริ่มใช้งาน👋</p>
         </div>
 
         <?php echo displayFlashMessage(); ?>
 
         <form action="register_google.php" method="POST" id="registerGoogleForm">
             <div class="form-group">
-                <label class="field-label">Full Name <span>*</span></label>
+                <label class="field-label">ชื่อ-นามสกุล <span>*</span></label>
                 <div class="input-wrapper">
                     <input type="text" name="fullname" class="form-control-custom" placeholder="ระบุชื่อและนามสกุลจริง" required>
                     <i class="fas fa-user input-icon"></i>
@@ -344,7 +344,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <div class="form-group">
-                <label class="field-label">Student ID <span>*</span></label>
+                <label class="field-label"> รหัสประจำตัวนักเรียน <span>*</span></label>
                 <div class="input-wrapper">
                     <input type="text" name="student_id" id="student_id" class="form-control-custom" placeholder="รหัสประจำตัว 11 หลัก (ตัวเลขเท่านั้น)" maxlength="11" pattern="[0-9]{11}" required>
                     <i class="fas fa-id-card input-icon"></i>
@@ -353,7 +353,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                 <div class="form-group">
-                    <label class="field-label">Level <span>*</span></label>
+                    <label class="field-label">ระดับชั้น <span>*</span></label>
                     <div class="input-wrapper">
                         <select name="class_level" class="form-control-custom" required>
                             <option value="ปวช.">ปวช.</option>
@@ -363,7 +363,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="field-label">Year/Room</label>
+                    <label class="field-label">ชั้น/ห้อง</label>
                     <div class="input-wrapper">
                         <input type="text" name="class_year" id="class_year" class="form-control-custom" placeholder="เช่น 1/2" maxlength="3" pattern="[1-3]/[1-3]" required>
                         <i class="fas fa-door-open input-icon"></i>
@@ -372,7 +372,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <div class="form-group">
-                <label class="field-label">Department <span>*</span></label>
+                <label class="field-label">แผนกวิชา <span>*</span></label>
                 <div class="input-wrapper">
                     <select name="department" class="form-control-custom" required>
                         <option value="">-- เลือกแผนกวิชา --</option>
@@ -395,7 +395,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <div class="form-group">
-                <label class="field-label">New Password <span>*</span></label>
+                <label class="field-label">รหัสผ่าน <span>*</span></label>
                 <div class="input-wrapper">
                     <input type="password" name="password" id="password" class="form-control-custom" placeholder="กำหนดรหัสผ่าน" required>
                     <i class="fas fa-key input-icon"></i>
@@ -404,7 +404,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <div class="form-group">
-                <label class="field-label">Confirm Password <span>*</span></label>
+                <label class="field-label">ยืนยันรหัสผ่านอีกครั้ง <span>*</span></label>
                 <div class="input-wrapper">
                     <input type="password" name="confirm_password" id="confirm_password" class="form-control-custom" placeholder="ยืนยันรหัสผ่านเดิม" required>
                     <i class="fas fa-shield-alt input-icon"></i>
@@ -413,7 +413,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <button type="submit" class="btn-login-main">
-                สร้างบัญชีและเริ่มใช้งาน <i class="fas fa-rocket"></i>
+                สร้างบัญชีผู้ใช้งาน <i class="fas fa-rocket"></i>
             </button>
         </form>
     </div>
