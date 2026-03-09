@@ -594,7 +594,7 @@ if (isLoggedIn()) {
     <i class="fas fa-heart" style="color: #ef4444;"></i>
 </a>
 
-<a href="<?= BASE_URL ?>buyer/my_orders.php" class="nav-icon-btn" title="ประวัติการสั่งซื้อ">
+<a href="<?= BASE_URL ?>pages/my_orders.php" class="nav-icon-btn" title="ประวัติการสั่งซื้อ">
     <i class="fas fa-shopping-bag" style="color: #6366f1;"></i>
 </a>
                     <a href="../auth/logout.php" class="logout-icon magnetic-item" title="ออกจากระบบ">
