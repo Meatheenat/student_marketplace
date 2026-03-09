@@ -6,8 +6,10 @@
 $pageTitle = "ลืมรหัสผ่าน - BNCC Market";
 require_once '../includes/header.php';
 require_once '../includes/functions.php';
-use PHPMailer\PHPMailer\PHPMailer;
-require '../vendor/autoload.php';
+
+// 🎯 [REMOVED] เอา PHPMailer ออกจากหน้านี้ เพราะเราย้ายไปจัดการใน functions.php แล้ว
+// use PHPMailer\PHPMailer\PHPMailer;
+// require '../vendor/autoload.php';
 
 if (isLoggedIn()) redirect('../pages/index.php');
 
@@ -15,14 +17,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email']);
     $db = getDB();
 
-    // 1. 🛠️ แก้ไข SQL: ดึง id และ is_banned มาตรวจสอบพร้อมกัน
+    // 1. ดึง id และ is_banned มาตรวจสอบพร้อมกัน
     $stmt = $db->prepare("SELECT id, is_banned FROM users WHERE email = ?");
     $stmt->execute([$email]);
     $user = $stmt->fetch();
     
     if ($user) {
         
-        // 🚫 🛠️ เงื่อนไขเพิ่มเติม: ตรวจสอบสถานะการโดนแบน
+        // 🚫 ตรวจสอบสถานะการโดนแบน
         if ($user['is_banned'] == 1) {
             $_SESSION['flash_message'] = "🚫 บัญชีนี้ถูกระงับการใช้งานชั่วคราว ไม่สามารถดำเนินการรีเซ็ตรหัสผ่านได้";
             $_SESSION['flash_type'] = "danger";
@@ -32,47 +34,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $otp = sprintf("%06d", mt_rand(1, 999999)); // สุ่มเลข 6 หลัก
         $expires_at = date("Y-m-d H:i:s", strtotime("+15 minutes")); // หมดอายุใน 15 นาที
 
-        // --- เพิ่มเติม: ลบ OTP เก่าของเมลนี้ทิ้งก่อน เพื่อป้องกันข้อมูลซ้ำซ้อน ---
+        // ลบ OTP เก่าของเมลนี้ทิ้งก่อน เพื่อป้องกันข้อมูลซ้ำซ้อน
         $db->prepare("DELETE FROM password_resets WHERE email = ?")->execute([$email]);
 
         // 2. บันทึกลงตาราง password_resets
         $stmt = $db->prepare("INSERT INTO password_resets (email, otp, expires_at) VALUES (?, ?, ?)");
         $stmt->execute([$email, $otp, $expires_at]);
 
-        // 3. ส่ง Email ด้วย PHPMailer
-        $mail = new PHPMailer(true);
-        try {
-            // 🎯 เปลี่ยนมาใช้ isMail() เพื่อส่งผ่าน Server แทน ทำให้สามารถปลอมอีเมลผู้ส่งเป็นอะไรก็ได้
-            $mail->isMail(); 
+        // 🎯 3. [NEW] เรียกใช้ฟังก์ชันส่ง OTP ที่เราทำไว้ใน functions.php แทนการเขียนโค้ดอีเมลซ้ำ
+        if (function_exists('sendOTPToEmail')) {
+            $is_sent = sendOTPToEmail($email, $otp);
             
-            // --- โค้ดเดิมที่ล็อกอินด้วย Gmail ส่วนตัว (คอมเมนต์ไว้ ไม่ได้ลบ) ---
-            // $mail->isSMTP();
-            // $mail->Host       = 'smtp.gmail.com'; 
-            // $mail->SMTPAuth   = true;
-            // $mail->Username   = 'BNCC Market.k@gmail.com'; // เมลของมึง
-            // $mail->Password   = 'jxev urqg otnp avnt';    // App Password ตัวเดิม
-            // $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            // $mail->Port       = 587;
-            // -----------------------------------------------------------------
-
-            $mail->CharSet = 'UTF-8'; // กันภาษาไทยเพี้ยน
-            
-            // 🎯 ตั้งค่าอีเมลผู้ส่งเป็นอีเมลจำลองของระบบตามที่คุณต้องการ
-            $mail->setFrom('system@bncc.ac.th', 'BNCC Market System');
-            
-            $mail->addAddress($email);
-            $mail->isHTML(true);
-            $mail->Subject = 'Reset Your Password - OTP';
-            $mail->Body    = "รหัส OTP สำหรับรีเซ็ตรหัสผ่านของคุณคือ: <b style='font-size: 20px; color: #4f46e5;'>$otp</b> (รหัสมีอายุ 15 นาที)";
-
-            // ถ้าใช้งานบน Localhost แล้วไม่ได้เซ็ตระบบส่งเมลใน XAMPP มันจะ Error แต่เราใส่ @ ครอบกันพังไว้ให้ได้ถ้าต้องการ
-            $mail->send();
-            $_SESSION['reset_email'] = $email;
-            redirect('verify_otp.php'); 
-        } catch (Exception $e) {
-            $_SESSION['flash_message'] = "ไม่สามารถส่งอีเมลได้: {$mail->ErrorInfo}";
-            $_SESSION['flash_type'] = "danger";
+            if ($is_sent) {
+                $_SESSION['reset_email'] = $email;
+                $_SESSION['flash_message'] = "ระบบได้ส่งรหัส OTP ไปที่อีเมลของคุณแล้ว (หากไม่พบให้ตรวจสอบในโฟลเดอร์จดหมายขยะ)";
+                $_SESSION['flash_type'] = "info";
+                redirect('verify_otp.php'); 
+            } else {
+                $_SESSION['flash_message'] = "เกิดข้อผิดพลาดในการส่งอีเมล กรุณาลองใหม่อีกครั้ง";
+                $_SESSION['flash_type'] = "danger";
+            }
+        } else {
+             $_SESSION['flash_message'] = "ไม่พบฟังก์ชันส่งอีเมลในระบบ";
+             $_SESSION['flash_type'] = "danger";
         }
+
     } else {
         $_SESSION['flash_message'] = "ไม่พบอีเมลนี้ในระบบสมาชิก";
         $_SESSION['flash_type'] = "danger";
