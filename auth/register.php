@@ -33,18 +33,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $full_class_room = $class_level . " " . $class_year;
 
-    if (empty($fullname) || empty($student_id) || empty($email) || empty($password) || empty($department)) {
+    // 🎯 🛠️ เริ่มระบบ Validation ใหม่ตามเงื่อนไขที่กำหนด
+    if (empty($fullname) || empty($student_id) || empty($email) || empty($password) || empty($department) || empty($class_year)) {
         $_SESSION['flash_message'] = "กรุณากรอกข้อมูลให้ครบทุกช่อง";
         $_SESSION['flash_type'] = "danger";
     } 
+    // 1. เช็กรหัสประจำตัวนักเรียน (ต้องเป็นตัวเลข 11 หลักเท่านั้น)
+    elseif (!preg_match('/^[0-9]{11}$/', $student_id)) {
+        $_SESSION['flash_message'] = "รหัสประจำตัวนักเรียนต้องเป็นตัวเลข 11 หลักเท่านั้น";
+        $_SESSION['flash_type'] = "danger";
+    }
+    // 2. เช็กชั้น/ห้อง (ต้องเป็นเลข 1, 2 หรือ 3 คั่นด้วย / ตามด้วย 1, 2 หรือ 3 เท่านั้น)
+    elseif (!preg_match('/^[1-3]\/[1-3]$/', $class_year)) {
+        $_SESSION['flash_message'] = "ชั้น/ห้อง ไม่ถูกต้อง (กรุณาระบุเป็น 1/1 ถึง 3/3 เท่านั้น)";
+        $_SESSION['flash_type'] = "danger";
+    }
+    // 3. เช็กอีเมล (ต้องตรงกับ รหัสนักศึกษา@bncc.ac.th เป๊ะๆ)
+    elseif ($email !== $student_id . '@bncc.ac.th') {
+        $_SESSION['flash_message'] = "อีเมลไม่ถูกต้อง! ต้องเป็นรหัสนักศึกษาตามด้วย @bncc.ac.th เท่านั้น (เช่น {$student_id}@bncc.ac.th)";
+        $_SESSION['flash_type'] = "danger";
+    }
+    // 4. เช็กรหัสผ่านตรงกัน
     elseif ($password !== $confirm_password) {
         $_SESSION['flash_message'] = "รหัสผ่านทั้งสองช่องไม่ตรงกัน";
         $_SESSION['flash_type'] = "danger";
     }
-    elseif (!str_ends_with($email, '@bncc.ac.th')) {
-        $_SESSION['flash_message'] = "กรุณาใช้อีเมลวิทยาลัย (@bncc.ac.th) เท่านั้น";
-        $_SESSION['flash_type'] = "danger";
-    } 
     else {
         $db = getDB();
         $stmt = $db->prepare("SELECT id FROM users WHERE email = ? OR student_id = ?");
@@ -54,7 +67,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['flash_message'] = "อีเมลหรือรหัสนักเรียนนี้ถูกใช้งานไปแล้ว";
             $_SESSION['flash_type'] = "danger";
         } else {
-            // 🎯 [UPDATED] สุ่มรหัส OTP และเก็บข้อมูลทั้งหมดลง Session ไว้ก่อน (ยังไม่ INSERT ลงตาราง users)
             $otp_code = rand(100000, 999999);
             
             $_SESSION['temp_register_data'] = [
@@ -168,7 +180,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     .login-card {
         position: relative;
         width: 100%;
-        max-width: 550px; /* ขยายกว้างนิดนึงสำหรับฟอร์ม Register แต่สไตล์เดิมเป๊ะ */
+        max-width: 550px;
         background: var(--login-card-bg);
         backdrop-filter: blur(25px);
         -webkit-backdrop-filter: blur(25px);
@@ -265,7 +277,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         transform: translateY(-2px);
     }
 
-    /* สไตล์เพิ่มเติมสำหรับ Select ในหน้า Register */
     select.form-control-custom {
         appearance: none;
         background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(150,150,150,0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
@@ -289,7 +300,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         pointer-events: none;
     }
     .form-control-custom:focus + .input-icon {
-        color: #818cf8; /* สีม่วงสว่างเวลาโฟกัส */
+        color: #818cf8; 
     }
 
     .pass-toggle-icon {
@@ -332,7 +343,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     /* ============================================================
-       🌐 6. DIVIDER & GOOGLE BUTTON (DYNAMIC MODE)
+       🌐 6. DIVIDER & GOOGLE BUTTON
        ============================================================ */
     .divider-custom {
         position: relative;
@@ -347,7 +358,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     .divider-text {
         position: relative;
-        background: var(--login-card-bg); /* ดึงสีการ์ดตามธีมมาใช้ */
+        background: var(--login-card-bg);
         padding: 4px 15px;
         border-radius: 8px;
         color: var(--text-muted);
@@ -403,7 +414,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         text-shadow: 0 0 10px rgba(129, 140, 248, 0.5);
     }
 
-    /* แจ้งเตือนแบบเข้ากับทุกธีม */
     .alert {
         background: rgba(239, 68, 68, 0.1);
         border: 1px solid rgba(239, 68, 68, 0.2);
@@ -443,7 +453,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <?php echo displayFlashMessage(); ?>
 
-        <form action="register.php" method="POST">
+        <form action="register.php" method="POST" id="registerForm">
             <div class="form-group">
                 <label class="field-label">ชื่อ-นามสกุล <span>*</span></label>
                 <div class="input-wrapper">
@@ -455,7 +465,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="form-group">
                 <label class="field-label">รหัสประจำตัวนักเรียน <span>*</span></label>
                 <div class="input-wrapper">
-                    <input type="text" name="student_id" class="form-control-custom" placeholder="รหัสประจำตัว 11 หลัก" required>
+                    <input type="text" name="student_id" id="student_id" class="form-control-custom" placeholder="รหัสประจำตัว 11 หลัก (ตัวเลขเท่านั้น)" pattern="[0-9]{11}" maxlength="11" title="กรุณากรอกตัวเลข 11 หลักเท่านั้น" required>
                     <i class="fas fa-id-card input-icon"></i>
                 </div>
             </div>
@@ -474,7 +484,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="form-group">
                     <label class="field-label">ชั้น/ห้อง <span>*</span></label>
                     <div class="input-wrapper">
-                        <input type="text" name="class_year" class="form-control-custom" placeholder="เช่น 1/2" required>
+                        <input type="text" name="class_year" class="form-control-custom" placeholder="เช่น 1/2" pattern="[1-3]/[1-3]" title="กรุณาระบุชั้น/ห้อง เป็น 1-3 เช่น 1/1, 2/3" required>
                         <i class="fas fa-door-open input-icon"></i>
                     </div>
                 </div>
@@ -502,7 +512,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="form-group">
                 <label class="field-label">อีเมลวิทยาลัย <span>*</span></label>
                 <div class="input-wrapper">
-                    <input type="email" name="email" class="form-control-custom" placeholder="เช่น 65319010001@bncc.ac.th" required>
+                    <input type="email" name="email" id="email" class="form-control-custom" placeholder="เช่น 66xxxxxxxx@bncc.ac.th" required>
                     <i class="fas fa-envelope input-icon"></i>
                 </div>
             </div>
@@ -554,7 +564,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <script>
-    // 1. ระบบดวงตาสลับรหัสผ่าน (เพิ่ม Animation เด้งๆ) รองรับ 2 ช่อง
+    // 1. ระบบดวงตาสลับรหัสผ่าน
     function togglePass(inputId, iconElement) {
         const input = document.getElementById(inputId);
         const isDark = document.documentElement.classList.contains('dark-theme');
@@ -599,7 +609,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }, 500);
     };
 
-    // 4. อัปเดตสีดวงตาตอนเปลี่ยนตีม (ถ้าเปิดค้างไว้)
+    // 🎯 4. ดักจับและป้องกันการพิมพ์ตัวอักษรในช่องรหัสนักเรียน
+    document.getElementById('student_id').addEventListener('input', function() {
+        this.value = this.value.replace(/[^0-9]/g, '');
+    });
+
+    // 🎯 5. ตรวจสอบอีเมลแบบ Real-time ให้ตรงกับรหัสนักเรียนก่อนกดปุ่มสมัคร
+    document.getElementById('registerForm').addEventListener('submit', function(e) {
+        const studentId = document.getElementById('student_id').value;
+        const emailInput = document.getElementById('email').value;
+        const expectedEmail = studentId + '@bncc.ac.th';
+        
+        if (emailInput !== expectedEmail) {
+            e.preventDefault(); // หยุดการส่งฟอร์ม
+            alert('อีเมลไม่ถูกต้อง! ต้องใช้รหัสนักศึกษาตามด้วย @bncc.ac.th (เช่น ' + expectedEmail + ')');
+            document.getElementById('email').focus();
+        }
+    });
+
     document.getElementById('theme-toggle').addEventListener('click', () => {
         const passInput = document.getElementById('password');
         const confirmInput = document.getElementById('confirm_password');
