@@ -1,7 +1,7 @@
 <?php
 /**
  * Student Marketplace - Upgrade to Seller (register_seller.php)
- * สำหรับผู้ใช้งานที่เป็นสมาชิกอยู่แล้ว และต้องการเปิดหน้าร้านค้า
+ * สำหรับผู้ใช้งานที่เป็นสมาชิกอยู่แล้ว และต้องการขอเปิดหน้าร้านค้า
  */
 $pageTitle = "สมัครเป็นผู้ขายสินค้า";
 require_once '../includes/header.php';
@@ -21,6 +21,24 @@ if ($_SESSION['role'] !== 'buyer') {
 $db = getDB();
 $user_id = $_SESSION['user_id'];
 
+// 🛡️ 3. [NEW LOGIC] ตรวจสอบว่าผู้ใช้นี้เคยส่งคำขอเปิดร้านไปแล้วหรือยัง
+$checkShop = $db->prepare("SELECT status FROM shops WHERE user_id = ?");
+$checkShop->execute([$user_id]);
+$shopStatus = $checkShop->fetchColumn();
+
+// ถ้าร้านมีสถานะเป็น pending ให้สกัดไว้ไม่ให้ส่งข้อมูลซ้ำ
+if ($shopStatus === 'pending') {
+    $_SESSION['flash_message'] = "คุณได้ส่งคำขอเปิดร้านค้าไปแล้ว ขณะนี้กำลังรอการอนุมัติจากผู้ดูแลระบบ";
+    $_SESSION['flash_type'] = "info";
+    redirect('../pages/index.php'); // เด้งกลับไปหน้าแรก หรือหน้าที่คุณต้องการ
+}
+
+// ถ้าร้านมีสถานะเป็น approved แล้ว (เผื่อกรณีระบบ Role รวน)
+if ($shopStatus === 'approved') {
+     redirect('../seller/dashboard.php');
+}
+
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // รับข้อมูลหน้าร้านค้า
     $shop_name    = trim($_POST['shop_name']);
@@ -36,34 +54,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // เริ่ม Transaction
             $db->beginTransaction();
 
-            // 1. อัปเดตสถานะผู้ใช้งานจาก 'buyer' เป็น 'seller'
-            $updateUser = $db->prepare("UPDATE users SET role = 'seller' WHERE id = ?");
-            $updateUser->execute([$user_id]);
+            // ❌ [DELETED] เอาส่วนที่อัปเดต Role ผู้ใช้งานทันทีออก (รอแอดมินอัปเกรดให้)
+            // $updateUser = $db->prepare("UPDATE users SET role = 'seller' WHERE id = ?");
+            // $updateUser->execute([$user_id]);
 
-            // 2. เพิ่มข้อมูลร้านค้าใหม่ (สถานะเริ่มต้นเป็น pending)
+            // 1. เพิ่มข้อมูลร้านค้าใหม่ (สถานะเริ่มต้นเป็น pending)
             $insertShop = $db->prepare("INSERT INTO shops (user_id, shop_name, description, contact_line, contact_ig, status) VALUES (?, ?, ?, ?, ?, 'pending')");
             $insertShop->execute([$user_id, $shop_name, $description, $contact_line, $contact_ig]);
 
             // ✅ ยืนยันการบันทึกฐานข้อมูล
             $db->commit();
 
-            // 🔔 3. ส่งแจ้งเตือนหา Admin (ถ้าจุดนี้พัง มันจะไป catch แต่ DB บันทึกไปแล้ว)
+            // 🔔 2. ส่งแจ้งเตือนหา Admin
             $admin_msg = "📢 [Admin] มีคำขอเปิดร้านค้าใหม่!\n"
                        . "👤 ผู้สมัคร: " . $_SESSION['fullname'] . "\n"
                        . "🏪 ชื่อร้าน: " . $shop_name . "\n"
                        . "🔗 ตรวจสอบ: http://localhost/student_marketplace/admin/manage_shops.php";
             
-            notifyAllAdmins($admin_msg);
+            if (function_exists('notifyAllAdmins')) {
+                notifyAllAdmins($admin_msg);
+            }
 
-            // 4. อัปเดต Session Role
-            $_SESSION['role'] = 'seller';
+            // ❌ [DELETED] เอาส่วนอัปเดต Session Role ออก
+            // $_SESSION['role'] = 'seller';
 
-            $_SESSION['flash_message'] = "สมัครเป็นผู้ขายสำเร็จ! ขณะนี้ร้านค้าของคุณกำลังรอการอนุมัติจากคุณครู";
+            $_SESSION['flash_message'] = "ส่งคำขอเปิดร้านสำเร็จ! ขณะนี้ร้านค้าของคุณกำลังรอการอนุมัติ (บทบาทของคุณจะอัปเดตเมื่อได้รับการอนุมัติ)";
             $_SESSION['flash_type'] = "success";
-            redirect('../seller/dashboard.php');
+            redirect('../pages/index.php'); // กลับไปหน้าหลักก่อน เพราะยังเข้าไปใน seller/dashboard.php ไม่ได้
 
         } catch (Exception $e) {
-            // 🛠️ แก้ไขจุดตาย: เช็กก่อนว่ามี Transaction ค้างอยู่จริงไหมก่อนสั่ง Rollback
+            // 🛠️ เช็กก่อนว่ามี Transaction ค้างอยู่จริงไหมก่อนสั่ง Rollback
             if ($db->inTransaction()) {
                 $db->rollBack();
             }
@@ -106,7 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <button type="submit" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1rem; font-weight: 600;">
-            ยืนยันการเปิดหน้าร้าน
+            ส่งคำขอเปิดหน้าร้าน
         </button>
     </form>
 </div>
