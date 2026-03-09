@@ -95,11 +95,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['place_order'])) {
         $ins_order = $db->prepare("INSERT INTO orders (buyer_id, shop_id, product_id) VALUES (?, ?, ?)");
         if ($ins_order->execute([$user_id, $product['shop_id'], $product_id])) {
             
-            // 🔔 1. แจ้งเตือนกระดิ่งบนเว็บ (ส่งให้เจ้าของร้าน)
+            // 🔔 แจ้งเตือนกระดิ่งบนเว็บ (ส่งให้เจ้าของร้าน)
             $notif_msg = "🛒 มีคำสั่งซื้อใหม่สำหรับสินค้า {$product['title']} จากคุณ {$_SESSION['fullname']}";
             sendNotification($product['owner_id'], 'order', $notif_msg, "../seller/dashboard.php");
 
-            // 🔔 2. แจ้งเตือนคนขายผ่าน LINE (ถ้าผูกไว้)
+            // 🔔 แจ้งเตือนคนขายผ่าน LINE (ถ้าผูกไว้)
             if (!empty($product['line_user_id'])) {
                 $msg = "🛒 มีคำสั่งซื้อใหม่!\nสินค้า: " . $product['title'] . "\nจากคุณ: " . $_SESSION['fullname'] . "\nกรุณาตรวจสอบในหน้า Dashboard ของคุณ";
                 sendLineMessagingAPI($product['line_user_id'], $msg);
@@ -125,23 +125,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
         $ins = $db->prepare("INSERT INTO reviews (product_id, user_id, rating, comment) VALUES (?, ?, ?, ?)");
         if ($ins->execute([$product_id, $user_id, $rating, $comment])) {
             
-            // 🔔 1. แจ้งเตือนกระดิ่งบนเว็บ เมื่อมีคนมารีวิว
+            // 🔔 แจ้งเตือนกระดิ่งบนเว็บ เมื่อมีคนมารีวิว
             $notif_msg = "⭐ มีรีวิวใหม่ ({$rating} ดาว) ในสินค้า {$product['title']}";
             sendNotification($product['owner_id'], 'review', $notif_msg, "product_detail.php?id=$product_id");
 
-            // 🔔 2. แจ้งเตือนคนขายผ่าน LINE เมื่อมีคนมารีวิว (ถ้าผูกไว้)
+            // 🔔 แจ้งเตือนคนขายผ่าน LINE เมื่อมีคนมารีวิว (ถ้าผูกไว้)
             if (!empty($product['line_user_id'])) {
                 $message = "📢 มีรีวิวใหม่ถึงสินค้าของคุณ!\n"
                          . "📦 สินค้า: " . $product['title'] . "\n"
                          . "⭐️ คะแนน: " . $rating . " ดาว\n"
                          . "💬 ความเห็น: " . $comment . "\n"
-                         . "🔗 ดูรีวิว: " . BASE_URL . "pages/product_detail.php?id=" . $product_id;
+                         . "🔗 ดูรีวิว: " . BASE_URL . "https://hosting.bncc.ac.th/s673190104/pages/product_detail.php?id=" . $product_id;
                 sendLineMessagingAPI($product['line_user_id'], $message);
             }
 
             $_SESSION['flash_message'] = "บันทึกรีวิวสำเร็จ ระบบแจ้งเตือนผู้ขายเรียบร้อยแล้ว";
             $_SESSION['flash_type'] = "success";
         }
+    }
+    redirect("product_detail.php?id=$product_id");
+}
+
+// 🟢 3. ส่วนแก้ไขและลบรีวิว (เอาคืนมาให้ครบครับ)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_review_submit'])) {
+    $r_id = (int)$_POST['review_id'];
+    $r_rating = (int)$_POST['rating'];
+    $r_comment = trim($_POST['comment']);
+    $stmt = $db->prepare("UPDATE reviews SET rating = ?, comment = ? WHERE id = ? AND user_id = ?");
+    if ($stmt->execute([$r_rating, $r_comment, $r_id, $user_id])) {
+        $_SESSION['flash_message'] = "แก้ไขรีวิวเรียบร้อย"; $_SESSION['flash_type'] = "success";
+    }
+    redirect("product_detail.php?id=$product_id");
+}
+
+if (isset($_GET['action']) && $_GET['action'] === 'delete_my_review') {
+    $del_id = (int)$_GET['rev_id'];
+    $stmt = $db->prepare("UPDATE reviews SET is_deleted = 1 WHERE id = ? AND user_id = ?");
+    if ($stmt->execute([$del_id, $user_id])) {
+        $_SESSION['flash_message'] = "ลบรีวิวแล้ว"; $_SESSION['flash_type'] = "success";
     }
     redirect("product_detail.php?id=$product_id");
 }
