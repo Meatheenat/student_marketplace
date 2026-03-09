@@ -36,12 +36,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = $stmt->fetch();
 
         if ($user && password_verify($password, $user['password'])) {
-            // 🚫 🛠️ เงื่อนไขเพิ่มเติม: ตรวจสอบสถานะการโดนแบน
-            if (isset($user['is_banned']) && $user['is_banned'] == 1) {
-                $_SESSION['flash_message'] = "🚫 บัญชีของคุณถูกระงับการใช้งาน กรุณาติดต่อแอดมินเพื่อตรวจสอบ";
-                $_SESSION['flash_type'] = "danger";
-                redirect('login.php');
-            }
+            // 🚫 🛠️ [แก้ไขใหม่] ตรวจสอบสถานะการโดนแบน พร้อมเพิ่มปุ่มกดไปหน้าอุทธรณ์
+if (isset($user['is_banned']) && $user['is_banned'] == 1) {
+    $_SESSION['flash_message'] = "🚫 บัญชีของคุณถูกระงับการใช้งานชั่วคราว <br>
+        <a href='appeal_ban.php' style='
+            display: inline-block; 
+            margin-top: 12px; 
+            padding: 10px 25px; 
+            background: #ef4444; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 14px; 
+            font-weight: 800; 
+            font-size: 0.85rem;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+            transition: all 0.3s ease;
+        '>ยื่นเรื่องขอกู้คืนบัญชีที่นี่</a>";
+    $_SESSION['flash_type'] = "danger";
+    redirect('login.php');
+}
 
             // บันทึกข้อมูลลง Session เมื่อรหัสผ่านถูกต้องและไม่โดนแบน
             $_SESSION['user_id']    = $user['id'];
