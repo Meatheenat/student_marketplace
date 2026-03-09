@@ -242,3 +242,5 @@ CREATE TABLE ban_appeals (
     reason TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+-- เปลี่ยนโครงสร้างคอลัมน์ status ให้รองรับค่าที่ส่งมาจาก PHP
+ALTER TABLE shops MODIFY COLUMN status ENUM('pending', 'approved', 'blocked') DEFAULT 'pending';

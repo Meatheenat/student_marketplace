@@ -420,3 +420,26 @@ function sendOTPToEmail($to_email, $otp_code) {
     }
 }
 */
+/**
+ * 📢 ฟังก์ชันแจ้งเตือนคนขาย (Web + LINE)
+ * ใช้สำหรับแจ้งเตือนเมื่อมีคนคอมเม้นต์ หรือ กดถูกใจ
+ */
+function notifySeller($seller_id, $message, $link = '#') {
+    $db = getDB();
+    
+    // 1. ส่งแจ้งเตือนบนหน้าเว็บ (กระดิ่ง)
+    sendNotification($seller_id, 'system', $message, $link);
+
+    // 2. ส่งแจ้งเตือนเข้า LINE (Messaging API)
+    // ดึง line_user_id ของคนขายออกมา
+    $stmt = $db->prepare("SELECT line_user_id FROM users WHERE id = ? AND line_user_id IS NOT NULL");
+    $stmt->execute([$seller_id]);
+    $line_id = $stmt->fetchColumn();
+
+    if ($line_id) {
+        // เรียกใช้ฟังก์ชันเดิมที่มีอยู่แล้วใน functions.php ของพี่
+        sendLineMessagingAPI($line_id, "📢 BNCC Market: " . $message . "\nตรวจสอบได้ที่: " . $link);
+    }
+    
+    return true;
+}
