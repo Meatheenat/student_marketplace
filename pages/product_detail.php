@@ -135,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
                          . "📦 สินค้า: " . $product['title'] . "\n"
                          . "⭐️ คะแนน: " . $rating . " ดาว\n"
                          . "💬 ความเห็น: " . $comment . "\n"
-                         . "🔗 ดูรีวิว: " . BASE_URL . "https://hosting.bncc.ac.th/s673190104/pages/product_detail.php?id=" . $product_id;
+                         . "🔗 ดูรีวิว: " . BASE_URL . "/pages/product_detail.php?id=" . $product_id;
                 sendLineMessagingAPI($product['line_user_id'], $message);
             }
 
