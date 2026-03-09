@@ -34,11 +34,26 @@ if (isset($_GET['code'])) {
     $user = $stmt->fetch();
 
     if ($user) {
-        // 🚫 🛠️ เงื่อนไขเพิ่มเติม: ตรวจสอบสถานะการโดนแบนก่อนเข้าสู่ระบบ
+        // 🚫 🛠️ [แก้ไขใหม่] ตรวจสอบสถานะการโดนแบนสำหรับผู้ใช้ Google พร้อมปุ่มพรีเมียม
         if (isset($user['is_banned']) && $user['is_banned'] == 1) {
-            $_SESSION['flash_message'] = "🚫 บัญชีของคุณถูกระงับการใช้งาน กรุณาติดต่อแอดมินเพื่อตรวจสอบ";
+            $_SESSION['flash_message'] = "🚫 บัญชีของคุณถูกระงับการใช้งานชั่วคราว <br>
+                <a href='appeal_ban.php' style='
+                    display: inline-block; 
+                    margin-top: 15px; 
+                    padding: 10px 25px; 
+                    background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%); 
+                    color: white; 
+                    text-decoration: none; 
+                    border-radius: 14px; 
+                    font-weight: 800; 
+                    font-size: 0.85rem;
+                    box-shadow: 0 4px 15px rgba(225, 29, 72, 0.3);
+                    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                ' onmouseover='this.style.transform=\"translateY(-2px)\"' onmouseout='this.style.transform=\"translateY(0)\"'>
+                    <i class='fas fa-paper-plane'></i> ยื่นเรื่องขอกู้คืนบัญชีที่นี่
+                </a>";
             $_SESSION['flash_type'] = "danger";
-            redirect('login.php'); // ส่งกลับหน้า Login ทันที
+            redirect('login.php'); // ดีดกลับไปหน้า Login เพื่อโชว์ปุ่ม
         }
 
         // บันทึกสถานะการเข้าสู่ระบบ
