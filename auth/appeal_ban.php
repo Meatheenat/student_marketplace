@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                        . "📝 เหตุผล: " . $reason;
             
             if (function_exists('notifyAllAdmins')) {
-                notifyAllAdmins($admin_msg); // แจ้งเตือนเข้า LINE
+                notifyAllAdmins($admin_msg);
             }
 
             $adminStmt = $db->query("SELECT id FROM users WHERE role IN ('admin', 'teacher')");
@@ -57,11 +57,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <style>
     /* ============================================================
-       🎨 DYNAMIC THEME & PREMIUM STYLES
+       🎨 DYNAMIC THEME & PREMIUM STYLES (แก้ปัญหาสีขาว)
        ============================================================ */
     :root {
-        --appeal-red: #f43f5e;
-        --appeal-red-dark: #e11d48;
+        --login-bg: #f8fafc;
+        --login-orb-1: rgba(79, 70, 229, 0.1);
+        --login-orb-2: rgba(168, 85, 247, 0.1);
+        --login-card-bg: rgba(255, 255, 255, 0.7);
+        --login-card-border: rgba(0, 0, 0, 0.05);
+        --login-card-shadow: 0 30px 60px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255,255,255,0.5);
+        --login-input-bg: rgba(255, 255, 255, 0.5);
+        --login-input-focus: rgba(255, 255, 255, 0.9);
+        --login-icon-color: rgba(30, 41, 59, 0.4);
+    }
+
+    .dark-theme {
+        --login-bg: #0b0e14;
+        --login-orb-1: rgba(99, 102, 241, 0.15);
+        --login-orb-2: rgba(168, 85, 247, 0.1);
+        --login-card-bg: rgba(20, 25, 40, 0.55);
+        --login-card-border: rgba(255, 255, 255, 0.05);
+        --login-card-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+        --login-input-bg: rgba(0, 0, 0, 0.3);
+        --login-input-focus: rgba(0, 0, 0, 0.5);
+        --login-icon-color: rgba(255, 255, 255, 0.3);
     }
 
     body {
@@ -81,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         overflow: hidden;
     }
 
-    /* 🔮 พื้นหลังแสงออร่า */
+    /* 🔮 พื้นหลังแสงออร่าเด้งๆ */
     .glow-orb {
         position: absolute;
         border-radius: 50%;
@@ -90,17 +109,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         opacity: 0.8;
         animation: pulseOrb 8s infinite alternate ease-in-out;
     }
-    .glow-orb-1 {
-        width: 600px; height: 600px;
-        background: radial-gradient(circle, var(--login-orb-1) 0%, transparent 70%);
-        top: -10%; left: -10%;
-    }
-    .glow-orb-2 {
-        width: 500px; height: 500px;
-        background: radial-gradient(circle, rgba(244, 63, 94, 0.1) 0%, transparent 70%);
-        bottom: -10%; right: -10%;
-        animation-delay: -4s;
-    }
+    .glow-orb-1 { width: 600px; height: 600px; background: radial-gradient(circle, var(--login-orb-1) 0%, transparent 70%); top: -10%; left: -10%; }
+    .glow-orb-2 { width: 500px; height: 500px; background: radial-gradient(circle, rgba(244, 63, 94, 0.15) 0%, transparent 70%); bottom: -10%; right: -10%; animation-delay: -4s; }
 
     @keyframes pulseOrb {
         0% { transform: scale(0.9); opacity: 0.6; }
@@ -125,9 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         animation: entranceCard 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
-    @keyframes entranceCard {
-        to { opacity: 1; transform: translateY(0); }
-    }
+    @keyframes entranceCard { to { opacity: 1; transform: translateY(0); } }
 
     .form-control-custom {
         width: 100%;
@@ -144,7 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     .form-control-custom:focus {
         background: var(--login-input-focus);
-        border-color: var(--appeal-red);
+        border-color: #f43f5e;
         box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.15);
         transform: translateY(-2px);
     }
@@ -165,7 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         width: 100%;
         padding: 18px;
         border-radius: 18px;
-        background: linear-gradient(135deg, var(--appeal-red) 0%, var(--appeal-red-dark) 100%);
+        background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
         color: #ffffff;
         font-weight: 800;
         font-size: 1.05rem;
@@ -196,7 +204,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         margin-top: 30px;
         transition: 0.3s;
     }
-    .back-link:hover { color: var(--appeal-red); }
+    .back-link:hover { color: #f43f5e; }
 </style>
 
 <div class="login-master-wrapper">
@@ -206,7 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="appeal-card" id="tilt-card-premium">
         <div style="margin-bottom: 35px;">
             <div style="width: 80px; height: 80px; background: rgba(244, 63, 94, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
-                <i class="fas fa-user-shield" style="font-size: 2.5rem; color: var(--appeal-red);"></i>
+                <i class="fas fa-user-shield" style="font-size: 2.5rem; color: #f43f5e;"></i>
             </div>
             <h2 style="font-size: 2.2rem; font-weight: 900; color: var(--text-main); margin: 0; letter-spacing: -1px;">ยื่นเรื่องปลดแบน</h2>
             <p style="color: var(--text-muted); margin-top: 5px;">ระบุข้อมูลเพื่อขอยืนยันตัวตนกับผู้ดูแลระบบ</p>
