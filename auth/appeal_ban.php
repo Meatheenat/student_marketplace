@@ -1,6 +1,6 @@
 <?php
 /**
- * Student Marketplace - Appeal Ban Page
+ * Student Marketplace - Appeal Ban Page (Premium UI + Logic 3 Times / 3 Days)
  * สำหรับผู้ใช้งานที่ถูกระงับบัญชี เพื่อยื่นเรื่องขอตรวจสอบ
  */
 $pageTitle = "ยื่นเรื่องอุทธรณ์ - BNCC Market";
@@ -29,27 +29,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['flash_message'] = "บัญชีของคุณสถานะปกติ ไม่ได้ถูกระงับการใช้งานครับ";
             $_SESSION['flash_type'] = "info";
         } else {
-            // 2. ส่งแจ้งเตือนหา Admin ทุกคน
-            $admin_msg = "🚨 [คำขออุทธรณ์] ผู้ใช้ขอยืนยันตัวตนเพื่อปลดแบน\n"
-                       . "👤 ชื่อ: " . $user['fullname'] . "\n"
-                       . "🆔 รหัส: " . $student_id . "\n"
-                       . "📝 เหตุผล: " . $reason;
-            
-            if (function_exists('notifyAllAdmins')) {
-                notifyAllAdmins($admin_msg);
-            }
+            // 🎯 2. ตรวจสอบเงื่อนไขการยื่นอุทธรณ์ (3 ครั้ง และ ห่างกัน 3 วัน)
+            $check_stmt = $db->prepare("SELECT COUNT(*) as total_appeals, MAX(created_at) as last_appeal FROM ban_appeals WHERE user_id = ?");
+            $check_stmt->execute([$user['id']]);
+            $appeal_stat = $check_stmt->fetch();
 
-            $adminStmt = $db->query("SELECT id FROM users WHERE role IN ('admin', 'teacher')");
-            $admins = $adminStmt->fetchAll(PDO::FETCH_COLUMN);
-            foreach ($admins as $adm_id) {
-                if (function_exists('sendNotification')) {
-                    sendNotification($adm_id, 'system', "มีการยื่นอุทธรณ์ปลดแบนจาก: " . $user['fullname'], "../admin/manage_members.php?search=" . urlencode($user['email']));
+            $total = (int)$appeal_stat['total_appeals'];
+            $last_date = $appeal_stat['last_appeal'] ? strtotime($appeal_stat['last_appeal']) : 0;
+            $wait_period = 3 * 24 * 60 * 60; // 3 วัน แปลงเป็นวินาที
+
+            if ($total >= 3) {
+                // ❌ กรณีครบ 3 ครั้งแล้ว
+                $_SESSION['flash_message'] = "คุณได้ใช้สิทธิ์ยื่นอุทธรณ์ครบ 3 ครั้งแล้ว ไม่สามารถยื่นได้อีกครับ";
+                $_SESSION['flash_type'] = "danger";
+            } elseif (time() - $last_date < $wait_period && $total > 0) {
+                // ❌ กรณีเว้นระยะไม่ถึง 3 วัน
+                $days_left = ceil(($wait_period - (time() - $last_date)) / (24 * 60 * 60));
+                $_SESSION['flash_message'] = "กรุณารออีกอย่างน้อย {$days_left} วัน จึงจะสามารถยื่นเรื่องได้ใหม่อีกครั้ง";
+                $_SESSION['flash_type'] = "warning";
+            } else {
+                // ✅ 3. บันทึกข้อมูลการอุทธรณ์ลงตาราง ban_appeals
+                $ins_stmt = $db->prepare("INSERT INTO ban_appeals (user_id, student_id, reason) VALUES (?, ?, ?)");
+                $ins_stmt->execute([$user['id'], $student_id, $reason]);
+
+                // 🔔 4. ส่งแจ้งเตือนหา Admin ทุกคน (LINE & Web Notification)
+                $appeal_count = $total + 1;
+                $admin_msg = "🚨 [คำขออุทธรณ์ครั้งที่ {$appeal_count}]\n"
+                           . "👤 ชื่อ: " . $user['fullname'] . "\n"
+                           . "🆔 รหัส: " . $student_id . "\n"
+                           . "📝 เหตุผล: " . $reason;
+                
+                if (function_exists('notifyAllAdmins')) {
+                    notifyAllAdmins($admin_msg);
                 }
-            }
 
-            $_SESSION['flash_message'] = "ส่งเรื่องอุทธรณ์สำเร็จ! แอดมินจะดำเนินการตรวจสอบให้ภายใน 1-3 วันครับ";
-            $_SESSION['flash_type'] = "success";
-            redirect('login.php');
+                // แจ้งเตือนกระดิ่งบนหน้าเว็บแอดมิน
+                $adminStmt = $db->query("SELECT id FROM users WHERE role IN ('admin', 'teacher')");
+                $admins = $adminStmt->fetchAll(PDO::FETCH_COLUMN);
+                foreach ($admins as $adm_id) {
+                    if (function_exists('sendNotification')) {
+                        sendNotification($adm_id, 'system', "อุทธรณ์ปลดแบนครั้งที่ {$appeal_count}: " . $user['fullname'], "../admin/manage_members.php?search=" . urlencode($user['email']));
+                    }
+                }
+
+                $_SESSION['flash_message'] = "ส่งเรื่องอุทธรณ์ครั้งที่ {$appeal_count}/3 สำเร็จ! แอดมินจะตรวจสอบภายใน 1-3 วันครับ";
+                $_SESSION['flash_type'] = "success";
+                redirect('login.php');
+            }
         }
     }
 }
@@ -57,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <style>
     /* ============================================================
-       🎨 DYNAMIC THEME & PREMIUM STYLES (แก้ปัญหาสีขาว)
+       🎨 DYNAMIC THEME & PREMIUM STYLES
        ============================================================ */
     :root {
         --login-bg: #f8fafc;
@@ -68,7 +94,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         --login-card-shadow: 0 30px 60px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255,255,255,0.5);
         --login-input-bg: rgba(255, 255, 255, 0.5);
         --login-input-focus: rgba(255, 255, 255, 0.9);
-        --login-icon-color: rgba(30, 41, 59, 0.4);
     }
 
     .dark-theme {
@@ -80,7 +105,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         --login-card-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255,255,255,0.05);
         --login-input-bg: rgba(0, 0, 0, 0.3);
         --login-input-focus: rgba(0, 0, 0, 0.5);
-        --login-icon-color: rgba(255, 255, 255, 0.3);
     }
 
     body {
@@ -100,7 +124,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         overflow: hidden;
     }
 
-    /* 🔮 พื้นหลังแสงออร่าเด้งๆ */
     .glow-orb {
         position: absolute;
         border-radius: 50%;
@@ -117,7 +140,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         100% { transform: scale(1.1); opacity: 1; }
     }
 
-    /* 💎 Premium Glass Card */
     .appeal-card {
         position: relative;
         width: 100%;
@@ -217,7 +239,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <i class="fas fa-user-shield" style="font-size: 2.5rem; color: #f43f5e;"></i>
             </div>
             <h2 style="font-size: 2.2rem; font-weight: 900; color: var(--text-main); margin: 0; letter-spacing: -1px;">ยื่นเรื่องปลดแบน</h2>
-            <p style="color: var(--text-muted); margin-top: 5px;">ระบุข้อมูลเพื่อขอยืนยันตัวตนกับผู้ดูแลระบบ</p>
+            <p style="color: var(--text-muted); margin-top: 5px;">จำกัดสิทธิ์ 3 ครั้ง และเว้นระยะห่างทุก 3 วัน</p>
         </div>
 
         <?php echo displayFlashMessage(); ?>
@@ -245,7 +267,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <script>
-    // 🎯 ระบบการ์ดเอียงตามเมาส์ (Sync ทุกหน้า)
+    // 🎯 ระบบการ์ดเอียงตามเมาส์ (Premium UX)
     const card = document.querySelector('#tilt-card-premium');
     const wrapper = document.querySelector('.login-master-wrapper');
 
