@@ -618,11 +618,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         const emailInput = document.getElementById('email').value;
         const expectedEmail = studentId + '@bncc.ac.th';
         
-        if (emailInput !== expectedEmail) {
-            e.preventDefault(); // หยุดการส่งฟอร์ม
-            alert('อีเมลไม่ถูกต้อง! ต้องใช้รหัสนักศึกษาตามด้วย @bncc.ac.th (เช่น ' + expectedEmail + ')');
-            document.getElementById('email').focus();
-        }
     });
 
     document.getElementById('theme-toggle').addEventListener('click', () => {
