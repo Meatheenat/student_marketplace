@@ -38,15 +38,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $department  = $_POST['department'];
     $password    = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
-    $email       = $temp_email; 
+    $email       = $temp_email; // ใช้อีเมลจาก Session ของ Google โดยตรง
     $role        = 'buyer'; 
 
     $full_class_room = $class_level . " " . $class_year;
 
-    if (empty($fullname) || empty($student_id) || empty($department) || empty($password)) {
+    // ดึงเฉพาะตัวเลขรหัสนักศึกษาออกจากอีเมล (เช่น ดึง 66319010012 ออกจาก 66319010012@bncc.ac.th)
+    $expected_student_id = explode('@', $email)[0];
+
+    // 🎯 เริ่มระบบ Validation ดักข้อมูล
+    if (empty($fullname) || empty($student_id) || empty($department) || empty($password) || empty($class_year)) {
         $_SESSION['flash_message'] = "กรุณากรอกข้อมูลให้ครบถ้วนทุกช่องครับ";
         $_SESSION['flash_type'] = "danger";
     } 
+    elseif (!preg_match('/^[0-9]{11}$/', $student_id)) {
+        $_SESSION['flash_message'] = "รหัสประจำตัวนักเรียนต้องเป็นตัวเลข 11 หลักเท่านั้น";
+        $_SESSION['flash_type'] = "danger";
+    }
+    elseif (!preg_match('/^[1-3]\/[1-3]$/', $class_year)) {
+        $_SESSION['flash_message'] = "ชั้น/ห้อง ไม่ถูกต้อง (กรุณาระบุเป็น 1/1 ถึง 3/3 เท่านั้น)";
+        $_SESSION['flash_type'] = "danger";
+    }
+    elseif ($student_id !== $expected_student_id) {
+        $_SESSION['flash_message'] = "รหัสประจำตัวที่กรอก ไม่ตรงกับอีเมลของ Google ที่คุณใช้ล็อกอิน";
+        $_SESSION['flash_type'] = "danger";
+    }
     elseif ($password !== $confirm_password) {
         $_SESSION['flash_message'] = "รหัสผ่านทั้งสองช่องไม่ตรงกัน กรุณาตรวจสอบอีกครั้ง";
         $_SESSION['flash_type'] = "danger";
@@ -69,6 +85,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['role']       = $role;
                 $_SESSION['student_id'] = $student_id;
                 unset($_SESSION['temp_email']);
+                
+                $_SESSION['flash_message'] = "เข้าสู่ระบบสำเร็จ ยินดีต้อนรับครับ!";
+                $_SESSION['flash_type'] = "success";
                 redirect('../pages/index.php');
             }
         }
@@ -76,9 +95,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <style>
     /* ============================================================
-       🎨 DYNAMIC THEME VARIABLES (ก๊อปจาก Login ตัวอย่างเป๊ะๆ)
+       🎨 DYNAMIC THEME VARIABLES
        ============================================================ */
     :root {
         --login-bg: #f8fafc;
@@ -132,17 +153,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         opacity: 0.8;
         animation: pulseOrb 8s infinite alternate ease-in-out;
     }
-    .glow-orb-1 {
-        width: 600px; height: 600px;
-        background: radial-gradient(circle, var(--login-orb-1) 0%, transparent 70%);
-        top: -10%; left: 0%;
-    }
-    .glow-orb-2 {
-        width: 500px; height: 500px;
-        background: radial-gradient(circle, var(--login-orb-2) 0%, transparent 70%);
-        bottom: -10%; right: 0%;
-        animation-delay: -4s;
-    }
+    .glow-orb-1 { width: 600px; height: 600px; background: radial-gradient(circle, var(--login-orb-1) 0%, transparent 70%); top: -10%; left: 0%; }
+    .glow-orb-2 { width: 500px; height: 500px; background: radial-gradient(circle, var(--login-orb-2) 0%, transparent 70%); bottom: -10%; right: 0%; animation-delay: -4s; }
 
     @keyframes pulseOrb {
         0% { transform: scale(0.9); opacity: 0.6; }
@@ -152,7 +164,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     .login-card {
         position: relative;
         width: 100%;
-        max-width: 550px; /* ขยายความกว้างสำหรับฟอร์มกรอกข้อมูลเพิ่ม */
+        max-width: 550px; 
         background: var(--login-card-bg);
         backdrop-filter: blur(25px);
         -webkit-backdrop-filter: blur(25px);
@@ -226,7 +238,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         transform: translateY(-2px);
     }
 
-    /* Select Styles Sync */
     select.form-control-custom {
         appearance: none;
         background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(150,150,150,0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
@@ -247,6 +258,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         color: var(--login-icon-color);
         font-size: 1.1rem;
         transition: 0.3s;
+        pointer-events: none;
     }
     .form-control-custom:focus + .input-icon { color: #818cf8; }
 
@@ -296,6 +308,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         font-size: 0.9rem;
         text-align: center;
     }
+    .dark-theme .alert {
+        background: rgba(239, 68, 68, 0.15);
+        color: #fca5a5;
+    }
 </style>
 
 <div class="login-master-wrapper">
@@ -310,7 +326,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <?php echo displayFlashMessage(); ?>
 
-        <form action="register_google.php" method="POST">
+        <form action="register_google.php" method="POST" id="registerGoogleForm">
             <div class="form-group">
                 <label class="field-label">Full Name <span>*</span></label>
                 <div class="input-wrapper">
@@ -322,7 +338,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="form-group">
                 <label class="field-label">Verify Email (Google)</label>
                 <div class="input-wrapper">
-                    <input type="email" class="form-control-custom" value="<?php echo e($temp_email); ?>" readonly style="opacity: 0.7; cursor: not-allowed;">
+                    <input type="email" id="email" class="form-control-custom" value="<?php echo e($temp_email); ?>" readonly style="opacity: 0.7; cursor: not-allowed; background: rgba(0,0,0,0.05);">
                     <i class="fas fa-envelope input-icon"></i>
                 </div>
             </div>
@@ -330,7 +346,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="form-group">
                 <label class="field-label">Student ID <span>*</span></label>
                 <div class="input-wrapper">
-                    <input type="text" name="student_id" class="form-control-custom" placeholder="รหัสประจำตัวนักเรียน" required>
+                    <input type="text" name="student_id" id="student_id" class="form-control-custom" placeholder="รหัสประจำตัว 11 หลัก (ตัวเลขเท่านั้น)" maxlength="11" pattern="[0-9]{11}" required>
                     <i class="fas fa-id-card input-icon"></i>
                 </div>
             </div>
@@ -349,7 +365,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="form-group">
                     <label class="field-label">Year/Room</label>
                     <div class="input-wrapper">
-                        <input type="text" name="class_year" class="form-control-custom" placeholder="เช่น 1/2" required>
+                        <input type="text" name="class_year" id="class_year" class="form-control-custom" placeholder="เช่น 1/2" maxlength="3" pattern="[1-3]/[1-3]" required>
                         <i class="fas fa-door-open input-icon"></i>
                     </div>
                 </div>
@@ -404,7 +420,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <script>
-    // 1. ระบบดวงตาสลับรหัสผ่าน (Sync กับ Theme)
+    // 1. ระบบดวงตาสลับรหัสผ่าน
     function togglePass(inputId, iconElement) {
         const input = document.getElementById(inputId);
         const isDark = document.documentElement.classList.contains('dark-theme');
@@ -442,8 +458,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         card.style.transition = "transform 0.8s ease-out";
     });
 
-    // 3. Theme Listener สำหรับไอคอนดวงตา
-    document.getElementById('theme-toggle').addEventListener('click', () => {
+    // 3. โฟกัสช่องกรอกข้อมูลอัตโนมัติ
+    window.onload = () => {
+        setTimeout(() => {
+            document.querySelector('input[name="fullname"]').focus();
+        }, 500);
+    };
+
+    // 🎯 4. ดักจับและป้องกันการพิมพ์ตัวอักษรในช่องรหัสนักเรียน (พิมพ์ได้แค่ตัวเลข 0-9)
+    document.getElementById('student_id').addEventListener('input', function() {
+        this.value = this.value.replace(/[^0-9]/g, '');
+    });
+
+    // 🎯 5. ดักจับให้ช่องชั้น/ห้อง พิมพ์ได้แค่ตัวเลข 1-3 และเครื่องหมายทับ / เท่านั้น
+    document.getElementById('class_year').addEventListener('input', function() {
+        this.value = this.value.replace(/[^1-3\/]/g, '');
+    });
+
+    // 🎯 6. ตรวจสอบรหัสนักศึกษากับอีเมลของ Google ด้วย SweetAlert2
+    document.getElementById('registerGoogleForm').addEventListener('submit', function(e) {
+        const studentId = document.getElementById('student_id').value;
+        const emailInput = document.getElementById('email').value;
+        
+        // แยกเอาตัวเลขหน้า @ ออกมาจาก email ของ Google
+        const expectedStudentId = emailInput.split('@')[0];
+        
+        // ถ้ารหัสที่กรอก ไม่ตรงกับอีเมลของ Google
+        if (studentId !== expectedStudentId) {
+            e.preventDefault(); // หยุดการส่งฟอร์มทันที
+            
+            const isDark = document.documentElement.classList.contains('dark-theme');
+            
+            Swal.fire({
+                icon: 'warning',
+                title: 'ข้อมูลไม่ถูกต้อง!',
+                html: 'รหัสประจำตัวที่คุณกรอก <b>ไม่ตรงกับ</b> อีเมลของ Google<br><br>อีเมลที่ใช้คือ: <span style="color:#ef4444; font-weight:800;">' + emailInput + '</span><br>ดังนั้นรหัสนักศึกษาต้องเป็น: <span style="color:#6366f1; font-weight:800; font-size:1.1rem;">' + expectedStudentId + '</span>',
+                confirmButtonText: 'กลับไปแก้ไข',
+                confirmButtonColor: '#6366f1',
+                background: isDark ? '#1e293b' : '#ffffff',
+                color: isDark ? '#ffffff' : '#0f172a',
+                backdrop: `rgba(0,0,0,0.6)`
+            }).then(() => {
+                document.getElementById('student_id').focus();
+            });
+        }
+    });
+
+    // 7. Theme Listener สำหรับไอคอนดวงตา
+    document.getElementById('theme-toggle')?.addEventListener('click', () => {
         const passInput = document.getElementById('password');
         const confirmInput = document.getElementById('confirm_password');
         const icons = document.querySelectorAll('.pass-toggle-icon');
