@@ -92,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $shopStatus !== 'pending') {
                 คุณได้ส่งคำขอเปิดร้านค้าไปเรียบร้อยแล้ว<br>
                 ขณะนี้กำลังรอการอนุมัติจากผู้ดูแลระบบ/คุณครู<br>
                 <span style="display: block; margin-top: 10px; font-size: 0.9rem; color: var(--primary-color);">
-                    (บทบาทของคุณจะเปลี่ยนเป็นผู้ขายอัตโนมัติเมื่อผ่านการอนุมัติ)
+                    (คุณจะเปลี่ยนเป็นผู้ขายอัตโนมัติเมื่อผ่านการอนุมัติ)
                 </span>
             </p>
             <a href="../pages/index.php" class="btn btn-primary" style="padding: 12px 30px; border-radius: 12px; font-weight: 600; text-decoration: none; display: inline-block;">
