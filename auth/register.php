@@ -33,32 +33,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $full_class_room = $class_level . " " . $class_year;
 
-    // 🎯 🛠️ เริ่มระบบ Validation ใหม่ตามเงื่อนไขที่กำหนด
+// 🎯 เริ่มระบบ Validation ดักตัวเลขและอีเมล
     if (empty($fullname) || empty($student_id) || empty($email) || empty($password) || empty($department) || empty($class_year)) {
         $_SESSION['flash_message'] = "กรุณากรอกข้อมูลให้ครบทุกช่อง";
         $_SESSION['flash_type'] = "danger";
     } 
-    // 1. เช็กรหัสประจำตัวนักเรียน (ต้องเป็นตัวเลข 11 หลักเท่านั้น)
     elseif (!preg_match('/^[0-9]{11}$/', $student_id)) {
         $_SESSION['flash_message'] = "รหัสประจำตัวนักเรียนต้องเป็นตัวเลข 11 หลักเท่านั้น";
         $_SESSION['flash_type'] = "danger";
     }
-    // 2. เช็กชั้น/ห้อง (ต้องเป็นเลข 1, 2 หรือ 3 คั่นด้วย / ตามด้วย 1, 2 หรือ 3 เท่านั้น)
     elseif (!preg_match('/^[1-3]\/[1-3]$/', $class_year)) {
         $_SESSION['flash_message'] = "ชั้น/ห้อง ไม่ถูกต้อง (กรุณาระบุเป็น 1/1 ถึง 3/3 เท่านั้น)";
         $_SESSION['flash_type'] = "danger";
     }
-    // 3. เช็กอีเมล (ต้องตรงกับ รหัสนักศึกษา@bncc.ac.th เป๊ะๆ)
     elseif ($email !== $student_id . '@bncc.ac.th') {
-        $_SESSION['flash_message'] = "อีเมลไม่ถูกต้อง! ต้องเป็นรหัสนักศึกษาตามด้วย @bncc.ac.th เท่านั้น (เช่น {$student_id}@bncc.ac.th)";
+        $_SESSION['flash_message'] = "อีเมลไม่ถูกต้อง! ต้องเป็นรหัสนักศึกษาตามด้วย @bncc.ac.th เท่านั้น";
         $_SESSION['flash_type'] = "danger";
     }
-    // 4. เช็กรหัสผ่านตรงกัน
     elseif ($password !== $confirm_password) {
         $_SESSION['flash_message'] = "รหัสผ่านทั้งสองช่องไม่ตรงกัน";
         $_SESSION['flash_type'] = "danger";
     }
     else {
+        // ... โค้ด $db = getDB(); ของเดิม ...
         $db = getDB();
         $stmt = $db->prepare("SELECT id FROM users WHERE email = ? OR student_id = ?");
         $stmt->execute([$email, $student_id]);
@@ -95,11 +92,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
-
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
     /* ============================================================
        🎨 DYNAMIC THEME VARIABLES (ก๊อปจาก Login.php เป๊ะๆ)
        ============================================================ */
+       
     :root {
         --login-bg: #f8fafc;
         --login-orb-1: rgba(79, 70, 229, 0.1);
@@ -484,7 +482,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="form-group">
                     <label class="field-label">ชั้น/ห้อง <span>*</span></label>
                     <div class="input-wrapper">
-                        <input type="text" name="class_year" class="form-control-custom" placeholder="เช่น 1/2" pattern="[1-3]/[1-3]" title="กรุณาระบุชั้น/ห้อง เป็น 1-3 เช่น 1/1, 2/3" required>
+                        <input type="text" name="class_year" id="class_year" class="form-control-custom" placeholder="เช่น 1/2" maxlength="3" required>
                         <i class="fas fa-door-open input-icon"></i>
                     </div>
                 </div>
