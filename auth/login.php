@@ -36,24 +36,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = $stmt->fetch();
 
         if ($user && password_verify($password, $user['password'])) {
-         // 🚫 🛠️ [แก้ไขใหม่] ตรวจสอบสถานะการโดนแบน พร้อมปุ่มดีไซน์พรีเมียม
+            // 🚫 🛠️ [แก้ไขใหม่] ตรวจสอบสถานะการโดนแบน พร้อมเพิ่มปุ่มกดไปหน้าอุทธรณ์
 if (isset($user['is_banned']) && $user['is_banned'] == 1) {
     $_SESSION['flash_message'] = "🚫 บัญชีของคุณถูกระงับการใช้งานชั่วคราว <br>
         <a href='appeal_ban.php' style='
             display: inline-block; 
-            margin-top: 15px; 
+            margin-top: 12px; 
             padding: 10px 25px; 
-            background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%); 
+            background: #ef4444; 
             color: white; 
             text-decoration: none; 
             border-radius: 14px; 
             font-weight: 800; 
             font-size: 0.85rem;
-            box-shadow: 0 4px 15px rgba(225, 29, 72, 0.3);
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        ' onmouseover='this.style.transform=\"translateY(-2px)\"' onmouseout='this.style.transform=\"translateY(0)\"'>
-            <i class='fas fa-paper-plane'></i> ยื่นเรื่องขอกู้คืนบัญชีที่นี่
-        </a>";
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+            transition: all 0.3s ease;
+        '>ยื่นเรื่องขอกู้คืนบัญชีที่นี่</a>";
     $_SESSION['flash_type'] = "danger";
     redirect('login.php');
 }
