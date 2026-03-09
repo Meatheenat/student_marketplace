@@ -300,34 +300,21 @@ function canUserReview($user_id, $product_id) {
     return ['status' => true];
 }
 /**
- * 📧 [NEW] ฟังก์ชันส่งรหัส OTP เข้า Email (ใช้ฟังก์ชัน mail() พื้นฐานของ PHP)
- * ใช้สำหรับส่งรหัสยืนยันตัวตนตอนสมัครสมาชิกและลืมรหัสผ่าน
- */
-/**
- * 📧 [FIXED] ฟังก์ชันส่งรหัส OTP เข้า Email ด้วย PHPMailer (ชัวร์ 100% ไม่ตก Spam)
- */
-/**
- * 📧 [FIXED] ฟังก์ชันส่งรหัส OTP เข้า Email (ใช้อีเมลจำลอง ไม่ต้องใช้เมลจริง)
- */
-/**
- * 📧 [FIXED] ฟังก์ชันส่งรหัส OTP เข้า Email (ใช้อีเมลจำลอง + แต่ง HTML สวยๆ)
+ * 📧 [ACTIVE] ฟังก์ชันส่งรหัส OTP เข้า Email (ใช้อีเมลจำลอง + แต่ง HTML สวยๆ)
+ * ใช้ตัวนี้ไปก่อนจนกว่าจะได้อีเมลทางการ
  */
 function sendOTPToEmail($to_email, $otp_code) {
-    // กำหนดหัวข้ออีเมล
     $subject = "รหัสยืนยันตัวตน (OTP) - BNCC Market";
-    
-    // กำหนดเนื้อหาข้อความในอีเมล (เขียนเป็น HTML และฝัง CSS ลงไปเลย)
+    $logo_url = "https://cdn-icons-png.flaticon.com/512/3081/3081986.png"; 
+
     $message = "
     <html>
-    <head>
-        <title>รหัสยืนยันตัวตน</title>
-    </head>
+    <head><title>รหัสยืนยันตัวตน</title></head>
     <body style='background-color: #f1f5f9; padding: 40px 20px; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;'>
         <div style='max-width: 500px; margin: 0 auto; background-color: #ffffff; padding: 40px 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; border: 1px solid #e2e8f0;'>
             
-            <h2 style='color: #4f46e5; margin-top: 0; font-size: 26px; font-weight: 900; letter-spacing: -0.5px;'>
-                🛍️ BNCC Market
-            </h2>
+            <img src='{$logo_url}' alt='BNCC Market' style='width: 80px; height: 80px; margin-bottom: 15px;'>
+            <h2 style='color: #4f46e5; margin-top: 0; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;'>BNCC Market</h2>
             
             <p style='color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 25px;'>
                 สวัสดีครับ,<br>นี่คือรหัสความปลอดภัย (OTP) สำหรับยืนยันตัวตนของคุณเพื่อเข้าใช้งานระบบ
@@ -347,20 +334,89 @@ function sendOTPToEmail($to_email, $otp_code) {
                 อีเมลฉบับนี้ถูกส่งจากระบบอัตโนมัติ กรุณาอย่าตอบกลับอีเมลนี้<br>
                 &copy; " . date('Y') . " BNCC Market. All rights reserved.
             </p>
-            
         </div>
     </body>
     </html>
     ";
     
-    // 🎯 อัปเกรด Headers ให้รองรับการแสดงผลแบบ HTML
     $headers = "MIME-Version: 1.0\r\n";
     $headers .= "Content-type: text/html; charset=UTF-8\r\n";
-    // 🎯 ชื่อผู้ส่งโชว์ชื่อ BNCC Market แต่อีเมลที่ส่งมาคือ system@bncc.ac.th
     $headers .= "From: BNCC Market <system@bncc.ac.th>\r\n";
 
-    // ใช้ @ ป้องกัน Error แจ้งเตือนหน้าเว็บพัง
     @mail($to_email, $subject, $message, $headers);
     
     return true;
 }
+
+/* =========================================================================
+   🚀 [FUTURE USE] โค้ดสำหรับใช้ PHPMailer (รอใช้อีเมลทางการของวิทยาลัย)
+   
+   วิธีสลับมาใช้ตัวนี้: 
+   1. ลบหรือคอมเมนต์ฟังก์ชัน sendOTPToEmail() ด้านบนทิ้ง
+   2. ลบเครื่องหมายคอมเมนต์ (/* และ * /) ของบล็อกด้านล่างนี้ออก
+   3. แก้ไข Username และ Password ให้เป็นอีเมลของวิทยาลัย
+   ========================================================================= */
+
+/*
+function sendOTPToEmail($to_email, $otp_code) {
+    require_once __DIR__ . '/../vendor/autoload.php';
+    
+    $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+    
+    try {
+        // ⚙️ ตั้งค่าเซิร์ฟเวอร์ (สมมติว่าวิทยาลัยใช้ระบบของ Gmail/Google Workspace)
+        $mail->isSMTP();
+        $mail->Host       = 'smtp.gmail.com'; 
+        $mail->SMTPAuth   = true;
+        
+        // 🔑 ใส่ข้อมูลอีเมลทางการตรงนี้
+        $mail->Username   = 'official_email@bncc.ac.th'; // เปลี่ยนเป็นอีเมลวิทยาลัย
+        $mail->Password   = 'รหัสผ่าน_หรือ_App_Password'; // เปลี่ยนเป็นรหัสผ่าน
+        
+        $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = 587;
+        $mail->CharSet    = 'UTF-8';
+
+        // 🎯 ตั้งค่าผู้ส่งและผู้รับ
+        $mail->setFrom('official_email@bncc.ac.th', 'BNCC Market');
+        $mail->addAddress($to_email);
+
+        // 🎨 เนื้อหาอีเมล (HTML สวยๆ เหมือนเดิม)
+        $mail->isHTML(true);
+        $mail->Subject = 'รหัสยืนยันตัวตน (OTP) - BNCC Market';
+     
+
+        $mail->Body = "
+        <html>
+        <head><title>รหัสยืนยันตัวตน</title></head>
+        <body style='background-color: #f1f5f9; padding: 40px 20px; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;'>
+            <div style='max-width: 500px; margin: 0 auto; background-color: #ffffff; padding: 40px 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; border: 1px solid #e2e8f0;'>
+                <img src='{$logo_url}' alt='BNCC Market' style='width: 80px; height: 80px; margin-bottom: 15px;'>
+                <h2 style='color: #4f46e5; margin-top: 0; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;'>BNCC Market</h2>
+                <p style='color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 25px;'>
+                    สวัสดีครับ,<br>นี่คือรหัสความปลอดภัย (OTP) สำหรับยืนยันตัวตนของคุณเพื่อเข้าใช้งานระบบ
+                </p>
+                <div style='background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); padding: 25px; border-radius: 16px; margin-bottom: 25px; border: 1px solid #a5b4fc;'>
+                    <span style='font-size: 40px; font-weight: 900; color: #4338ca; letter-spacing: 10px; display: block;'>{$otp_code}</span>
+                </div>
+                <p style='color: #ef4444; font-size: 14px; font-weight: bold; margin-bottom: 0; background: #fef2f2; padding: 12px; border-radius: 10px; display: inline-block;'>
+                    ⚠️ โปรดอย่าเปิดเผยรหัสนี้ให้ใครทราบเด็ดขาด
+                </p>
+                <hr style='border: none; border-top: 1px dashed #cbd5e1; margin: 35px 0 25px;'>
+                <p style='color: #94a3b8; font-size: 12px; margin: 0;'>
+                    อีเมลฉบับนี้ถูกส่งจากระบบอัตโนมัติ กรุณาอย่าตอบกลับอีเมลนี้<br>
+                    &copy; " . date('Y') . " BNCC Market. All rights reserved.
+                </p>
+            </div>
+        </body>
+        </html>
+        ";
+
+        $mail->send();
+        return true;
+    } catch (Exception $e) {
+        error_log("ส่งอีเมล OTP ไม่สำเร็จ: {$mail->ErrorInfo}");
+        return false;
+    }
+}
+*/
