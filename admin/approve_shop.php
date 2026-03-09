@@ -58,11 +58,11 @@ $pending_shops = $stmt->fetchAll();
                     </div>
 
                     <div style="display: flex; gap: 10px;">
-                        <a href="../pages/profile.php?id=<?php echo $s['user_id']; ?>" class="btn" style="background: var(--bg-body); color: var(--text-main); border: 1px solid var(--border-color); padding: 5px 12px; font-size: 0.85rem; border-radius: 8px;">
+                        <a href="../pages/view_profile.php?id=<?php echo $s['user_id']; ?>" class="btn" style="background: var(--bg-body); color: var(--text-main); border: 1px solid var(--border-color); padding: 5px 12px; font-size: 0.85rem; border-radius: 8px;">
                             <i class="fas fa-id-badge" style="color: var(--primary-color);"></i> ดูโปรไฟล์
                         </a>
                         
-                        <a href="../pages/chat.php?receiver_id=<?php echo $s['user_id']; ?>" class="btn" style="background: var(--bg-body); color: var(--text-main); border: 1px solid var(--border-color); padding: 5px 12px; font-size: 0.85rem; border-radius: 8px;">
+                        <a href="../pages/chat.php?user=<?php echo $s['user_id']; ?>" class="btn" style="background: var(--bg-body); color: var(--text-main); border: 1px solid var(--border-color); padding: 5px 12px; font-size: 0.85rem; border-radius: 8px;">
                             <i class="fas fa-comment-dots" style="color: #0ea5e9;"></i> แชทติดต่อ
                         </a>
                     </div>
