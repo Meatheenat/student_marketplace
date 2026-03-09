@@ -584,7 +584,7 @@ if (isLoggedIn()) {
                         <?php endif; ?>
                     </a>
 
-                    <?php if ($_SESSION['role'] === 'buyer' || $_SESSION['role'] === 'seller'): ?>
+                   
                     <a href="../pages/my_orders.php" title="คำสั่งซื้อ" class="toolbar-icon magnetic-item" style="color: #10b981;">
                         <i class="fas fa-shopping-bag" style="pointer-events: none;"></i>
                     </a>
