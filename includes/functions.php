@@ -117,7 +117,7 @@ function displayFlashMessage() {
         if ($type === 'warning') $icon = '<i class="fas fa-exclamation-triangle"></i>';
 
         unset($_SESSION['flash_message'], $_SESSION['flash_type']);
-        return "<div class='alert alert-{$type}'>{$icon} <span>" . e($msg) . "</span></div>";
+        return "<div class='alert alert-{$type}'>{$icon} <span>" . $msg . "</span></div>";
     }
     return "";
 }
