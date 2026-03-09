@@ -26,6 +26,39 @@ $googleAuthUrl = $client->createAuthUrl();
 
 // 3. จัดการการเข้าสู่ระบบด้วยชื่อผู้ใช้และรหัสผ่าน (POST)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    
+    // ------------------------------------------------------------------
+    // 🛡️ [เพิ่มใหม่] ตรวจสอบ Cloudflare Turnstile ก่อนไปต่อ
+    // ------------------------------------------------------------------
+    $secret_key = '0x4AAAAAACoR11ccsBAXDbqrr_1J8UB8UXw';
+    $turnstile_response = $_POST['cf-turnstile-response'] ?? '';
+
+    $verify_url = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
+    $data = [
+        'secret' => $secret_key,
+        'response' => $turnstile_response,
+        'remoteip' => $_SERVER['REMOTE_ADDR']
+    ];
+
+    $options = [
+        'http' => [
+            'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+            'method'  => 'POST',
+            'content' => http_build_query($data)
+        ]
+    ];
+    $context  = stream_context_create($options);
+    $response = file_get_contents($verify_url, false, $context);
+    $result = json_decode($response);
+
+    if (!$result->success) {
+        $_SESSION['flash_message'] = "กรุณายืนยันตัวตนว่าคุณไม่ใช่บอท";
+        $_SESSION['flash_type'] = "danger";
+        redirect('login.php');
+        exit(); // หยุดการทำงานทันทีถ้าเป็นบอท
+    }
+    // ------------------------------------------------------------------
+
     $login_input = trim($_POST['login_input']);
     $password    = $_POST['password'];
 
@@ -415,6 +448,8 @@ if (isset($user['is_banned']) && $user['is_banned'] == 1) {
 
         <?php echo displayFlashMessage(); ?>
 
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
         <form action="login.php" method="POST">
             <div class="form-group">
                 <label class="field-label">ACCOUNT IDENTITY</label>
@@ -435,6 +470,8 @@ if (isset($user['is_banned']) && $user['is_banned'] == 1) {
                     <i class="fas fa-eye pass-toggle-icon" id="toggleLoginPass"></i>
                 </div>
             </div>
+
+            <div class="cf-turnstile" data-sitekey="ใส่_SITE_KEY_ที่ก๊อปมา_ตรงนี้" style="margin-bottom: 20px; display: flex; justify-content: center;"></div>
 
             <button type="submit" class="btn-login-main">
                 เข้าสู่ระบบ <i class="fas fa-arrow-right" style="font-size: 0.9rem;"></i>
