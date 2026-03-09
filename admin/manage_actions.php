@@ -1,5 +1,6 @@
 <?php
 require_once '../includes/functions.php';
+
 // ปรับให้รองรับทั้ง admin และ teacher 
 if (!isset($_SESSION['role']) || ($_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'teacher')) {
     redirect('../pages/index.php');
@@ -8,11 +9,13 @@ if (!isset($_SESSION['role']) || ($_SESSION['role'] !== 'admin' && $_SESSION['ro
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $db = getDB();
     $target_id = $_POST['target_id'];
-    $type = $_POST['type']; // 'user', 'shop' หรือ 'change_role'
+    $type = $_POST['type']; // 'user', 'shop', 'product' หรือ 'change_role'
     $action = $_POST['action'] ?? null;
 
     if ($type === 'user') {
-        // จัดการสถานะแบนสมาชิก
+        // ----------------------------------------------------
+        // 👤 จัดการสถานะแบนสมาชิก
+        // ----------------------------------------------------
         $status = ($action === 'ban') ? 1 : 0;
         $stmt = $db->prepare("UPDATE users SET is_banned = ? WHERE id = ?");
         
@@ -24,7 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } 
     elseif ($type === 'shop') {
-        // จัดการสถานะร้านค้า (approved/blocked)
+        // ----------------------------------------------------
+        // 🏪 จัดการสถานะร้านค้า (approved/blocked)
+        // 🎯 ตรวจสอบค่าในฐานข้อมูลให้ตรงกับ 'blocked' และ 'approved'
+        // ----------------------------------------------------
         $status_text = ($action === 'block') ? 'blocked' : 'approved';
         $stmt = $db->prepare("UPDATE shops SET status = ? WHERE id = ?");
         
@@ -34,9 +40,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             logAdminAction($action_text, 'shop', $target_id, $detail_text);
             $_SESSION['flash_message'] = ($action === 'block') ? "สั่งปิดร้านค้าชั่วคราวแล้ว" : "อนุญาตให้เปิดร้านค้าตามปกติแล้ว";
         }
-        // เอาไปแทรกต่อจากบล็อก elseif ($type === 'shop') { ... } 
+    } 
     elseif ($type === 'product') {
-        $status_action = ($action === 'delete') ? 1 : 0; // 1 = ลบ, 0 = กู้คืน
+        // ----------------------------------------------------
+        // 📦 จัดการสินค้า (Soft Delete)
+        // ----------------------------------------------------
+        $status_action = ($action === 'delete') ? 1 : 0; 
         $stmt = $db->prepare("UPDATE products SET is_deleted = ? WHERE id = ?");
         
         if ($stmt->execute([$status_action, $target_id])) {
@@ -48,12 +57,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['flash_type'] = ($status_action) ? "warning" : "success";
         }
     }
-    }
-    // 👑 🛡️ [เพิ่มใหม่] เปลี่ยนยศแบบอิสระ (เฉพาะ Teacher เท่านั้น!)
     elseif ($type === 'change_role') {
+        // ----------------------------------------------------
+        // 👑 เปลี่ยนยศ (เฉพาะ Teacher เท่านั้น)
+        // ----------------------------------------------------
         if ($_SESSION['role'] === 'teacher') {
-            $new_role = $_POST['new_role']; // รับค่าจาก Dropdown (buyer, seller, admin, teacher)
-            $allowed_roles = ['buyer', 'seller', 'admin', 'teacher']; // ป้องกันคนแฮก Inspect element ส่งค่ามั่ว
+            $new_role = $_POST['new_role']; 
+            $allowed_roles = ['buyer', 'seller', 'admin', 'teacher'];
 
             if (in_array($new_role, $allowed_roles)) {
                 $stmt = $db->prepare("UPDATE users SET role = ? WHERE id = ?");
@@ -70,7 +80,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['flash_type'] = "danger";
             }
         } else {
-            // ถ้านักเรียนแอบพยายามส่งค่ามาแก้สิทธิ์
             $_SESSION['flash_message'] = "ขออภัย เฉพาะระดับคุณครูเท่านั้นที่มีสิทธิ์ปรับยศได้";
             $_SESSION['flash_type'] = "danger";
         }
@@ -78,8 +87,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // กรณีไม่ได้เซ็ตเป็น danger ให้เป็น success ไว้ก่อน
     if (!isset($_SESSION['flash_type']) || $_SESSION['flash_type'] !== 'danger') {
-        $_SESSION['flash_type'] = "success";
+        if (!isset($_SESSION['flash_type']) || $_SESSION['flash_type'] !== 'warning') {
+            $_SESSION['flash_type'] = "success";
+        }
     }
 }
 
+// ส่งกลับหน้าเดิม
 redirect('manage_members.php');
