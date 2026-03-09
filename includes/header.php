@@ -590,13 +590,10 @@ if (isLoggedIn()) {
                     </a>
                     <?php endif; ?>
 
-                    <a href="<?= BASE_URL ?>pages/wishlist.php" class="nav-icon-btn" title="รายการโปรด">
-    <i class="fas fa-heart" style="color: #ef4444;"></i>
-</a>
-
-<a href="<?= BASE_URL ?>pages/my_orders.php" class="nav-icon-btn" title="ประวัติการสั่งซื้อ">
-    <i class="fas fa-shopping-bag" style="color: #6366f1;"></i>
-</a>
+                    <a href="../pages/wishlist.php" title="สินค้าที่ชอบ" class="toolbar-icon magnetic-item" style="color: #ef4444;">
+                        <i class="fas fa-heart" style="pointer-events: none;"></i>
+                    </a>
+                    
                     <a href="../auth/logout.php" class="logout-icon magnetic-item" title="ออกจากระบบ">
                         <i class="fas fa-power-off" style="pointer-events: none;"></i>
                     </a>
