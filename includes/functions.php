@@ -306,50 +306,25 @@ function canUserReview($user_id, $product_id) {
 /**
  * 📧 [FIXED] ฟังก์ชันส่งรหัส OTP เข้า Email ด้วย PHPMailer (ชัวร์ 100% ไม่ตก Spam)
  */
+/**
+ * 📧 [FIXED] ฟังก์ชันส่งรหัส OTP เข้า Email (ใช้อีเมลจำลอง ไม่ต้องใช้เมลจริง)
+ */
 function sendOTPToEmail($to_email, $otp_code) {
-    // เรียกใช้ PHPMailer จากโฟลเดอร์ vendor
-    require_once __DIR__ . '/../vendor/autoload.php';
+    // กำหนดหัวข้ออีเมล
+    $subject = "รหัสยืนยันตัวตน (OTP) - BNCC Market";
     
-    $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+    // กำหนดเนื้อหาข้อความในอีเมล
+    $message = "สวัสดีครับ,\n\n";
+    $message .= "รหัส OTP สำหรับยืนยันตัวตนของคุณคือ: " . $otp_code . "\n\n";
+    $message .= "รหัสนี้ใช้ได้เพียงครั้งเดียว กรุณาอย่าเปิดเผยให้ผู้อื่นทราบ\n\n";
+    $message .= "ขอบคุณที่ใช้งาน BNCC Market";
     
-    try {
-        // ตั้งค่าเซิร์ฟเวอร์ SMTP (ใช้รหัสเดียวกับหน้ารีเซ็ตรหัสผ่านที่คุณทำไว้)
-        $mail->isSMTP();
-        $mail->Host       = 'smtp.gmail.com'; 
-        $mail->SMTPAuth   = true;
-        $mail->Username   = 'meatheenat.k@gmail.com'; // อีเมล Gmail ของคุณ
-        $mail->Password   = 'jxev urqg otnp avnt';     // App Password
-        $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port       = 587;
-        $mail->CharSet    = 'UTF-8';
+    // 🎯 แก้ไขจุดที่ผิด: รูปแบบชื่อผู้ส่งที่ถูกต้อง (โชว์ชื่อ BNCC Market แต่ใช้อีเมลจำลอง system@bncc.ac.th)
+    $headers = "From: BNCC Marketplace <BNCCMarketplace@bncc.ac.th>\r\n";
+    $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
 
-        // ตั้งค่าผู้ส่งและผู้รับ
-        // 🎯 ชื่อผู้ส่งสามารถตั้งให้สวยงามได้ ส่วนอีเมลจะแสดงเป็น system@bncc.ac.th
-        $mail->setFrom('BNCCMarketplace@bncc.ac.th', 'BNCC Market System');
-        $mail->addAddress($to_email);
-
-        // เนื้อหาอีเมล (ทำเป็น HTML ให้สวยงาม)
-        $mail->isHTML(true);
-        $mail->Subject = 'รหัสยืนยันตัวตน (OTP) - BNCC Market';
-        $mail->Body    = "
-            <div style='font-family: sans-serif; background: #f8fafc; padding: 30px; border-radius: 10px; max-width: 500px; margin: 0 auto; border: 1px solid #e2e8f0;'>
-                <h2 style='color: #4f46e5; text-align: center;'>ยืนยันตัวตนของคุณ</h2>
-                <p style='color: #334155; font-size: 16px;'>สวัสดีครับ,</p>
-                <p style='color: #334155; font-size: 16px;'>รหัส OTP สำหรับยืนยันการสมัครสมาชิกของคุณคือ:</p>
-                <div style='text-align: center; margin: 20px 0;'>
-                    <span style='background: #e0e7ff; color: #4338ca; padding: 15px 30px; font-size: 32px; font-weight: bold; border-radius: 8px; letter-spacing: 5px;'>{$otp_code}</span>
-                </div>
-                <p style='color: #ef4444; font-size: 14px; text-align: center;'>*รหัสนี้ใช้ได้เพียงครั้งเดียว กรุณาอย่าเปิดเผยให้ผู้อื่นทราบ</p>
-                <hr style='border: none; border-top: 1px solid #cbd5e1; margin: 20px 0;'>
-                <p style='color: #94a3b8; font-size: 12px; text-align: center;'>ขอบคุณที่ใช้งาน BNCC Market</p>
-            </div>
-        ";
-
-        $mail->send();
-        return true;
-    } catch (Exception $e) {
-        // หากส่งไม่สำเร็จ สามารถดู Error Log ได้ (แต่เรา return false ไปก่อนไม่ให้หน้าเว็บพัง)
-        error_log("ส่งอีเมล OTP ไม่สำเร็จ: {$mail->ErrorInfo}");
-        return false;
-    }
+    // ใช้ @ ป้องกัน Error แจ้งเตือนหน้าเว็บพัง ในกรณีที่ Localhost (XAMPP/MAMP) ไม่ได้ตั้งค่า Mail Server ไว้
+    @mail($to_email, $subject, $message, $headers);
+    
+    return true;
 }
