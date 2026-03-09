@@ -6,6 +6,43 @@ $pageTitle = "จัดการข้อมูลสินค้า";
 require_once '../includes/header.php';
 require_once '../includes/functions.php';
 
+// ... (ไฟล์ require_once ต่างๆ ด้านบนของพี่) ...
+
+// 1. ตรวจสอบว่าล็อกอินและเป็นคนขายหรือไม่
+if (!isLoggedIn()) {
+    redirect('../auth/login.php');
+}
+
+$db = getDB();
+$user_id = $_SESSION['user_id'];
+
+// 2. 🛡️ [ดักสิทธิ์] ตรวจสอบสถานะร้านค้าของ User นี้
+$shop_stmt = $db->prepare("SELECT status FROM shops WHERE user_id = ?");
+$shop_stmt->execute([$user_id]);
+$shop_data = $shop_stmt->fetch();
+
+// 3. เช็กเงื่อนไขการอนุมัติ
+if (!$shop_data) {
+    // กรณียังไม่ได้สร้างโปรไฟล์ร้านค้า
+    $_SESSION['flash_message'] = "กรุณาสร้างโปรไฟล์ร้านค้าก่อนลงขายสินค้า";
+    $_SESSION['flash_type'] = "warning";
+    redirect('create_shop.php'); // เด้งไปหน้าสร้างร้าน (แก้ชื่อไฟล์ให้ตรงกับระบบพี่)
+} 
+elseif ($shop_data['status'] === 'pending') {
+    // 🔴 กรณีร้านค้ายังรออนุมัติ (สกัดไว้ตรงนี้!)
+    $_SESSION['flash_message'] = "⏳ ไม่สามารถลงสินค้าได้! ร้านค้าของคุณกำลังรอการตรวจสอบจากแอดมิน";
+    $_SESSION['flash_type'] = "warning";
+    redirect('dashboard.php'); // เด้งกลับไปหน้า Dashboard ของคนขาย
+} 
+elseif ($shop_data['status'] !== 'approved') {
+    // กรณีร้านค้าถูกแบน หรือไม่อนุมัติ
+    $_SESSION['flash_message'] = "🚫 ร้านค้าของคุณถูกระงับหรือไม่อนุมัติให้ขายสินค้า";
+    $_SESSION['flash_type'] = "danger";
+    redirect('dashboard.php');
+}
+
+// ✅ ถ้าหลุดลงมาถึงตรงนี้ได้ แปลว่า status == 'approved' ให้โค้ดเพิ่มสินค้าทำงานต่อไปได้เลย
+// ... (โค้ดฟอร์มเพิ่มสินค้าของพี่ต่อจากตรงนี้) ...
 checkRole('seller');
 
 $db = getDB();
