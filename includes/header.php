@@ -20,7 +20,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // 3. รายการหน้าที่ต้องซ่อนเมนูเฉพาะจุด
-$hide_home_list = ['login.php', 'register.php', 'register_google.php', 'verify_otp.php'];
+$hide_home_list = ['login.php', 'register.php', 'register_google.php', 'verify_otp.php' , 'appeal_ban.php'];
 $hide_auth_list = ['index.php', 'register_seller.php', 'product_detail.php'];
 
 // 4. ฟังก์ชันจัดการรูปโปรไฟล์

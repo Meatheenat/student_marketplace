@@ -3,7 +3,7 @@
  * Student Marketplace - Appeal Ban Page
  * สำหรับผู้ใช้งานที่ถูกระงับบัญชี เพื่อยื่นเรื่องขอตรวจสอบ
  */
-$pageTitle = "ยื่นเรื่องอุทธรณ์การถูกระงับบัญชี - BNCC Market";
+$pageTitle = "ยื่นเรื่องอุทธรณ์ - BNCC Market";
 require_once '../includes/header.php';
 require_once '../includes/functions.php';
 
@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $reason     = trim($_POST['reason']);
 
     if (empty($student_id) || empty($reason)) {
-        $_SESSION['flash_message'] = "กรุณากรอกรหัสนักศึกษาและระบุเหตุผลให้ครบถ้วน";
+        $_SESSION['flash_message'] = "กรุณากรอกข้อมูลให้ครบถ้วนครับ";
         $_SESSION['flash_type'] = "danger";
     } else {
         // 1. ตรวจสอบว่ามีรหัสนักศึกษานี้ในระบบและโดนแบนจริงหรือไม่
@@ -23,24 +23,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = $stmt->fetch();
 
         if (!$user) {
-            $_SESSION['flash_message'] = "ไม่พบรหัสนักศึกษานี้ในระบบ";
+            $_SESSION['flash_message'] = "ไม่พบรหัสนักศึกษานี้ในระบบ กรุณาตรวจสอบอีกครั้ง";
             $_SESSION['flash_type'] = "danger";
         } elseif ($user['is_banned'] == 0) {
-            $_SESSION['flash_message'] = "บัญชีนี้ไม่ได้ถูกระงับการใช้งาน คุณสามารถเข้าสู่ระบบได้ตามปกติ";
+            $_SESSION['flash_message'] = "บัญชีของคุณสถานะปกติ ไม่ได้ถูกระงับการใช้งานครับ";
             $_SESSION['flash_type'] = "info";
         } else {
-            // 2. ส่งแจ้งเตือนหา Admin ทุกคน (ผ่านระบบแจ้งเตือนหน้าเว็บและ LINE)
+            // 2. ส่งแจ้งเตือนหา Admin ทุกคน
             $admin_msg = "🚨 [คำขออุทธรณ์] ผู้ใช้ขอยืนยันตัวตนเพื่อปลดแบน\n"
                        . "👤 ชื่อ: " . $user['fullname'] . "\n"
                        . "🆔 รหัส: " . $student_id . "\n"
                        . "📝 เหตุผล: " . $reason;
             
-            // ส่ง LINE Notify
             if (function_exists('notifyAllAdmins')) {
-                notifyAllAdmins($admin_msg);
+                notifyAllAdmins($admin_msg); // แจ้งเตือนเข้า LINE
             }
 
-            // ส่งแจ้งเตือนเข้ากระดิ่งหน้าเว็บให้ Admin ทุกคน
             $adminStmt = $db->query("SELECT id FROM users WHERE role IN ('admin', 'teacher')");
             $admins = $adminStmt->fetchAll(PDO::FETCH_COLUMN);
             foreach ($admins as $adm_id) {
@@ -49,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
-            $_SESSION['flash_message'] = "ส่งเรื่องอุทธรณ์สำเร็จ! กรุณารอการตรวจสอบจากแอดมิน (ประมาณ 1-3 วันทำการ)";
+            $_SESSION['flash_message'] = "ส่งเรื่องอุทธรณ์สำเร็จ! แอดมินจะดำเนินการตรวจสอบให้ภายใน 1-3 วันครับ";
             $_SESSION['flash_type'] = "success";
             redirect('login.php');
         }
@@ -58,47 +56,202 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 
 <style>
-    /* ใช้ธีมเดียวกับ Login/Register */
-    body { background-color: var(--login-bg) !important; font-family: 'Prompt', sans-serif; }
-    .login-master-wrapper { position: relative; min-height: calc(100vh - 75px); display: flex; align-items: center; justify-content: center; padding: 40px 20px; overflow: hidden; }
-    .login-card { position: relative; width: 100%; max-width: 500px; background: var(--login-card-bg); backdrop-filter: blur(25px); border: 1px solid var(--login-card-border); border-radius: 32px; padding: 50px 45px; box-shadow: var(--login-card-shadow); text-align: center; }
-    .btn-appeal { width: 100%; padding: 18px; border-radius: 18px; background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%); color: white; font-weight: 800; border: none; cursor: pointer; margin-top: 15px; box-shadow: 0 10px 25px rgba(225, 29, 72, 0.3); transition: 0.3s; }
-    .btn-appeal:hover { transform: translateY(-4px); box-shadow: 0 15px 35px rgba(225, 29, 72, 0.5); }
-    .form-control-custom { width: 100%; padding: 16px 20px; border-radius: 16px; background: var(--login-input-bg); border: 1px solid var(--login-card-border); color: var(--text-main); margin-bottom: 20px; outline: none; }
+    /* ============================================================
+       🎨 DYNAMIC THEME & PREMIUM STYLES
+       ============================================================ */
+    :root {
+        --appeal-red: #f43f5e;
+        --appeal-red-dark: #e11d48;
+    }
+
+    body {
+        margin: 0;
+        background-color: var(--login-bg) !important;
+        font-family: 'Prompt', sans-serif;
+        transition: background-color 0.5s ease;
+    }
+
+    .login-master-wrapper {
+        position: relative;
+        min-height: calc(100vh - 75px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+        overflow: hidden;
+    }
+
+    /* 🔮 พื้นหลังแสงออร่า */
+    .glow-orb {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(120px);
+        z-index: -1;
+        opacity: 0.8;
+        animation: pulseOrb 8s infinite alternate ease-in-out;
+    }
+    .glow-orb-1 {
+        width: 600px; height: 600px;
+        background: radial-gradient(circle, var(--login-orb-1) 0%, transparent 70%);
+        top: -10%; left: -10%;
+    }
+    .glow-orb-2 {
+        width: 500px; height: 500px;
+        background: radial-gradient(circle, rgba(244, 63, 94, 0.1) 0%, transparent 70%);
+        bottom: -10%; right: -10%;
+        animation-delay: -4s;
+    }
+
+    @keyframes pulseOrb {
+        0% { transform: scale(0.9); opacity: 0.6; }
+        100% { transform: scale(1.1); opacity: 1; }
+    }
+
+    /* 💎 Premium Glass Card */
+    .appeal-card {
+        position: relative;
+        width: 100%;
+        max-width: 500px;
+        background: var(--login-card-bg);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border: 1px solid var(--login-card-border);
+        border-radius: 32px;
+        padding: 50px 45px;
+        box-shadow: var(--login-card-shadow);
+        text-align: center;
+        opacity: 0;
+        transform: translateY(30px);
+        animation: entranceCard 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes entranceCard {
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .form-control-custom {
+        width: 100%;
+        padding: 18px 25px;
+        border-radius: 18px;
+        background: var(--login-input-bg);
+        border: 1px solid var(--login-card-border);
+        color: var(--text-main);
+        font-size: 1rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        outline: none;
+        margin-bottom: 20px;
+    }
+    .form-control-custom:focus {
+        background: var(--login-input-focus);
+        border-color: var(--appeal-red);
+        box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .field-label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 800;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        margin-bottom: 10px;
+        margin-left: 5px;
+        text-align: left;
+    }
+
+    .btn-appeal-main {
+        width: 100%;
+        padding: 18px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, var(--appeal-red) 0%, var(--appeal-red-dark) 100%);
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 1.05rem;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        margin-top: 15px;
+        box-shadow: 0 10px 25px rgba(244, 63, 94, 0.3);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .btn-appeal-main:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 15px 35px rgba(244, 63, 94, 0.5);
+        filter: brightness(1.1);
+    }
+
+    .back-link {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        font-weight: 700;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 30px;
+        transition: 0.3s;
+    }
+    .back-link:hover { color: var(--appeal-red); }
 </style>
 
 <div class="login-master-wrapper">
-    <div class="login-card">
-        <div style="margin-bottom: 30px;">
-            <i class="fas fa-user-shield" style="font-size: 4rem; color: #f43f5e; margin-bottom: 20px;"></i>
-            <h2 style="font-weight: 900; color: var(--text-main);">ยื่นเรื่องปลดแบน</h2>
-            <p style="color: var(--text-muted);">ระบุข้อมูลเพื่อให้แอดมินพิจารณาตรวจสอบบัญชีของคุณ</p>
+    <div class="glow-orb glow-orb-1"></div>
+    <div class="glow-orb glow-orb-2"></div>
+
+    <div class="appeal-card" id="tilt-card-premium">
+        <div style="margin-bottom: 35px;">
+            <div style="width: 80px; height: 80px; background: rgba(244, 63, 94, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                <i class="fas fa-user-shield" style="font-size: 2.5rem; color: var(--appeal-red);"></i>
+            </div>
+            <h2 style="font-size: 2.2rem; font-weight: 900; color: var(--text-main); margin: 0; letter-spacing: -1px;">ยื่นเรื่องปลดแบน</h2>
+            <p style="color: var(--text-muted); margin-top: 5px;">ระบุข้อมูลเพื่อขอยืนยันตัวตนกับผู้ดูแลระบบ</p>
         </div>
 
         <?php echo displayFlashMessage(); ?>
 
         <form method="POST">
-            <div style="text-align: left; margin-bottom: 8px;">
-                <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">รหัสนักศึกษา 11 หลัก</label>
+            <div class="form-group">
+                <label class="field-label">รหัสนักศึกษา 11 หลัก</label>
+                <input type="text" name="student_id" class="form-control-custom" placeholder="ตัวเลข 11 หลักเท่านั้น" maxlength="11" required oninput="this.value = this.value.replace(/[^0-9]/g, '')">
             </div>
-            <input type="text" name="student_id" class="form-control-custom" placeholder="กรอกรหัสนักศึกษาของคุณ" maxlength="11" required>
 
-            <div style="text-align: left; margin-bottom: 8px;">
-                <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">เหตุผลหรือข้อความถึงแอดมิน</label>
+            <div class="form-group">
+                <label class="field-label">เหตุผลที่ต้องการให้ตรวจสอบ</label>
+                <textarea name="reason" class="form-control-custom" rows="4" placeholder="ระบุเหตุผลหรือข้อความที่ต้องการแจ้งแอดมิน..." required style="resize: none;"></textarea>
             </div>
-            <textarea name="reason" class="form-control-custom" rows="4" placeholder="อธิบายเหตุผลที่ต้องการให้ตรวจสอบบัญชี..." required style="resize: none;"></textarea>
 
-            <button type="submit" class="btn-appeal">
-                ส่งคำขอตรวจสอบ <i class="fas fa-paper-plane" style="margin-left: 8px;"></i>
+            <button type="submit" class="btn-appeal-main">
+                ส่งคำขออุทธรณ์ <i class="fas fa-paper-plane"></i>
             </button>
         </form>
 
-        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--login-card-border);">
-            <a href="login.php" style="color: var(--text-muted); text-decoration: none; font-size: 0.9rem; font-weight: 600;">
-                <i class="fas fa-arrow-left"></i> กลับหน้าเข้าสู่ระบบ
-            </a>
-        </div>
+        <a href="login.php" class="back-link">
+            <i class="fas fa-arrow-left"></i> กลับไปยังหน้าเข้าสู่ระบบ
+        </a>
     </div>
 </div>
+
+<script>
+    // 🎯 ระบบการ์ดเอียงตามเมาส์ (Sync ทุกหน้า)
+    const card = document.querySelector('#tilt-card-premium');
+    const wrapper = document.querySelector('.login-master-wrapper');
+
+    wrapper.addEventListener('mousemove', (e) => {
+        const x = (window.innerWidth / 2 - e.pageX) / 45;
+        const y = (window.innerHeight / 2 - e.pageY) / 45;
+        card.style.transform = `perspective(1000px) rotateX(${y}deg) rotateY(${-x}deg) scale3d(1.02, 1.02, 1.02)`;
+        card.style.transition = "transform 0.1s ease-out";
+    });
+
+    wrapper.addEventListener('mouseleave', () => {
+        card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+        card.style.transition = "transform 0.8s ease-out";
+    });
+</script>
 
 <?php require_once '../includes/footer.php'; ?>
