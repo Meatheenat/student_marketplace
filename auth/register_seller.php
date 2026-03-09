@@ -51,14 +51,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $shopStatus !== 'pending') {
 
             $db->commit();
 
-            // 🔔 ส่งแจ้งเตือนหา Admin
+            // 🔔 ส่งแจ้งเตือนหา Admin (ผ่าน LINE)
             $admin_msg = "📢 [Admin] มีคำขอเปิดร้านค้าใหม่!\n"
                        . "👤 ผู้สมัคร: " . $_SESSION['fullname'] . "\n"
                        . "🏪 ชื่อร้าน: " . $shop_name . "\n"
-                       . "🔗 ตรวจสอบ: http://localhost/student_marketplace/admin/manage_shops.php";
+                       . "🔗 ตรวจสอบ: http://localhost/student_marketplace/admin/approve_shop.php";
             
             if (function_exists('notifyAllAdmins')) {
                 notifyAllAdmins($admin_msg);
+            }
+
+            // 🎯 [NEW] ส่งแจ้งเตือนในระบบ (กระดิ่งหน้าเว็บ) ให้ Admin และ Teacher ทุกคน
+            $adminStmt = $db->query("SELECT id FROM users WHERE role IN ('admin', 'teacher')");
+            $admins = $adminStmt->fetchAll(PDO::FETCH_COLUMN);
+            foreach ($admins as $adm_id) {
+                if (function_exists('sendNotification')) {
+                    sendNotification($adm_id, 'system', "มีคำขอเปิดร้านค้าใหม่: " . $shop_name, "../admin/approve_shop.php");
+                }
             }
 
             $_SESSION['flash_message'] = "ส่งคำขอเปิดร้านสำเร็จ! ขณะนี้ร้านค้าของคุณกำลังรอการอนุมัติ";
@@ -92,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $shopStatus !== 'pending') {
                 คุณได้ส่งคำขอเปิดร้านค้าไปเรียบร้อยแล้ว<br>
                 ขณะนี้กำลังรอการอนุมัติจากผู้ดูแลระบบ/คุณครู<br>
                 <span style="display: block; margin-top: 10px; font-size: 0.9rem; color: var(--primary-color);">
-                    (คุณจะเปลี่ยนเป็นผู้ขายอัตโนมัติเมื่อผ่านการอนุมัติ)
+                    (บทบาทของคุณจะเปลี่ยนเป็นผู้ขายอัตโนมัติเมื่อผ่านการอนุมัติ)
                 </span>
             </p>
             <a href="../pages/index.php" class="btn btn-primary" style="padding: 12px 30px; border-radius: 12px; font-weight: 600; text-decoration: none; display: inline-block;">

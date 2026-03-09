@@ -6,9 +6,7 @@ $pageTitle = "จัดการข้อมูลสินค้า";
 require_once '../includes/header.php';
 require_once '../includes/functions.php';
 
-// ... (ไฟล์ require_once ต่างๆ ด้านบนของพี่) ...
-
-// 1. ตรวจสอบว่าล็อกอินและเป็นคนขายหรือไม่
+// 1. ตรวจสอบว่าล็อกอินหรือไม่
 if (!isLoggedIn()) {
     redirect('../auth/login.php');
 }
@@ -17,48 +15,38 @@ $db = getDB();
 $user_id = $_SESSION['user_id'];
 
 // 2. 🛡️ [ดักสิทธิ์] ตรวจสอบสถานะร้านค้าของ User นี้
-$shop_stmt = $db->prepare("SELECT status FROM shops WHERE user_id = ?");
+$shop_stmt = $db->prepare("SELECT id, shop_name, status FROM shops WHERE user_id = ?");
 $shop_stmt->execute([$user_id]);
 $shop_data = $shop_stmt->fetch();
 
-// 3. เช็กเงื่อนไขการอนุมัติ
+// 3. เช็กเงื่อนไขการอนุมัติร้านค้า
 if (!$shop_data) {
-    // กรณียังไม่ได้สร้างโปรไฟล์ร้านค้า
     $_SESSION['flash_message'] = "กรุณาสร้างโปรไฟล์ร้านค้าก่อนลงขายสินค้า";
     $_SESSION['flash_type'] = "warning";
-    redirect('create_shop.php'); // เด้งไปหน้าสร้างร้าน (แก้ชื่อไฟล์ให้ตรงกับระบบพี่)
+    redirect('create_shop.php'); // แก้ชื่อไฟล์ให้ตรงกับหน้าสร้างร้านของคุณ
 } 
 elseif ($shop_data['status'] === 'pending') {
-    // 🔴 กรณีร้านค้ายังรออนุมัติ (สกัดไว้ตรงนี้!)
     $_SESSION['flash_message'] = "⏳ ไม่สามารถลงสินค้าได้! ร้านค้าของคุณกำลังรอการตรวจสอบจากแอดมิน";
     $_SESSION['flash_type'] = "warning";
-    redirect('dashboard.php'); // เด้งกลับไปหน้า Dashboard ของคนขาย
+    redirect('dashboard.php');
 } 
 elseif ($shop_data['status'] !== 'approved') {
-    // กรณีร้านค้าถูกแบน หรือไม่อนุมัติ
     $_SESSION['flash_message'] = "🚫 ร้านค้าของคุณถูกระงับหรือไม่อนุมัติให้ขายสินค้า";
     $_SESSION['flash_type'] = "danger";
     redirect('dashboard.php');
 }
 
-// ✅ ถ้าหลุดลงมาถึงตรงนี้ได้ แปลว่า status == 'approved' ให้โค้ดเพิ่มสินค้าทำงานต่อไปได้เลย
-// ... (โค้ดฟอร์มเพิ่มสินค้าของพี่ต่อจากตรงนี้) ...
+// ✅ ถ้าผ่านลงมาได้ แปลว่า status == 'approved' แล้ว
+// สามารถตรวจสอบ role ต่อเพื่อความปลอดภัย
 checkRole('seller');
 
-$db = getDB();
-$user_id = $_SESSION['user_id'];
+$shop_id = $shop_data['id'];
+$shop_name = $shop_data['shop_name'] ?? 'ร้านค้าไม่ทราบชื่อ';
 
-// 1. ดึง ID ร้านค้าของผู้ใช้ปัจจุบัน
-$shop_stmt = $db->prepare("SELECT id, shop_name FROM shops WHERE user_id = ?");
-$shop_stmt->execute([$user_id]);
-$shop = $shop_stmt->fetch();
-$shop_id = $shop['id'];
-$shop_name = $shop['shop_name'] ?? 'ร้านค้าไม่ทราบชื่อ';
-
-// 2. ตรวจสอบโหมด: แก้ไข (Edit) หรือ เพิ่มใหม่ (Add)
+// 4. ตรวจสอบโหมด: แก้ไข (Edit) หรือ เพิ่มใหม่ (Add)
 $product_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $product = null;
-$existing_images = []; // 🎯 ตัวแปรเก็บรูปเก่า
+$existing_images = []; 
 
 if ($product_id > 0) {
     $stmt = $db->prepare("SELECT * FROM products WHERE id = ? AND shop_id = ?");
@@ -71,12 +59,10 @@ if ($product_id > 0) {
         redirect('dashboard.php');
     }
 
-    // 🎯 🛠️ ดึงรูปเก่าจาก Database มาเตรียมไว้ให้ JS
     $img_stmt = $db->prepare("SELECT image_path, is_main FROM product_images WHERE product_id = ? ORDER BY is_main DESC, id ASC");
     $img_stmt->execute([$product_id]);
     $existing_images = $img_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Fallback: ถ้าระบบเก่ายังไม่มีรูปในตารางย่อย ให้ดึงจากคอลัมน์ image_url หลัก
     if(count($existing_images) === 0 && !empty($product['image_url'])) {
         $existing_images[] = ['image_path' => $product['image_url'], 'is_main' => 1];
     }
@@ -85,10 +71,9 @@ if ($product_id > 0) {
 $cat_stmt = $db->query("SELECT * FROM categories ORDER BY category_name ASC");
 $categories = $cat_stmt->fetchAll();
 
-// 4. จัดการการส่งข้อมูล (Form Submission)
+// 5. จัดการการส่งข้อมูล (Form Submission)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    // 🚨 🛡️ ดักจับกรณี Server ล่มเพราะไฟล์เกินโควต้า
     if (empty($_POST) && isset($_SERVER['CONTENT_LENGTH']) && $_SERVER['CONTENT_LENGTH'] > 0) {
         $_SESSION['flash_message'] = "❌ ขนาดไฟล์รวมกันใหญ่เกินกว่าที่ระบบจะรับได้ กรุณาลองใหม่อีกครั้ง";
         $_SESSION['flash_type'] = "danger";
@@ -101,8 +86,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $category_id = (int)($_POST['category_id'] ?? 0);
     $p_status    = $_POST['product_status'] ?? 'in-stock'; 
     $description = trim($_POST['description'] ?? '');
-    
-    // 🎯 โหมดรับรูปภาพ: คราวนี้ต้องแยกแยะให้ออกว่ารูปไหนคือรูปเดิมที่ถูกส่งกลับมาแบบ "ชื่อไฟล์ข้อความ" หรือรูปใหม่ที่อัปโหลด
     $image_url   = $product['image_url'] ?? ''; 
 
     if (empty($title) || $price <= 0 || empty($category_id)) {
@@ -113,15 +96,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $uploadedImages = [];
         $main_image_index = isset($_POST['main_image_index']) ? (int)$_POST['main_image_index'] : 0;
         
-        // 🎯 🛠️ รับชื่อรูปเก่าที่ผู้ใช้ไม่ได้ลบทิ้ง ส่งมาจาก Input Hidden (ดูในส่วน JS ด้านล่าง)
         $keptOldImages = $_POST['kept_old_images'] ?? [];
 
-        // เอาของเก่าที่ถูกเก็บไว้ยัดลง Array ไว้ก่อน
         foreach($keptOldImages as $oldImg) {
             $uploadedImages[] = $oldImg;
         }
 
-        // ประมวลผลรูปใหม่ที่ถูกอัปโหลด
         if (!empty($_FILES['product_images']['name'][0])) {
             $fileCount = count($_FILES['product_images']['name']);
             
@@ -143,7 +123,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        // หารูปปกใหม่ (ดึงจาก Index ที่ถูกเลือก)
         if (!empty($uploadedImages) && isset($uploadedImages[$main_image_index])) {
             $image_url = $uploadedImages[$main_image_index];
         } else if (!empty($uploadedImages)) {
@@ -155,13 +134,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     WHERE id = ? AND shop_id = ?";
             $params = [$title, $price, $category_id, $p_status, $description, $image_url, $product_id, $shop_id];
             $success_msg = "แก้ไขข้อมูลสำเร็จ! สินค้าเข้าสู่สถานะรอแอดมินตรวจสอบอีกครั้ง";
-            $admin_notify_msg = "🔄 [Admin] มีการแก้ไขข้อมูลสินค้า!\n📦 สินค้า: $title\n🏪 ร้านค้า: $shop_name\n🔗 ตรวจสอบ: https://hosting.bncc.ac.th/s673190104/student_marketplace/admin/manage_products.php";
+            $admin_notify_msg = "🔄 [Admin] มีการแก้ไขข้อมูลสินค้า!\n📦 สินค้า: $title\n🏪 ร้านค้า: $shop_name\n🔗 ตรวจสอบ: http://localhost/student_marketplace/admin/approve_product.php";
         } else {
             $sql = "INSERT INTO products (title, price, category_id, status, product_status, description, image_url, shop_id) 
                     VALUES (?, ?, ?, 'pending', ?, ?, ?, ?)";
             $params = [$title, $price, $category_id, $p_status, $description, $image_url, $shop_id];
             $success_msg = "ลงขายสินค้าใหม่สำเร็จ! กรุณารอแอดมินอนุมัติก่อนแสดงในตลาด";
-            $admin_notify_msg = "🆕 [Admin] มีการลงขายสินค้าใหม่!\n📦 สินค้า: $title\n💰 ราคา: ฿" . number_format($price, 2) . "\n🏪 ร้านค้า: $shop_name\n🔗 ตรวจสอบ: https://hosting.bncc.ac.th/s673190104/student_marketplace/admin/manage_products.php";
+            $admin_notify_msg = "🆕 [Admin] มีการลงขายสินค้าใหม่!\n📦 สินค้า: $title\n💰 ราคา: ฿" . number_format($price, 2) . "\n🏪 ร้านค้า: $shop_name\n🔗 ตรวจสอบ: http://localhost/student_marketplace/admin/approve_product.php";
         }
 
         $stmt_save = $db->prepare($sql);
@@ -177,7 +156,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                        ->execute([$current_p_id, $path, $is_main]);
                 }
             }
-            notifyAllAdmins($admin_notify_msg);
+
+            // 🎯 [NEW] ส่งแจ้งเตือนทั้งผ่าน LINE และหน้าเว็บให้แอดมินทุกคน
+            if (function_exists('notifyAllAdmins')) {
+                notifyAllAdmins($admin_notify_msg);
+            }
+
+            $adminStmt = $db->query("SELECT id FROM users WHERE role IN ('admin', 'teacher')");
+            $admins = $adminStmt->fetchAll(PDO::FETCH_COLUMN);
+            foreach ($admins as $adm_id) {
+                if (function_exists('sendNotification')) {
+                    sendNotification($adm_id, 'system', "รออนุมัติสินค้า: " . $title, "../admin/approve_product.php");
+                }
+            }
+
             $_SESSION['flash_message'] = $success_msg;
             $_SESSION['flash_type'] = "success";
             redirect('dashboard.php');
@@ -187,7 +179,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 
 <style>
-    /* 🎨 CSS เดิมของมึง ไม่ได้แตะ */
     .upload-box { transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: relative; }
     .upload-box:hover { border-color: #6c5ce7 !important; box-shadow: 0 0 20px rgba(108, 92, 231, 0.25); transform: translateY(-3px); }
     #thumbnails_container { display: none; flex-wrap: wrap; gap: 15px; margin-top: 20px; justify-content: center; }
@@ -304,7 +295,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <script>
-// 🎯 🛠️ อาเรย์ผสม (เก็บทั้งรูปเก่าที่มาจาก DB และรูปใหม่ที่กำลังอัปโหลด)
 let mixedGallery = []; 
 let currentMainIndex = 0; 
 
@@ -315,7 +305,6 @@ const thumbsContainer = document.getElementById('thumbnails_container');
 const submitBtn = document.getElementById('submit_btn');
 const productForm = document.getElementById('productForm');
 
-// 🎯 🛠️ โหลดข้อมูลรูปเก่าตอนเริ่มเปิดหน้าเว็บ
 const existingImagesFromDB = <?php echo json_encode($existing_images); ?>;
 
 if (existingImagesFromDB.length > 0) {
@@ -323,9 +312,8 @@ if (existingImagesFromDB.length > 0) {
         mixedGallery.push({
             type: 'old',
             url: '../assets/images/products/' + img.image_path,
-            filename: img.image_path // จำชื่อไฟล์ไว้ส่งกลับไปให้ PHP
+            filename: img.image_path 
         });
-        // ให้จำว่ารูปไหนคือรูปหลัก
         if (img.is_main == 1) {
             currentMainIndex = index;
         }
@@ -411,7 +399,6 @@ fileInput.addEventListener('change', async function() {
         showCustomAlert("คุณสามารถรวมรูปภาพได้สูงสุด 5 รูปเท่านั้นครับ!");
     }
     
-    // เคลียร์ Input File ปลอมๆ เพราะเราจัดการไฟล์ด้วย DataTransfer ตอน Submit แทน
     fileInput.value = ''; 
     
     pTag.innerHTML = originalPlaceholderHtml;
@@ -435,7 +422,6 @@ function renderUI() {
         thumbsContainer.style.display = 'flex';
         thumbsContainer.innerHTML = ''; 
         
-        // กันเหนียวกรณี Main Index เกินจำนวนรูป (เช่น ลบรูปหน้าปกทิ้ง)
         if(currentMainIndex >= mixedGallery.length) {
             currentMainIndex = 0;
         }
@@ -496,9 +482,7 @@ function renderUI() {
     }
 }
 
-// 🎯 🛠️ ดักจับตอนกดปุ่ม Save เพื่อเตรียมของส่งเข้า PHP
 productForm.addEventListener('submit', function(e) {
-    // 1. สร้าง DataTransfer เพื่อรวมเฉพาะรูป "ใหม่" ส่งเข้า Input File
     const dt = new DataTransfer();
     mixedGallery.forEach(item => {
         if (item.type === 'new') {
@@ -506,7 +490,6 @@ productForm.addEventListener('submit', function(e) {
         }
     });
     
-    // ยัดไฟล์ลง Input จริง (เปลี่ยนชื่อนิดหน่อยไม่ให้ชน)
     const newFileInput = document.createElement('input');
     newFileInput.type = 'file';
     newFileInput.name = 'product_images[]';
@@ -515,7 +498,6 @@ productForm.addEventListener('submit', function(e) {
     newFileInput.style.display = 'none';
     productForm.appendChild(newFileInput);
 
-    // 2. สร้าง Input Hidden สำหรับบอก PHP ว่ารูป "เก่า" ไหนบ้างที่ยังเก็บไว้
     const hiddenContainer = document.getElementById('hidden_old_images_container');
     hiddenContainer.innerHTML = '';
     mixedGallery.forEach(item => {
@@ -528,7 +510,6 @@ productForm.addEventListener('submit', function(e) {
         }
     });
 
-    // 3. ส่งตำแหน่ง Main Index ไปด้วย
     const mainIndexHidden = document.createElement('input');
     mainIndexHidden.type = 'hidden';
     mainIndexHidden.name = 'main_image_index';
