@@ -607,47 +607,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }, 500);
     };
 
-    // 🎯 4. ดักจับและป้องกันการพิมพ์ตัวอักษรในช่องรหัสนักเรียน
+    // 🎯 4. ดักจับและป้องกันการพิมพ์ตัวอักษรในช่องรหัสนักเรียน (พิมพ์ได้แค่ตัวเลข 0-9)
     document.getElementById('student_id').addEventListener('input', function() {
         this.value = this.value.replace(/[^0-9]/g, '');
     });
 
-    // 🎯 5. ตรวจสอบอีเมลแบบ Real-time ให้ตรงกับรหัสนักเรียนก่อนกดปุ่มสมัคร
-    document.getElementById('registerForm').addEventListener('submit', function(e) {
-        const studentId = document.getElementById('student_id').value;
-        const emailInput = document.getElementById('email').value;
-        const expectedEmail = studentId + '@bncc.ac.th';
-        
-    });
-
-    document.getElementById('theme-toggle').addEventListener('click', () => {
-        const passInput = document.getElementById('password');
-        const confirmInput = document.getElementById('confirm_password');
-        const icons = document.querySelectorAll('.pass-toggle-icon');
-        
-        setTimeout(() => {
-            const isDark = document.documentElement.classList.contains('dark-theme');
-            icons.forEach((icon, index) => {
-                const type = index === 0 ? passInput.type : confirmInput.type;
-                if(type === 'text') {
-                    icon.style.color = isDark ? '#ffffff' : '#1e293b';
-                } else {
-                    icon.style.color = 'var(--login-icon-color)';
-                }
-            });
-        }, 100);
-    });
-    // 🎯 1. ดักจับให้ช่องรหัสนักเรียน พิมพ์ได้แค่ "ตัวเลข" เท่านั้น
-    document.getElementById('student_id').addEventListener('input', function() {
-        this.value = this.value.replace(/[^0-9]/g, '');
-    });
-
-    // 🎯 2. ดักจับให้ช่องชั้น/ห้อง พิมพ์ได้แค่ตัวเลข 1-3 และเครื่องหมายทับ / เท่านั้น
+    // 🎯 5. ดักจับให้ช่องชั้น/ห้อง พิมพ์ได้แค่ตัวเลข 1-3 และเครื่องหมายทับ / เท่านั้น
     document.getElementById('class_year').addEventListener('input', function() {
         this.value = this.value.replace(/[^1-3\/]/g, '');
     });
 
-    // 🎯 3. ตรวจสอบอีเมลตอนกดปุ่มสมัคร ด้วย SweetAlert2 (บล็อกแจ้งเตือนแบบสวยงาม)
+    // 🎯 6. ตรวจสอบอีเมลตอนกดปุ่มสมัคร ด้วย SweetAlert2 (บล็อกแจ้งเตือนแบบสวยงาม) - มีแค่ชุดเดียวเท่านั้น
     document.getElementById('registerForm').addEventListener('submit', function(e) {
         const studentId = document.getElementById('student_id').value;
         const emailInput = document.getElementById('email').value;
@@ -672,6 +642,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 document.getElementById('email').focus();
             });
         }
+    });
+
+    // 7. อัปเดตสีไอคอนตอนเปลี่ยนตีม
+    document.getElementById('theme-toggle')?.addEventListener('click', () => {
+        const passInput = document.getElementById('password');
+        const confirmInput = document.getElementById('confirm_password');
+        const icons = document.querySelectorAll('.pass-toggle-icon');
+        
+        setTimeout(() => {
+            const isDark = document.documentElement.classList.contains('dark-theme');
+            icons.forEach((icon, index) => {
+                const type = index === 0 ? passInput.type : confirmInput.type;
+                if(type === 'text') {
+                    icon.style.color = isDark ? '#ffffff' : '#1e293b';
+                } else {
+                    icon.style.color = 'var(--login-icon-color)';
+                }
+            });
+        }, 100);
     });
 </script>
 
