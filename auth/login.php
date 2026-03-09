@@ -471,7 +471,7 @@ if (isset($user['is_banned']) && $user['is_banned'] == 1) {
                 </div>
             </div>
 
-            <div class="cf-turnstile" data-sitekey="0x4AAAAAACoR1z-q8h6byzeX" style="margin-bottom: 20px; display: flex; justify-content: center position: relative; z-index: 9999;"></div>
+            <div class="cf-turnstile" data-sitekey="0x4AAAAAACoR1z-q8h6byzeX" style="margin-bottom: 20px; display: flex; justify-content: center; position: relative; z-index: 9999;"></div>
 
             <button type="submit" class="btn-login-main">
                 เข้าสู่ระบบ <i class="fas fa-arrow-right" style="font-size: 0.9rem;"></i>
