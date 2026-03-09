@@ -309,21 +309,57 @@ function canUserReview($user_id, $product_id) {
 /**
  * 📧 [FIXED] ฟังก์ชันส่งรหัส OTP เข้า Email (ใช้อีเมลจำลอง ไม่ต้องใช้เมลจริง)
  */
+/**
+ * 📧 [FIXED] ฟังก์ชันส่งรหัส OTP เข้า Email (ใช้อีเมลจำลอง + แต่ง HTML สวยๆ)
+ */
 function sendOTPToEmail($to_email, $otp_code) {
     // กำหนดหัวข้ออีเมล
     $subject = "รหัสยืนยันตัวตน (OTP) - BNCC Market";
     
-    // กำหนดเนื้อหาข้อความในอีเมล
-    $message = "สวัสดีครับ,\n\n";
-    $message .= "รหัส OTP สำหรับยืนยันตัวตนของคุณคือ: " . $otp_code . "\n\n";
-    $message .= "รหัสนี้ใช้ได้เพียงครั้งเดียว กรุณาอย่าเปิดเผยให้ผู้อื่นทราบ\n\n";
-    $message .= "ขอบคุณที่ใช้งาน BNCC Market";
+    // กำหนดเนื้อหาข้อความในอีเมล (เขียนเป็น HTML และฝัง CSS ลงไปเลย)
+    $message = "
+    <html>
+    <head>
+        <title>รหัสยืนยันตัวตน</title>
+    </head>
+    <body style='background-color: #f1f5f9; padding: 40px 20px; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;'>
+        <div style='max-width: 500px; margin: 0 auto; background-color: #ffffff; padding: 40px 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; border: 1px solid #e2e8f0;'>
+            
+            <h2 style='color: #4f46e5; margin-top: 0; font-size: 26px; font-weight: 900; letter-spacing: -0.5px;'>
+                🛍️ BNCC Market
+            </h2>
+            
+            <p style='color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 25px;'>
+                สวัสดีครับ,<br>นี่คือรหัสความปลอดภัย (OTP) สำหรับยืนยันตัวตนของคุณเพื่อเข้าใช้งานระบบ
+            </p>
+            
+            <div style='background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); padding: 25px; border-radius: 16px; margin-bottom: 25px; border: 1px solid #a5b4fc;'>
+                <span style='font-size: 40px; font-weight: 900; color: #4338ca; letter-spacing: 10px; display: block;'>{$otp_code}</span>
+            </div>
+            
+            <p style='color: #ef4444; font-size: 14px; font-weight: bold; margin-bottom: 0; background: #fef2f2; padding: 12px; border-radius: 10px; display: inline-block;'>
+                ⚠️ โปรดอย่าเปิดเผยรหัสนี้ให้ใครทราบเด็ดขาด
+            </p>
+            
+            <hr style='border: none; border-top: 1px dashed #cbd5e1; margin: 35px 0 25px;'>
+            
+            <p style='color: #94a3b8; font-size: 12px; margin: 0;'>
+                อีเมลฉบับนี้ถูกส่งจากระบบอัตโนมัติ กรุณาอย่าตอบกลับอีเมลนี้<br>
+                &copy; " . date('Y') . " BNCC Market. All rights reserved.
+            </p>
+            
+        </div>
+    </body>
+    </html>
+    ";
     
-    // 🎯 แก้ไขจุดที่ผิด: รูปแบบชื่อผู้ส่งที่ถูกต้อง (โชว์ชื่อ BNCC Market แต่ใช้อีเมลจำลอง system@bncc.ac.th)
-    $headers = "From: BNCC Marketplace <BNCCMarketplace@bncc.ac.th>\r\n";
-    $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
+    // 🎯 อัปเกรด Headers ให้รองรับการแสดงผลแบบ HTML
+    $headers = "MIME-Version: 1.0\r\n";
+    $headers .= "Content-type: text/html; charset=UTF-8\r\n";
+    // 🎯 ชื่อผู้ส่งโชว์ชื่อ BNCC Market แต่อีเมลที่ส่งมาคือ system@bncc.ac.th
+    $headers .= "From: BNCC Market <system@bncc.ac.th>\r\n";
 
-    // ใช้ @ ป้องกัน Error แจ้งเตือนหน้าเว็บพัง ในกรณีที่ Localhost (XAMPP/MAMP) ไม่ได้ตั้งค่า Mail Server ไว้
+    // ใช้ @ ป้องกัน Error แจ้งเตือนหน้าเว็บพัง
     @mail($to_email, $subject, $message, $headers);
     
     return true;
