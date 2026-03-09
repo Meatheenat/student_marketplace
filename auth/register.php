@@ -642,6 +642,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             });
         }, 100);
     });
+    // 🎯 1. ดักจับให้ช่องรหัสนักเรียน พิมพ์ได้แค่ "ตัวเลข" เท่านั้น
+    document.getElementById('student_id').addEventListener('input', function() {
+        this.value = this.value.replace(/[^0-9]/g, '');
+    });
+
+    // 🎯 2. ดักจับให้ช่องชั้น/ห้อง พิมพ์ได้แค่ตัวเลข 1-3 และเครื่องหมายทับ / เท่านั้น
+    document.getElementById('class_year').addEventListener('input', function() {
+        this.value = this.value.replace(/[^1-3\/]/g, '');
+    });
+
+    // 🎯 3. ตรวจสอบอีเมลตอนกดปุ่มสมัคร ด้วย SweetAlert2 (บล็อกแจ้งเตือนแบบสวยงาม)
+    document.getElementById('registerForm').addEventListener('submit', function(e) {
+        const studentId = document.getElementById('student_id').value;
+        const emailInput = document.getElementById('email').value;
+        const expectedEmail = studentId + '@bncc.ac.th';
+        
+        // ถ้ากรอกอีเมลไม่ตรงกับ (รหัส@bncc.ac.th) จะแสดงกล่องบล็อกแจ้งเตือน
+        if (emailInput !== expectedEmail) {
+            e.preventDefault(); // หยุดการส่งฟอร์มทันที
+            
+            const isDark = document.documentElement.classList.contains('dark-theme');
+            
+            Swal.fire({
+                icon: 'warning',
+                title: 'อีเมลไม่ถูกต้อง!',
+                html: 'อีเมลต้องตรงกับรหัสนักศึกษาตามด้วย <b>@bncc.ac.th</b><br><br><span style="color:#6366f1; font-weight:800; font-size:1.1rem;">(ต้องเป็น: ' + expectedEmail + ')</span>',
+                confirmButtonText: 'รับทราบ',
+                confirmButtonColor: '#6366f1',
+                background: isDark ? '#1e293b' : '#ffffff',
+                color: isDark ? '#ffffff' : '#0f172a',
+                backdrop: `rgba(0,0,0,0.6)`
+            }).then(() => {
+                document.getElementById('email').focus();
+            });
+        }
+    });
 </script>
 
 <?php require_once '../includes/footer.php'; ?>
