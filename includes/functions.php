@@ -443,31 +443,3 @@ function notifySeller($seller_id, $message, $link = '#') {
     
     return true;
 }
-function loginWithRMS($student_id, $password) {
-
-    $url = "https://rms.bncc.ac.th/login.php";
-
-    $post = [
-        "student_id" => $student_id,
-        "password" => $password
-    ];
-
-    $ch = curl_init();
-
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-
-    $response = curl_exec($ch);
-
-    curl_close($ch);
-
-    if (strpos($response, "dashboard") !== false) {
-        return true;
-    }
-
-    return false;
-}

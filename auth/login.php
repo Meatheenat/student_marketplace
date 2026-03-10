@@ -1,34 +1,67 @@
 <?php
 /**
  * ระบบตลาดออนไลน์นักเรียน (Student Marketplace)
- * หน้าเข้าสู่ระบบ (Login Page) - [THEME DYNAMIC REDESIGN]
- * [Cite: User Summary] - พัฒนาโดย Gemini Collaboration
+ * หน้าเข้าสู่ระบบ (Login Page) - [THEME DYNAMIC REDESIGN + RMS API]
  */
-
 
 $pageTitle = "เข้าสู่ระบบ - Student Marketplace";
 require_once '../includes/header.php';
 require_once '../includes/functions.php';
 require_once '../vendor/autoload.php';
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    
-    $login_input = trim($_POST['login_input']);
-    $password    = $_POST['password'];
 
-    $rmsLogin = loginWithRMS($login_input, $password);
+// ------------------------------------------------------------------
+// 🚀 [เพิ่มใหม่] ฟังก์ชันเจาะระบบ RMS (ป้องกันไฟล์ Cookie ตีกัน)
+// ------------------------------------------------------------------
+function loginWithRMS($username, $password){
+    $loginPage = "https://rms.bncc.ac.th/?p=login";
+    $loginAction = "https://rms.bncc.ac.th/check.php";
+    $cookie = tempnam(sys_get_temp_dir(), 'RMSC'); 
 
-    if ($rmsLogin) {
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL => $loginPage,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_COOKIEJAR => $cookie,
+        CURLOPT_COOKIEFILE => $cookie,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_USERAGENT => "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_SSL_VERIFYHOST => false
+    ]);
+    curl_exec($ch);
+    curl_close($ch);
 
-        $_SESSION['student_id'] = $login_input;
-        $_SESSION['role'] = "student";
+    $postData = http_build_query([
+        'username_log' => $username,
+        'password_log' => $password,
+        'school_id' => '01'
+    ]);
 
-        redirect('../pages/index.php');
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL => $loginAction,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => $postData,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_COOKIEJAR => $cookie,
+        CURLOPT_COOKIEFILE => $cookie,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_USERAGENT => "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_SSL_VERIFYHOST => false
+    ]);
+
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    if(file_exists($cookie)) unlink($cookie);
+
+    $response = iconv("TIS-620", "UTF-8//IGNORE", $response);
+    if(strpos($response, "สถานการณ์") !== false){
+        return true;
     }
-
+    return false;
 }
-
-
-
 
 // 1. ตรวจสอบสถานะ: หากเข้าสู่ระบบอยู่แล้ว ให้เปลี่ยนหน้าไปยังหน้าแรกทันที
 if (isLoggedIn()) {
@@ -45,12 +78,10 @@ $client->addScope("profile");
 $client->setPrompt('select_account'); 
 $googleAuthUrl = $client->createAuthUrl();
 
-// 3. จัดการการเข้าสู่ระบบด้วยชื่อผู้ใช้และรหัสผ่าน (POST)
+// 3. จัดการการเข้าสู่ระบบแบบเบ็ดเสร็จ (Turnstile + Local DB + RMS)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    // ------------------------------------------------------------------
-    // 🛡️ [เพิ่มใหม่] ตรวจสอบ Cloudflare Turnstile ก่อนไปต่อ
-    // ------------------------------------------------------------------
+    // 🛡️ ตรวจสอบ Cloudflare Turnstile
     $secret_key = '0x4AAAAAACoR11ccsBAXDbqrr_1J8UB8UXw';
     $turnstile_response = $_POST['cf-turnstile-response'] ?? '';
 
@@ -76,9 +107,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['flash_message'] = "กรุณายืนยันตัวตนว่าคุณไม่ใช่บอท";
         $_SESSION['flash_type'] = "danger";
         redirect('login.php');
-        exit(); // หยุดการทำงานทันทีถ้าเป็นบอท
+        exit(); 
     }
-    // ------------------------------------------------------------------
 
     $login_input = trim($_POST['login_input']);
     $password    = $_POST['password'];
@@ -89,35 +119,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$login_input, $login_input]);
         $user = $stmt->fetch();
 
-        if ($user && password_verify($password, $user['password'])) {
-            // 🚫 🛠️ [แก้ไขใหม่] ตรวจสอบสถานะการโดนแบน พร้อมเพิ่มปุ่มกดไปหน้าอุทธรณ์
-if (isset($user['is_banned']) && $user['is_banned'] == 1) {
-    $_SESSION['flash_message'] = "🚫 บัญชีของคุณถูกระงับการใช้งานชั่วคราว <br>
-        <a href='appeal_ban.php' style='
-            display: inline-block; 
-            margin-top: 12px; 
-            padding: 10px 25px; 
-            background: #ef4444; 
-            color: white; 
-            text-decoration: none; 
-            border-radius: 14px; 
-            font-weight: 800; 
-            font-size: 0.85rem;
-            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
-            transition: all 0.3s ease;
-        '>ยื่นเรื่องขอกู้คืนบัญชีที่นี่</a>";
-    $_SESSION['flash_type'] = "danger";
-    redirect('login.php');
-}
+        $login_success = false;
 
-            // บันทึกข้อมูลลง Session เมื่อรหัสผ่านถูกต้องและไม่โดนแบน
+        // 🎯 เช็คกับฐานข้อมูลระบบเราก่อน
+        if ($user && password_verify($password, $user['password'])) {
+            $login_success = true;
+        } 
+        // 🎯 ถ้ารหัสในระบบเราผิด หรือไม่มีบัญชี ให้วิ่งไปเจาะ RMS!
+        else if (loginWithRMS($login_input, $password)) {
+            $login_success = true;
+
+            // ถ้าล็อกอิน RMS ผ่าน แต่ยังไม่มีข้อมูลในระบบเรา (Auto-Register)
+            if (!$user) {
+                $student_email = is_numeric($login_input) ? $login_input . "@bncc.ac.th" : $login_input;
+                $hashed_pass = password_hash($password, PASSWORD_DEFAULT);
+                
+                $insert = $db->prepare("INSERT INTO users (student_id, email, password, fullname, role) VALUES (?, ?, ?, ?, 'student')");
+                $insert->execute([$login_input, $student_email, $hashed_pass, "นักศึกษา " . $login_input]);
+                
+                $user_id = $db->lastInsertId();
+                $stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
+                $stmt->execute([$user_id]);
+                $user = $stmt->fetch();
+            } else {
+                // ถ้ามีข้อมูลอยู่แล้ว แต่รหัสผ่านอาจจะเปลี่ยนใน RMS ก็อัปเดตให้ตรงกัน
+                $hashed_pass = password_hash($password, PASSWORD_DEFAULT);
+                $update = $db->prepare("UPDATE users SET password = ? WHERE id = ?");
+                $update->execute([$hashed_pass, $user['id']]);
+            }
+        }
+
+        // ✅ สรุปผลการล็อกอิน (ผ่านแล้วเช็คต่อว่าโดนแบนไหม)
+        if ($login_success) {
+            if (isset($user['is_banned']) && $user['is_banned'] == 1) {
+                $_SESSION['flash_message'] = "🚫 บัญชีของคุณถูกระงับการใช้งานชั่วคราว <br>
+                    <a href='appeal_ban.php' style='display: inline-block; margin-top: 12px; padding: 10px 25px; background: #ef4444; color: white; text-decoration: none; border-radius: 14px; font-weight: 800; font-size: 0.85rem; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); transition: all 0.3s ease;'>ยื่นเรื่องขอกู้คืนบัญชีที่นี่</a>";
+                $_SESSION['flash_type'] = "danger";
+                redirect('login.php');
+                exit();
+            }
+
             $_SESSION['user_id']    = $user['id'];
             $_SESSION['fullname']   = $user['fullname'];
             $_SESSION['role']       = $user['role'];
-            $_SESSION['student_id'] = $user['student_id'];
+            $_SESSION['student_id'] = $user['student_id'] ?? $login_input;
             redirect('../pages/index.php');
         } else {
-            $_SESSION['flash_message'] = "ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง";
+            $_SESSION['flash_message'] = "รหัสนักศึกษา หรือ รหัสผ่านไม่ถูกต้อง";
             $_SESSION['flash_type'] = "danger";
         }
     }
@@ -127,7 +175,6 @@ if (isset($user['is_banned']) && $user['is_banned'] == 1) {
 <style>
     /* ============================================================
        🎨 DYNAMIC THEME VARIABLES FOR LOGIN PAGE
-       (ตัวแปรสีที่จะเปลี่ยนไปตาม Light/Dark Theme ของเว็บ)
        ============================================================ */
     :root {
         --login-bg: #f8fafc;
@@ -176,7 +223,6 @@ if (isset($user['is_banned']) && $user['is_banned'] == 1) {
         z-index: 1;
     }
 
-    /* แสงฟุ้งด้านหลังการ์ด */
     .glow-orb {
         position: absolute;
         border-radius: 50%;
@@ -315,7 +361,7 @@ if (isset($user['is_banned']) && $user['is_banned'] == 1) {
         pointer-events: none;
     }
     .form-control-custom:focus + .input-icon {
-        color: #818cf8; /* สีม่วงสว่างเวลาโฟกัส */
+        color: #818cf8;
     }
 
     .pass-toggle-icon {
@@ -382,7 +428,7 @@ if (isset($user['is_banned']) && $user['is_banned'] == 1) {
     }
     .divider-text {
         position: relative;
-        background: var(--bg-card); /* ดึงสีการ์ดตามธีมมาใช้ */
+        background: var(--bg-card);
         padding: 4px 15px;
         border-radius: 8px;
         color: var(--text-muted);
@@ -438,7 +484,6 @@ if (isset($user['is_banned']) && $user['is_banned'] == 1) {
         text-shadow: 0 0 10px rgba(129, 140, 248, 0.5);
     }
 
-    /* แจ้งเตือนแบบเข้ากับทุกธีม */
     .alert {
         background: rgba(239, 68, 68, 0.1);
         border: 1px solid rgba(239, 68, 68, 0.2);
@@ -475,7 +520,7 @@ if (isset($user['is_banned']) && $user['is_banned'] == 1) {
             <div class="form-group">
                 <label class="field-label">ACCOUNT IDENTITY</label>
                 <div class="input-wrapper">
-                    <input type="text" name="login_input" class="form-control-custom" placeholder="อีเมล หรือ รหัสนักเรียน" required>
+                    <input type="text" name="login_input" class="form-control-custom" placeholder="รหัสนักศึกษา หรือ อีเมล" required>
                     <i class="fas fa-id-badge input-icon"></i>
                 </div>
             </div>
@@ -523,7 +568,6 @@ if (isset($user['is_banned']) && $user['is_banned'] == 1) {
 </div>
 
 <script>
-    // 1. ระบบดวงตาสลับรหัสผ่าน (เพิ่ม Animation เด้งๆ)
     const togglePass = document.querySelector('#toggleLoginPass');
     const passwordField = document.querySelector('#login_pass');
 
@@ -533,7 +577,6 @@ if (isset($user['is_banned']) && $user['is_banned'] == 1) {
         this.classList.toggle('fa-eye-slash');
         this.classList.toggle('fa-eye');
         
-        // ดึงสีไอคอนตาม Theme ปัจจุบัน
         const isDark = document.documentElement.classList.contains('dark-theme');
         this.style.color = type === 'text' ? (isDark ? '#ffffff' : '#1e293b') : 'var(--login-icon-color)';
         
@@ -544,7 +587,6 @@ if (isset($user['is_banned']) && $user['is_banned'] == 1) {
         ], { duration: 250 });
     });
 
-    // 2. ระบบการ์ดเอียงตามเมาส์
     const card = document.querySelector('#tilt-card-premium');
     const wrapper = document.querySelector('.login-master-wrapper');
 
@@ -560,15 +602,13 @@ if (isset($user['is_banned']) && $user['is_banned'] == 1) {
         card.style.transition = "transform 0.8s ease-out";
     });
 
-    // 3. โฟกัสช่องกรอกข้อมูลอัตโนมัติ
     window.onload = () => {
         setTimeout(() => {
             document.querySelector('input[name="login_input"]').focus();
         }, 500);
     };
 
-    // 4. อัปเดตสีดวงตาตอนเปลี่ยนตีม (ถ้าเปิดค้างไว้)
-    document.getElementById('theme-toggle').addEventListener('click', () => {
+    document.getElementById('theme-toggle')?.addEventListener('click', () => {
         const type = passwordField.getAttribute('type');
         if(type === 'text') {
             setTimeout(() => {
