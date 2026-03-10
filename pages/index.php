@@ -18,7 +18,7 @@ require_once '../includes/header.php';
 
 $db = getDB();
 
-// --- 1. Filter Logic (คงเดิม 100%) ---
+// --- 1. Filter Logic ---
 $search = isset($_GET['q']) ? trim($_GET['q']) : '';
 $cat_id = isset($_GET['cat']) ? $_GET['cat'] : '';
 $min_price = isset($_GET['min_price']) && $_GET['min_price'] !== '' ? (float)$_GET['min_price'] : null;
@@ -28,7 +28,7 @@ $sort_by = isset($_GET['sort']) ? $_GET['sort'] : 'newest';
 $cat_stmt = $db->query("SELECT * FROM categories ORDER BY id ASC");
 $categories = $cat_stmt->fetchAll();
 
-// --- 2. SQL Query (🎯 🛠️ เพิ่ม JOIN users เพื่อดึง role ของเจ้าของร้านมาโชว์ Badge)
+// --- 2. SQL Query ---
 $sql = "SELECT p.*, s.shop_name, s.status as shop_status, c.category_name, u.role as owner_role,
                IFNULL(AVG(r.rating), 0) as avg_rating,
                COUNT(r.id) as review_count
@@ -95,7 +95,6 @@ $products = $stmt->fetchAll();
 
     body { background-color: var(--solid-bg) !important; color: var(--solid-text); }
 
-    /* 🏰 Centered Hero Section */
     .hero-center {
         padding: 80px 20px;
         text-align: center;
@@ -123,7 +122,6 @@ $products = $stmt->fetchAll();
         animation: fadeIn 1s ease 0.4s forwards;
     }
 
-    /* 🔍 Search Bar - Centered & Sharp */
     .search-wrap {
         max-width: 650px;
         margin: 0 auto;
@@ -133,7 +131,7 @@ $products = $stmt->fetchAll();
         background: var(--solid-bg);
         border-radius: 16px;
         border: 2px solid var(--solid-border);
-        position: relative; /* 🎯 เพิ่มเพื่อให้ Dropdown เกาะติด */
+        position: relative; 
     }
 
     .search-wrap input {
@@ -159,7 +157,6 @@ $products = $stmt->fetchAll();
     }
     .btn-search-solid:hover { transform: scale(1.05); }
 
-    /* 🎯 🛠️ CSS สำหรับ Search Auto-Complete Dropdown */
     .search-dropdown {
         position: absolute;
         top: 100%;
@@ -191,7 +188,6 @@ $products = $stmt->fetchAll();
     .search-item .suggest-title { font-weight: 800; font-size: 0.95rem; margin: 0; }
     .search-item .suggest-price { font-weight: 700; color: #10b981; font-size: 0.85rem; }
 
-    /* 📂 Sidebar */
     .sidebar-sticky { position: sticky; top: 100px; }
     .cat-title { font-size: 0.8rem; font-weight: 900; text-transform: uppercase; color: var(--solid-primary); margin-bottom: 20px; }
     
@@ -212,7 +208,7 @@ $products = $stmt->fetchAll();
     .cat-btn:hover { border-color: var(--solid-primary); padding-left: 25px; }
     .cat-btn.active { background: var(--solid-primary); color: #fff; border-color: var(--solid-primary); box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4); }
 
-    /* 🧱 Product Card - Solid Style */
+    /* 🎯 🛠️ แก้ไข Product Card: เปลี่ยนมาใช้ CSS Animation แทน JS 100% ป้องกันสินค้าหาย */
     .product-box {
         background: var(--solid-card);
         border: 2px solid var(--solid-border);
@@ -221,8 +217,8 @@ $products = $stmt->fetchAll();
         transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         opacity: 0;
         transform: translateY(30px);
+        animation: cardEntrance 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     }
-    .product-box.show { opacity: 1; transform: translateY(0); }
     .product-box:hover {
         transform: translateY(-10px);
         border-color: var(--solid-primary);
@@ -233,7 +229,6 @@ $products = $stmt->fetchAll();
     .img-area img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
     .product-box:hover .img-area img { transform: scale(1.1); }
 
-    /* 🎯 🛠️ BIG PRICE BADGE (เน้นราคาให้เด่นสุดๆ) */
     .price-badge {
         position: absolute;
         top: 15px; 
@@ -259,29 +254,28 @@ $products = $stmt->fetchAll();
     .info-wrap h3 { font-size: 1.2rem; font-weight: 800; margin-bottom: 10px; color: var(--solid-text); }
     .shop-info { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--solid-border); padding-top: 15px; margin-top: 15px; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; }
 
-    /* 🎢 Keyframes */
     @keyframes dropIn { to { opacity: 1; transform: translateY(0); } }
     @keyframes fadeIn { to { opacity: 1; } }
     @keyframes suggestions { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    @keyframes cardEntrance {
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 🛠️ บังคับให้ Footer กลับมาและไม่โดนดันตกขอบ 100% */
+    footer, .footer, #footer {
+        display: block !important;
+        clear: both !important;
+        position: relative !important;
+        z-index: 9999 !important;
+        margin-top: 80px !important;
+    }
 
     @media (max-width: 768px) {
         .hero-center h1 { font-size: 2.2rem; }
         .main-layout { grid-template-columns: 1fr !important; }
         .sidebar-sticky { display: none; }
-        /* 🛠️ บังคับกู้คืน Footer */
-footer, .footer, #footer {
-    display: block !important;
-    position: relative !important;
-    width: 100% !important;
-    clear: both !important;
-    margin-top: 60px !important;
-    z-index: 9999 !important;
-    background: var(--solid-card) !important;
-    color: var(--solid-text) !important;
-    border-top: 1px solid var(--solid-border) !important;
-}
     }
-
 </style>
 
 <div class="hero-center">
@@ -290,7 +284,7 @@ footer, .footer, #footer {
         <p>ยินดีต้อนรับคุณ <?php echo e($_SESSION['fullname']); ?> | แหล่งรวมของดีที่เหล่านักศึกษายอมรับ</p>
         
         <form action="index.php" method="GET" class="search-wrap">
-            <input type="text" id="main-search" name="q" placeholder="เช่น คุกกี้, อุปกรณ์การเรียน, รับจ้าง..." value="<?= e($search) ?>" autofocus autocomplete="off">
+            <input type="text" id="main-search" name="q" placeholder="เช่น คุกกี้, อุปกรณ์การเรียน, รับจ้าง..." value="<?= e($search) ?>" autocomplete="off">
             <button type="submit" class="btn-search-solid">ค้นหาสินค้า</button>
             
             <div id="search-results" class="search-dropdown"></div>
@@ -352,8 +346,8 @@ footer, .footer, #footer {
 
             <?php if (count($products) > 0): ?>
                 <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 30px;">
-                    <?php foreach ($products as $p): ?>
-                        <div class="product-box">
+                    <?php $delay = 0; foreach ($products as $p): ?>
+                        <div class="product-box" style="animation-delay: <?= $delay ?>s;">
                             <a href="product_detail.php?id=<?= $p['id'] ?>" style="text-decoration: none; color: inherit;">
                                 <div class="img-area">
                                     <img src="<?= !empty($p['image_url']) ? '../assets/images/products/'.$p['image_url'] : 'https://via.placeholder.com/400x300' ?>" alt="<?= e($p['title']) ?>">
@@ -372,7 +366,7 @@ footer, .footer, #footer {
                                     <h3><?= e($p['title']) ?></h3>
                                     
                                     <div class="shop-info">
-                                        <span onclick="window.location.href='<?= BASE_URL ?>pages/shop_profile.php?id=<?= $p['shop_id'] ?>'; return false;" 
+                                        <span onclick="window.location.href='<?= defined("BASE_URL") ? BASE_URL : "../" ?>pages/shop_profile.php?id=<?= $p['shop_id'] ?>'; return false;" 
                                               style="cursor: pointer; transition: 0.2s;" 
                                               onmouseover="this.style.color='var(--solid-primary)'" 
                                               onmouseout="this.style.color='inherit'">
@@ -386,13 +380,13 @@ footer, .footer, #footer {
                                 </div>
                             </a>
                         </div>
-                    <?php endforeach; ?>
+                    <?php $delay += 0.05; endforeach; ?>
                 </div>
             <?php else: ?>
                 <div style="text-align: center; padding: 120px 20px; border: 3px dashed var(--solid-border); border-radius: 30px;">
                     <i class="fas fa-search" style="font-size: 4rem; color: var(--solid-border); margin-bottom: 20px;"></i>
-                    <h3 style="font-weight: 900;">ไม่พบสินค้าที่มึงตามหา</h3>
-                    <p style="color: var(--text-muted); margin-bottom: 20px;">ลองเปลี่ยนคำค้นหาหรือตัวกรองดูนะครับเพื่อน</p>
+                    <h3 style="font-weight: 900;">ไม่พบสินค้าที่ตามหา</h3>
+                    <p style="color: var(--text-muted); margin-bottom: 20px;">ลองเปลี่ยนคำค้นหาหรือตัวกรองดูนะครับ</p>
                     <a href="index.php" class="btn btn-primary" style="padding: 12px 40px; border-radius: 12px;">กลับไปดูสินค้าทั้งหมด</a>
                 </div>
             <?php endif; ?>
@@ -401,75 +395,55 @@ footer, .footer, #footer {
 </div>
 
 <script>
-    /**
-     * 🚀 Intersection Observer (สำหรับการ์ดเด้งขึ้นมาทีละอันแบบมีคิว)
-     */
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry, index) => {
-            if (entry.isIntersecting) {
-                setTimeout(() => {
-                    entry.target.classList.add('show');
-                }, index * 50); 
-            }
-        });
-    }, { threshold: 0.1 });
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('main-search');
+        const resultsBox = document.getElementById('search-results');
+        let debounceTimer;
 
-    document.querySelectorAll('.product-box').forEach(box => observer.observe(box));
+        if (searchInput && resultsBox) {
+            searchInput.addEventListener('input', function() {
+                clearTimeout(debounceTimer);
+                const q = this.value.trim();
 
-    /**
-     * 🎯 🛠️ [เพิ่มใหม่] JavaScript สำหรับระบบ Search Auto-Complete
-     */
-    const searchInput = document.getElementById('main-search');
-    const resultsBox = document.getElementById('search-results');
-    let debounceTimer;
+                if (q.length < 2) {
+                    resultsBox.style.display = 'none';
+                    return;
+                }
 
-    if (searchInput && resultsBox) {
-        searchInput.addEventListener('input', function() {
-            clearTimeout(debounceTimer);
-            const q = this.value.trim();
+                debounceTimer = setTimeout(() => {
+                    const baseUrl = '<?= defined("BASE_URL") ? BASE_URL : "../" ?>';
+                    fetch(`${baseUrl}ajax/search_suggestions.php?q=${encodeURIComponent(q)}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data && data.length > 0) {
+                                let html = '';
+                                data.forEach(item => {
+                                    html += `
+                                        <a href="product_detail.php?id=${item.id}" class="search-item">
+                                            <img src="${baseUrl}assets/images/products/${item.image_url}" onerror="this.src='https://via.placeholder.com/50'">
+                                            <div class="info">
+                                                <p class="suggest-title">${item.title}</p>
+                                                <span class="suggest-price">฿${parseFloat(item.price).toLocaleString()}</span>
+                                            </div>
+                                        </a>`;
+                                });
+                                resultsBox.innerHTML = html;
+                                resultsBox.style.display = 'block';
+                            } else {
+                                resultsBox.style.display = 'none';
+                            }
+                        })
+                        .catch(err => console.error("Suggestions Error:", err));
+                }, 300);
+            });
 
-            if (q.length < 2) {
-                resultsBox.style.display = 'none';
-                return;
-            }
-
-            // หน่วงเวลา 300ms เพื่อไม่ให้ยิง API ถี่เกินไป (ประหยัด Resource เซิร์ฟเวอร์)
-            debounceTimer = setTimeout(() => {
-                // เรียกไฟล์ API ที่เราสร้างไว้ในขั้นตอนก่อนหน้า
-                fetch(`<?= BASE_URL ?>ajax/search_suggestions.php?q=${encodeURIComponent(q)}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data && data.length > 0) {
-                            let html = '';
-                            data.forEach(item => {
-                                html += `
-                                    <a href="<?= BASE_URL ?>pages/product_detail.php?id=${item.id}" class="search-item">
-                                        <img src="<?= BASE_URL ?>assets/images/products/${item.image_url}" onerror="this.src='https://via.placeholder.com/50'">
-                                        <div class="info">
-                                            <p class="suggest-title">${item.title}</p>
-                                            <span class="suggest-price">฿${parseFloat(item.price).toLocaleString()}</span>
-                                        </div>
-                                    </a>`;
-                            });
-                            resultsBox.innerHTML = html;
-                            resultsBox.style.display = 'block';
-                        } else {
-                            resultsBox.style.display = 'none';
-                        }
-                    })
-                    .catch(err => {
-                        console.error("Suggestions Error:", err);
-                    });
-            }, 300);
-        });
-
-        // คลิกข้างนอกกล่องแล้วปิด Dropdown
-        document.addEventListener('click', (e) => {
-            if (!searchInput.contains(e.target) && !resultsBox.contains(e.target)) {
-                resultsBox.style.display = 'none';
-            }
-        });
-    }
+            document.addEventListener('click', (e) => {
+                if (!searchInput.contains(e.target) && !resultsBox.contains(e.target)) {
+                    resultsBox.style.display = 'none';
+                }
+            });
+        }
+    });
 </script>
 
 <?php require_once '../includes/footer.php'; ?>
