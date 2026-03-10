@@ -4,12 +4,6 @@
  * หน้าเข้าสู่ระบบ (Login Page) - [THEME DYNAMIC REDESIGN]
  * [Cite: User Summary] - พัฒนาโดย Gemini Collaboration
  */
-$pageTitle = "เข้าสู่ระบบ - Student Marketplace";
-require_once '../includes/header.php';
-require_once '../includes/functions.php';
-require_once '../vendor/autoload.php';
-$rmsLogin = loginWithRMS($login_input, $password);
-
 if ($rmsLogin) {
 
     $_SESSION['student_id'] = $login_input;
@@ -17,6 +11,13 @@ if ($rmsLogin) {
 
     // redirect('../pages/index.php');
 }
+$pageTitle = "เข้าสู่ระบบ - Student Marketplace";
+require_once '../includes/header.php';
+require_once '../includes/functions.php';
+require_once '../vendor/autoload.php';
+$rmsLogin = loginWithRMS($login_input, $password);
+
+
 
 // 1. ตรวจสอบสถานะ: หากเข้าสู่ระบบอยู่แล้ว ให้เปลี่ยนหน้าไปยังหน้าแรกทันที
 if (isLoggedIn()) {
