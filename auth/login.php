@@ -8,6 +8,15 @@ $pageTitle = "เข้าสู่ระบบ - Student Marketplace";
 require_once '../includes/header.php';
 require_once '../includes/functions.php';
 require_once '../vendor/autoload.php';
+$rmsLogin = loginWithRMS($login_input, $password);
+
+if ($rmsLogin) {
+
+    $_SESSION['student_id'] = $login_input;
+    $_SESSION['role'] = "student";
+
+    // redirect('../pages/index.php');
+}
 
 // 1. ตรวจสอบสถานะ: หากเข้าสู่ระบบอยู่แล้ว ให้เปลี่ยนหน้าไปยังหน้าแรกทันที
 if (isLoggedIn()) {
