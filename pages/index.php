@@ -436,40 +436,21 @@ footer, .footer, #footer {
             // หน่วงเวลา 300ms เพื่อไม่ให้ยิง API ถี่เกินไป (ประหยัด Resource เซิร์ฟเวอร์)
             debounceTimer = setTimeout(() => {
                 // เรียกไฟล์ API ที่เราสร้างไว้ในขั้นตอนก่อนหน้า
-                fetch(`<?= BASE_URL ?>ajax/search_suggestions.php?q=${encodeURIComponent(q)}`)
+                fetch(`../ajax/search_suggestions.php?q=${encodeURIComponent(q)}`)
                     .then(res => res.json())
                     .then(data => {
                         if (data && data.length > 0) {
                             let html = '';
                             data.forEach(item => {
                                 html += `
-                                    <a href="<?= BASE_URL ?>pages/product_detail.php?id=${item.id}" class="search-item">
-                                        <img src="<?= BASE_URL ?>assets/images/products/${item.image_url}" onerror="this.src='https://via.placeholder.com/50'">
+                                    <a href="product_detail.php?id=${item.id}" class="search-item">
+                                        <img src="../assets/images/products/${item.image_url}" onerror="this.src='https://via.placeholder.com/50'">
                                         <div class="info">
                                             <p class="suggest-title">${item.title}</p>
                                             <span class="suggest-price">฿${parseFloat(item.price).toLocaleString()}</span>
                                         </div>
                                     </a>`;
                             });
-                            resultsBox.innerHTML = html;
-                            resultsBox.style.display = 'block';
-                        } else {
-                            resultsBox.style.display = 'none';
-                        }
-                    })
-                    .catch(err => {
-                        console.error("Suggestions Error:", err);
-                    });
-            }, 300);
-        });
-
-        // คลิกข้างนอกกล่องแล้วปิด Dropdown
-        document.addEventListener('click', (e) => {
-            if (!searchInput.contains(e.target) && !resultsBox.contains(e.target)) {
-                resultsBox.style.display = 'none';
-            }
-        });
-    }
 </script>
 
 <?php require_once '../includes/footer.php'; ?>
