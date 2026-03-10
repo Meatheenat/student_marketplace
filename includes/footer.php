@@ -1,4 +1,10 @@
-</main> <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+</main> <footer style="margin-top: 60px; padding: 25px 0; text-align: center; background: var(--solid-card, #ffffff); border-top: 1px solid var(--solid-border, #cbd5e1); clear: both; position: relative; z-index: 9999; width: 100%;">
+    <p style="color: var(--text-muted, #64748b); font-size: 0.9rem; font-weight: 600; margin: 0;">
+        &copy; <?= date('Y') ?> BNCC Market. All rights reserved.
+    </p>
+</footer>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
