@@ -1,4 +1,11 @@
-</main> <style>
+</main>
+
+<?php
+// 🛠️ ตัวแปร Path อิงจาก URL จริงของเว็บมึง
+$basePath = defined('BASE_URL') ? BASE_URL : '/s673190104/student_marketplace/';
+?>
+
+<style>
     /* 🛠️ สไตล์ Footer 7 องค์ประกอบ (Responsive & High-Contrast) */
     .site-footer {
         background: var(--solid-card, #ffffff);
@@ -85,8 +92,8 @@
             <div class="footer-links">
                 <h4>สำรวจตลาด</h4>
                 <ul>
-                    <li><a href="<?= defined('BASE_URL') ? BASE_URL : '../' ?>pages/index.php"><i class="fas fa-angle-right"></i> หน้าแรก</a></li>
-                    <li><a href="<?= defined('BASE_URL') ? BASE_URL : '../' ?>pages/index.php"><i class="fas fa-angle-right"></i> สินค้าทั้งหมด</a></li>
+                    <li><a href="<?= $basePath ?>pages/index.php"><i class="fas fa-angle-right"></i> หน้าแรก</a></li>
+                    <li><a href="<?= $basePath ?>pages/index.php"><i class="fas fa-angle-right"></i> สินค้าทั้งหมด</a></li>
                     <li><a href="#"><i class="fas fa-angle-right"></i> ร้านค้านักศึกษา</a></li>
                     <li><a href="#"><i class="fas fa-angle-right"></i> กระดานตามหาของ (WTB)</a></li>
                 </ul>
@@ -96,11 +103,11 @@
                 <h4>บัญชีของฉัน</h4>
                 <ul>
                     <?php if(isLoggedIn()): ?>
-                        <li><a href="<?= defined('BASE_URL') ? BASE_URL : '../' ?>pages/profile.php"><i class="fas fa-angle-right"></i> โปรไฟล์ส่วนตัว</a></li>
-                        <li><a href="<?= defined('BASE_URL') ? BASE_URL : '../' ?>pages/my_orders.php"><i class="fas fa-angle-right"></i> การสั่งซื้อของฉัน</a></li>
-                        <li><a href="<?= defined('BASE_URL') ? BASE_URL : '../' ?>pages/my_shop.php"><i class="fas fa-angle-right"></i> จัดการร้านค้า</a></li>
+                        <li><a href="<?= $basePath ?>pages/profile.php"><i class="fas fa-angle-right"></i> โปรไฟล์ส่วนตัว</a></li>
+                        <li><a href="<?= $basePath ?>pages/my_orders.php"><i class="fas fa-angle-right"></i> การสั่งซื้อของฉัน</a></li>
+                        <li><a href="<?= $basePath ?>seller/dashboard.php"><i class="fas fa-angle-right"></i> จัดการร้านค้า</a></li>
                     <?php else: ?>
-                        <li><a href="<?= defined('BASE_URL') ? BASE_URL : '../' ?>auth/login.php"><i class="fas fa-angle-right"></i> เข้าสู่ระบบ / สมัครสมาชิก</a></li>
+                        <li><a href="<?= $basePath ?>auth/login.php"><i class="fas fa-angle-right"></i> เข้าสู่ระบบ / สมัครสมาชิก</a></li>
                     <?php endif; ?>
                 </ul>
             </div>
@@ -109,9 +116,9 @@
                 <h4>ช่วยเหลือ & นโยบาย</h4>
                 <ul>
                     <li><a href="#"><i class="fas fa-angle-right"></i> วิธีการสั่งซื้อและนัดรับ</a></li>
-                    <li><a href="#"><i class="fas fa-angle-right"></i> ข้อตกลงการใช้งาน (Terms)</a></li>
-                    <li><a href="#"><i class="fas fa-angle-right"></i> นโยบายความเป็นส่วนตัว</a></li>
-                    <li><a href="#"><i class="fas fa-angle-right"></i> แจ้งปัญหาสินค้า / รายงานการโกง</a></li>
+                    <li><a href="<?= $basePath ?>pages/terms.php"><i class="fas fa-angle-right"></i> ข้อตกลงการใช้งาน (Terms)</a></li>
+                    <li><a href="<?= $basePath ?>pages/privacy.php"><i class="fas fa-angle-right"></i> นโยบายความเป็นส่วนตัว</a></li>
+                    <li><a href="<?= $basePath ?>auth/submit_report.php"><i class="fas fa-angle-right"></i> แจ้งปัญหาสินค้า / รายงานการโกง</a></li>
                 </ul>
             </div>
         </div>
