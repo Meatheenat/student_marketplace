@@ -59,7 +59,7 @@ require_once '../includes/header.php';
         <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">
             การสมัครสมาชิกถือว่าคุณยอมรับระเบียบการข้างต้นทั้งหมด
         </p>
-        <a href="pages/index.php" class="btn btn-primary" style="padding: 10px 25px;">ยอมรับ</a>
+        <a href="index.php" class="btn btn-primary" style="padding: 10px 25px;">ยอมรับ</a>
     </div>
 
 </div>
