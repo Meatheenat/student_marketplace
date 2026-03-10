@@ -134,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $student_email = is_numeric($login_input) ? $login_input . "@bncc.ac.th" : $login_input;
                 $hashed_pass = password_hash($password, PASSWORD_DEFAULT);
                 
-                $insert = $db->prepare("INSERT INTO users (student_id, email, password, fullname, role) VALUES (?, ?, ?, ?, 'student')");
+                $insert = $db->prepare("INSERT INTO users (student_id, email, password, fullname, role) VALUES (?, ?, ?, ?, 'buyer')");
                 $insert->execute([$login_input, $student_email, $hashed_pass, "นักศึกษา " . $login_input]);
                 
                 $user_id = $db->lastInsertId();
