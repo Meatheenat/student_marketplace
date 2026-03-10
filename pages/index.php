@@ -268,14 +268,20 @@ $products = $stmt->fetchAll();
         .hero-center h1 { font-size: 2.2rem; }
         .main-layout { grid-template-columns: 1fr !important; }
         .sidebar-sticky { display: none; }
-    }
-    /* บังคับดึง Footer ให้มาโชว์ด้านล่างสุดและอยู่เหนือเลเยอร์พื้นหลัง */
+        /* 🛠️ บังคับกู้คืน Footer */
 footer, .footer, #footer {
+    display: block !important;
     position: relative !important;
+    width: 100% !important;
+    clear: both !important;
+    margin-top: 60px !important;
     z-index: 9999 !important;
-    background: var(--bg-card) !important; /* ให้สีพื้นหลัง Footer ตัดกับหน้า Login */
-    width: 100%;
+    background: var(--solid-card) !important;
+    color: var(--solid-text) !important;
+    border-top: 1px solid var(--solid-border) !important;
 }
+    }
+
 </style>
 
 <div class="hero-center">
