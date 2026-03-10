@@ -269,6 +269,13 @@ $products = $stmt->fetchAll();
         .main-layout { grid-template-columns: 1fr !important; }
         .sidebar-sticky { display: none; }
     }
+    /* บังคับดึง Footer ให้มาโชว์ด้านล่างสุดและอยู่เหนือเลเยอร์พื้นหลัง */
+footer, .footer, #footer {
+    position: relative !important;
+    z-index: 9999 !important;
+    background: var(--bg-card) !important; /* ให้สีพื้นหลัง Footer ตัดกับหน้า Login */
+    width: 100%;
+}
 </style>
 
 <div class="hero-center">
