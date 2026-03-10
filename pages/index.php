@@ -268,7 +268,19 @@ $products = $stmt->fetchAll();
         .hero-center h1 { font-size: 2.2rem; }
         .main-layout { grid-template-columns: 1fr !important; }
         .sidebar-sticky { display: none; }
-
+        /* 🛠️ บังคับกู้คืน Footer */
+footer, .footer, #footer {
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+    clear: both !important;
+    margin-top: 60px !important;
+    z-index: 9999 !important;
+    background: var(--solid-card) !important;
+    color: var(--solid-text) !important;
+    border-top: 1px solid var(--solid-border) !important;
+}
+    }
 
 </style>
 
@@ -421,6 +433,39 @@ $products = $stmt->fetchAll();
                 return;
             }
 
+            <script>
+    /**
+     * 🚀 Intersection Observer (สำหรับการ์ดเด้งขึ้นมาทีละอันแบบมีคิว)
+     */
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry, index) => {
+            if (entry.isIntersecting) {
+                setTimeout(() => {
+                    entry.target.classList.add('show');
+                }, index * 50); 
+            }
+        });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.product-box').forEach(box => observer.observe(box));
+
+    /**
+     * 🎯 🛠️ JavaScript สำหรับระบบ Search Auto-Complete
+     */
+    const searchInput = document.getElementById('main-search');
+    const resultsBox = document.getElementById('search-results');
+    let debounceTimer;
+
+    if (searchInput && resultsBox) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            const q = this.value.trim();
+
+            if (q.length < 2) {
+                resultsBox.style.display = 'none';
+                return;
+            }
+
             // หน่วงเวลา 300ms เพื่อไม่ให้ยิง API ถี่เกินไป (ประหยัด Resource เซิร์ฟเวอร์)
             debounceTimer = setTimeout(() => {
                 // เรียกไฟล์ API ที่เราสร้างไว้ในขั้นตอนก่อนหน้า
@@ -439,6 +484,25 @@ $products = $stmt->fetchAll();
                                         </div>
                                     </a>`;
                             });
+                            resultsBox.innerHTML = html;
+                            resultsBox.style.display = 'block';
+                        } else {
+                            resultsBox.style.display = 'none';
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Suggestions Error:", err);
+                    });
+            }, 300);
+        });
+
+        // คลิกข้างนอกกล่องแล้วปิด Dropdown
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !resultsBox.contains(e.target)) {
+                resultsBox.style.display = 'none';
+            }
+        });
+    }
 </script>
 
 <?php require_once '../includes/footer.php'; ?>
