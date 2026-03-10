@@ -268,19 +268,7 @@ $products = $stmt->fetchAll();
         .hero-center h1 { font-size: 2.2rem; }
         .main-layout { grid-template-columns: 1fr !important; }
         .sidebar-sticky { display: none; }
-        /* 🛠️ บังคับกู้คืน Footer */
-footer, .footer, #footer {
-    display: block !important;
-    position: relative !important;
-    width: 100% !important;
-    clear: both !important;
-    margin-top: 60px !important;
-    z-index: 9999 !important;
-    background: var(--solid-card) !important;
-    color: var(--solid-text) !important;
-    border-top: 1px solid var(--solid-border) !important;
-}
-    }
+
 
 </style>
 
