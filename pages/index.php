@@ -72,6 +72,7 @@ $stmt = $db->prepare($sql);
 $stmt->execute($params);
 $products = $stmt->fetchAll();
 ?>
+</main>
 
 <style>
     /* ============================================================
@@ -330,7 +331,7 @@ $products = $stmt->fetchAll();
             </div>
         </aside>
 
-        <main>
+        <section>
             <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px;">
                 <h2 style="font-size: 1.8rem; font-weight: 900; letter-spacing: -1px;">
                     <?php 
@@ -390,7 +391,7 @@ $products = $stmt->fetchAll();
                     <a href="index.php" class="btn btn-primary" style="padding: 12px 40px; border-radius: 12px;">กลับไปดูสินค้าทั้งหมด</a>
                 </div>
             <?php endif; ?>
-        </main>
+        </section>
     </div>
 </div>
 
