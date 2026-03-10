@@ -58,9 +58,17 @@ function loginWithRMS($username, $password){
 
     $response = iconv("TIS-620", "UTF-8//IGNORE", $response);
     if(strpos($response, "สถานการณ์") !== false){
-        return true;
+        // 🎯 ดึงชื่อจริงจาก HTML
+        $real_name = "นักศึกษา " . $username;
+        $clean_resp = strip_tags($response);
+        $clean_resp = str_replace('&nbsp;', ' ', $clean_resp);
+        
+        if (preg_match('/(นาย|นางสาว|นาง)\s*([ก-๙]+)\s+([ก-๙]+)/u', $clean_resp, $matches)) {
+            $real_name = $matches[1] . $matches[2] . " " . $matches[3]; 
+        }
+        return ['success' => true, 'fullname' => $real_name];
     }
-    return false;
+    return ['success' => false, 'fullname' => ''];
 }
 
 // 1. ตรวจสอบสถานะ: หากเข้าสู่ระบบอยู่แล้ว ให้เปลี่ยนหน้าไปยังหน้าแรกทันที
@@ -126,29 +134,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $login_success = true;
         } 
         // 🎯 ถ้ารหัสในระบบเราผิด หรือไม่มีบัญชี ให้วิ่งไปเจาะ RMS!
-        else if (loginWithRMS($login_input, $password)) {
-            $login_success = true;
+        else {
+            $rmsResult = loginWithRMS($login_input, $password);
+            if ($rmsResult['success']) {
+                $login_success = true;
+                $real_name = $rmsResult['fullname']; // ได้ชื่อจริงมาละ
 
-            // ถ้าล็อกอิน RMS ผ่าน แต่ยังไม่มีข้อมูลในระบบเรา (Auto-Register)
-            if (!$user) {
-                $student_email = is_numeric($login_input) ? $login_input . "@bncc.ac.th" : $login_input;
-                $hashed_pass = password_hash($password, PASSWORD_DEFAULT);
-                
-                $insert = $db->prepare("INSERT INTO users (student_id, email, password, fullname, role) VALUES (?, ?, ?, ?, 'buyer')");
-                $insert->execute([$login_input, $student_email, $hashed_pass, "นักศึกษา " . $login_input]);
-                
-                $user_id = $db->lastInsertId();
-                $stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
-                $stmt->execute([$user_id]);
-                $user = $stmt->fetch();
-            } else {
-                // ถ้ามีข้อมูลอยู่แล้ว แต่รหัสผ่านอาจจะเปลี่ยนใน RMS ก็อัปเดตให้ตรงกัน
-                $hashed_pass = password_hash($password, PASSWORD_DEFAULT);
-                $update = $db->prepare("UPDATE users SET password = ? WHERE id = ?");
-                $update->execute([$hashed_pass, $user['id']]);
+                if (!$user) {
+                    $student_email = is_numeric($login_input) ? $login_input . "@bncc.ac.th" : $login_input;
+                    $hashed_pass = password_hash($password, PASSWORD_DEFAULT);
+                    
+                    $insert = $db->prepare("INSERT INTO users (student_id, email, password, fullname, role) VALUES (?, ?, ?, ?, 'buyer')");
+                    $insert->execute([$login_input, $student_email, $hashed_pass, $real_name]);
+                    
+                    $user_id = $db->lastInsertId();
+                    $stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
+                    $stmt->execute([$user_id]);
+                    $user = $stmt->fetch();
+                } else {
+                    // ถ้ามีข้อมูลอยู่แล้ว ให้อัปเดตรหัสผ่านและ "ชื่อจริง" ให้เป็นปัจจุบันเสมอ!
+                    $hashed_pass = password_hash($password, PASSWORD_DEFAULT);
+                    $update = $db->prepare("UPDATE users SET password = ?, fullname = ? WHERE id = ?");
+                    $update->execute([$hashed_pass, $real_name, $user['id']]);
+                    $user['fullname'] = $real_name; // อัปเดตตัวแปรเพื่อส่งเข้า Session
+                }
             }
         }
-
         // ✅ สรุปผลการล็อกอิน (ผ่านแล้วเช็คต่อว่าโดนแบนไหม)
         if ($login_success) {
             if (isset($user['is_banned']) && $user['is_banned'] == 1) {
