@@ -433,51 +433,18 @@ footer, .footer, #footer {
                 return;
             }
 
-            <script>
-    /**
-     * 🚀 Intersection Observer (สำหรับการ์ดเด้งขึ้นมาทีละอันแบบมีคิว)
-     */
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry, index) => {
-            if (entry.isIntersecting) {
-                setTimeout(() => {
-                    entry.target.classList.add('show');
-                }, index * 50); 
-            }
-        });
-    }, { threshold: 0.1 });
-
-    document.querySelectorAll('.product-box').forEach(box => observer.observe(box));
-
-    /**
-     * 🎯 🛠️ JavaScript สำหรับระบบ Search Auto-Complete
-     */
-    const searchInput = document.getElementById('main-search');
-    const resultsBox = document.getElementById('search-results');
-    let debounceTimer;
-
-    if (searchInput && resultsBox) {
-        searchInput.addEventListener('input', function() {
-            clearTimeout(debounceTimer);
-            const q = this.value.trim();
-
-            if (q.length < 2) {
-                resultsBox.style.display = 'none';
-                return;
-            }
-
             // หน่วงเวลา 300ms เพื่อไม่ให้ยิง API ถี่เกินไป (ประหยัด Resource เซิร์ฟเวอร์)
             debounceTimer = setTimeout(() => {
                 // เรียกไฟล์ API ที่เราสร้างไว้ในขั้นตอนก่อนหน้า
-                fetch(`../ajax/search_suggestions.php?q=${encodeURIComponent(q)}`)
+                fetch(`<?= BASE_URL ?>ajax/search_suggestions.php?q=${encodeURIComponent(q)}`)
                     .then(res => res.json())
                     .then(data => {
                         if (data && data.length > 0) {
                             let html = '';
                             data.forEach(item => {
                                 html += `
-                                    <a href="product_detail.php?id=${item.id}" class="search-item">
-                                        <img src="../assets/images/products/${item.image_url}" onerror="this.src='https://via.placeholder.com/50'">
+                                    <a href="<?= BASE_URL ?>pages/product_detail.php?id=${item.id}" class="search-item">
+                                        <img src="<?= BASE_URL ?>assets/images/products/${item.image_url}" onerror="this.src='https://via.placeholder.com/50'">
                                         <div class="info">
                                             <p class="suggest-title">${item.title}</p>
                                             <span class="suggest-price">฿${parseFloat(item.price).toLocaleString()}</span>
