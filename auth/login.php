@@ -12,6 +12,9 @@ require_once '../vendor/autoload.php';
 // ------------------------------------------------------------------
 // 🚀 [เพิ่มใหม่] ฟังก์ชันเจาะระบบ RMS (ป้องกันไฟล์ Cookie ตีกัน)
 // ------------------------------------------------------------------
+// ------------------------------------------------------------------
+// 🚀 ฟังก์ชันเจาะระบบ RMS พร้อมสแกนดึง "ชื่อ-นามสกุล" จริง (แก้บั๊กคำติดกัน)
+// ------------------------------------------------------------------
 function loginWithRMS($username, $password){
     $loginPage = "https://rms.bncc.ac.th/?p=login";
     $loginAction = "https://rms.bncc.ac.th/check.php";
@@ -56,21 +59,32 @@ function loginWithRMS($username, $password){
 
     if(file_exists($cookie)) unlink($cookie);
 
+    // แปลงภาษาไทย
     $response = iconv("TIS-620", "UTF-8//IGNORE", $response);
+    
     if(strpos($response, "สถานการณ์") !== false){
-        // 🎯 ดึงชื่อจริงจาก HTML
         $real_name = "นักศึกษา " . $username;
-        $clean_resp = strip_tags($response);
+        
+        // 🛠️ ทริคแก้คำติดกัน: เปลี่ยนแท็กตารางให้เป็นช่องว่างก่อน แล้วค่อยลบ HTML ทิ้ง
+        $clean_resp = str_replace(['<td', '<th', '</td', '</th', '<tr', '</tr'], ' <', $response);
+        $clean_resp = strip_tags($clean_resp);
         $clean_resp = str_replace('&nbsp;', ' ', $clean_resp);
         
+        // 🛠️ เตะคำขยะที่ชอบติดมาทิ้งไปให้หมด
+        $clean_resp = str_replace(['คำนำหน้าและชื่อ', 'ชื่อ-สกุล', 'รหัสนักศึกษา'], '', $clean_resp);
+        
+        // ยุบช่องว่างที่มันห่างเกินไปให้เหลือเคาะเดียว
+        $clean_resp = preg_replace('/\s+/u', ' ', $clean_resp);
+        
+        // จับคำว่า นาย/นางสาว/นาง ตามด้วยชื่อและนามสกุล
         if (preg_match('/(นาย|นางสาว|นาง)\s*([ก-๙]+)\s+([ก-๙]+)/u', $clean_resp, $matches)) {
             $real_name = $matches[1] . $matches[2] . " " . $matches[3]; 
         }
+
         return ['success' => true, 'fullname' => $real_name];
     }
     return ['success' => false, 'fullname' => ''];
 }
-
 // 1. ตรวจสอบสถานะ: หากเข้าสู่ระบบอยู่แล้ว ให้เปลี่ยนหน้าไปยังหน้าแรกทันที
 if (isLoggedIn()) {
     redirect('../pages/index.php');
