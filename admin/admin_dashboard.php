@@ -225,6 +225,18 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
     </div>
 
     <div class="action-grid stagger-in">
+        <div class="action-card" style="border-left: 6px solid var(--solid-warning);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h3 style="font-size: 1.3rem; margin-bottom: 5px; font-weight: 900;"><i class="fas fa-magnifying-glass-dollar text-warning"></i> จัดการโพสต์ WTB</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; font-weight: 600; margin: 0;">ตรวจสอบและอนุมัติประกาศตามหาของ</p>
+                </div>
+                <?php if($count_pending_wtb > 0): ?>
+                    <span class="noti-badge" style="background: var(--solid-danger); box-shadow: 0 4px 10px rgba(239,68,68,0.4);"><?= $count_pending_wtb ?></span>
+                <?php endif; ?>
+            </div>
+            <a href="approve_wtb.php" class="btn-action-solid" style="background: var(--solid-warning); color: #000; box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);">จัดการ WTB</a>
+        </div>
         <div class="action-card" style="border-left: 6px solid var(--solid-primary);">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
