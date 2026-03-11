@@ -516,6 +516,11 @@ if (isLoggedIn()) {
                         <i class="fas fa-house"></i> <span>หน้าแรก</span>
                     </a>
                 </li>
+                <li class="nav-item">
+    <a class="nav-link" href="<?= BASE_URL ?>/pages/wtb_board.php">
+        <i class="fas fa-bullhorn text-warning"></i> กระดานตามหาของ
+    </a>
+</li>
             <?php endif; ?>
 
             <?php if (isLoggedIn()): ?>

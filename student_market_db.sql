@@ -248,3 +248,13 @@ ALTER TABLE orders ADD COLUMN meetup_location VARCHAR(255) NULL;
 ALTER TABLE orders ADD COLUMN meetup_time VARCHAR(100) NULL;
 ALTER TABLE orders ADD COLUMN buyer_note TEXT NULL;
 ALTER TABLE products MODIFY COLUMN price DECIMAL(10,2) NOT NULL DEFAULT '0.00';
+CREATE TABLE IF NOT EXISTS wtb_posts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    budget DECIMAL(10,2) DEFAULT NULL,
+    status ENUM('active', 'closed') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
