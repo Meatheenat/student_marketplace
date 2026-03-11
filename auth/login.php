@@ -425,14 +425,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         left: 20px;
         top: 50%;
         transform: translateY(-50%);
-        color: #0f172a !important; /* 🎯 บังคับสีดำเข้ม */
+        color: #0f172a !important; 
         font-size: 1.2rem;
         transition: 0.3s;
         pointer-events: none;
         opacity: 1 !important;
     }
     .form-control-custom:focus + .input-icon {
-        color: #4f46e5 !important; /* 🎯 ตอนกดพิมพ์ให้ไอคอนเปลี่ยนเป็นสีม่วงหลักของเว็บ จะได้ดูมีลูกเล่น */
+        color: #4f46e5 !important; 
     }
 
     .pass-toggle-icon {
@@ -441,13 +441,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         top: 50%;
         transform: translateY(-50%);
         cursor: pointer;
-        color: #0f172a !important; /* 🎯 บังคับสีดำเข้ม */
+        color: #0f172a !important; 
         padding: 5px;
         transition: 0.2s;
         opacity: 1 !important;
     }
     .pass-toggle-icon:hover { 
-        color: #4f46e5 !important; /* 🎯 เอาเมาส์ชี้แล้วเปลี่ยนเป็นสีม่วง */
+        color: #4f46e5 !important; 
     }
 
     .forgot-link {
@@ -536,28 +536,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         transform: translateY(-2px);
     }
 
-    .register-link-box {
-        text-align: center;
-        margin-top: 40px;
-    }
-    .register-link-box p {
-        font-size: 0.9rem;
-        color: var(--text-muted);
-        margin: 0;
-        transition: color 0.5s ease;
-    }
-    .register-link-box a {
-        color: #818cf8;
-        font-weight: 800;
-        text-decoration: none;
-        margin-left: 5px;
-        transition: 0.3s;
-    }
-    .register-link-box a:hover {
-        color: var(--primary-color);
-        text-shadow: 0 0 10px rgba(129, 140, 248, 0.5);
-    }
-
     .alert {
         background: rgba(239, 68, 68, 0.1);
         border: 1px solid rgba(239, 68, 68, 0.2);
@@ -572,29 +550,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         background: rgba(239, 68, 68, 0.15);
         color: #fca5a5;
     }
+
     /* ============================================================
-       💡 GUIDE MODAL CSS (หน้าต่างคู่มือ)
+       💡 GUIDE MODAL CSS (🎯 อัปเกรดสีทึบแบบ 100% อ่านง่ายชัวร์)
        ============================================================ */
     .guide-modal-overlay {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px);
-        -webkit-backdrop-filter: blur(5px);
+        background: rgba(0, 0, 0, 0.75); /* ทำพื้นหลังให้มืดขึ้นอีกนิด */
+        backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
         display: flex; justify-content: center; align-items: center;
         z-index: 10000; opacity: 0; pointer-events: none; transition: 0.3s ease;
     }
     .guide-modal-overlay.active { opacity: 1; pointer-events: all; }
     
     .guide-modal-card {
-        background: var(--login-card-bg); border: 1px solid var(--login-card-border);
-        border-radius: 24px; width: 90%; max-width: 450px; padding: 30px;
-        box-shadow: var(--login-card-shadow); transform: translateY(30px) scale(0.95);
+        background: #ffffff !important; /* 🎯 บังคับสีขาวทึบสำหรับโหมดสว่าง */
+        border-radius: 24px; width: 90%; max-width: 450px; padding: 35px 30px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); transform: translateY(30px) scale(0.95);
         transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1); opacity: 0;
+    }
+    .dark-theme .guide-modal-card {
+        background: #1e293b !important; /* 🎯 บังคับสีกรมท่าเข้มทึบสำหรับโหมดมืด */
+        border: 1px solid #334155;
     }
     .guide-modal-overlay.active .guide-modal-card { transform: translateY(0) scale(1); opacity: 1; }
     
     .guide-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-    .guide-modal-header h3 { margin: 0; color: var(--text-main); font-size: 1.4rem; font-weight: 800; }
-    .close-modal-btn { background: none; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer; transition: 0.3s; }
+    .guide-modal-header h3 { margin: 0; color: #0f172a; font-size: 1.4rem; font-weight: 800; }
+    .dark-theme .guide-modal-header h3 { color: #f8fafc; } /* สีหัวข้อโหมดมืด */
+    .close-modal-btn { background: none; border: none; font-size: 1.5rem; color: #94a3b8; cursor: pointer; transition: 0.3s; }
     .close-modal-btn:hover { color: #ef4444; transform: scale(1.1); }
     
     .guide-step { display: flex; gap: 15px; margin-bottom: 20px; align-items: flex-start; }
@@ -602,8 +586,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     .step-icon { width: 45px; height: 45px; border-radius: 14px; background: rgba(99, 102, 241, 0.1); color: #6366f1; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; flex-shrink: 0; }
     .dark-theme .step-icon { background: rgba(99, 102, 241, 0.2); color: #818cf8; }
     
-    .step-text h4 { margin: 0 0 5px 0; color: var(--text-main); font-size: 0.95rem; font-weight: 800; }
-    .step-text p { margin: 0; color: var(--text-muted); font-size: 0.85rem; line-height: 1.6; }
+    .step-text h4 { margin: 0 0 5px 0; color: #0f172a; font-size: 0.95rem; font-weight: 800; }
+    .dark-theme .step-text h4 { color: #f8fafc; } /* สีข้อความหลักโหมดมืด */
+    .step-text p { margin: 0; color: #475569; font-size: 0.85rem; line-height: 1.6; }
+    .dark-theme .step-text p { color: #94a3b8; } /* สีข้อความรองโหมดมืด */
 </style>
 
 <div class="login-master-wrapper">
@@ -625,9 +611,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <?php echo displayFlashMessage(); ?>
 
-        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer>
-     
-        </script>
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 
         <form action="login.php" method="POST">
             <div class="form-group">
@@ -671,7 +655,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ใช้งานผ่านบัญชีวิทยาลัย (@bncc.ac.th)
         </a>
 
-    <div id="loginGuideModal" class="guide-modal-overlay">
+    </div>
+</div>
+
+<div id="loginGuideModal" class="guide-modal-overlay">
     <div class="guide-modal-card">
         <div class="guide-modal-header">
             <h3>💡 คู่มือการเข้าสู่ระบบ</h3>
@@ -695,14 +682,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             </div>
 
-            <div class="guide-step">
-                <div class="step-icon"><i class="fas fa-user-plus"></i></div>
-                <div class="step-text">
-                    <h4>3. สำหรับบุคคลภายนอก/ครูอาจารย์</h4>
-                    <p>หากไม่มีรหัส RMS ให้กดปุ่ม <b>"สมัครใช้งานฟรีที่นี่"</b> ด้านล่างสุด เพื่อสร้างบัญชีใหม่ด้วยตนเอง</p>
-                </div>
-            </div>
-
         </div>
     </div>
 </div>
@@ -717,7 +696,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         this.classList.toggle('fa-eye-slash');
         this.classList.toggle('fa-eye');
         
-        // 🎯 บังคับให้ไอคอนตาเป็นสีดำเข้มเสมอ ไม่ว่าจะเปิดหรือปิด
         this.style.color = '#0f172a'; 
         
         this.animate([
@@ -748,13 +726,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }, 500);
     };
 
-    // 🎯 เปลี่ยนธีมก็ยังบังคับให้เป็นสีดำเข้ม
     document.getElementById('theme-toggle')?.addEventListener('click', () => {
         setTimeout(() => {
             togglePass.style.color = '#0f172a';
         }, 100);
     });
-           // 💡 ระบบเปิด-ปิด หน้าต่างคู่มือ
+
+    // 💡 ระบบเปิด-ปิด หน้าต่างคู่มือ
     const openGuideBtn = document.getElementById('openGuideBtn');
     const closeGuideBtn = document.getElementById('closeGuideBtn');
     const guideModal = document.getElementById('loginGuideModal');
