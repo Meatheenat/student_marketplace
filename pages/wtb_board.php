@@ -373,7 +373,7 @@ $posts = $stmt->fetchAll();
             <div class="wtb-empty-state">
                 <div class="mb-4"><i class="fas fa-search fa-5x text-muted opacity-25"></i></div>
                 <h2 class="text-muted fw-bold">ยังไม่มีประกาศตามหาในขณะนี้</h2>
-                <p class="text-muted">มึงอยากได้อะไรเป็นคนแรกไหม? ลองสร้างประกาศดูสิ!</p>
+                <p class="text-muted">อยากได้อะไรเป็นเป็นพิเศษไหม? ลองสร้างประกาศดูสิ!</p>
             </div>
         <?php endif; ?>
     </div>
