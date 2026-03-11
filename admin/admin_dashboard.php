@@ -191,35 +191,31 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
             <div class="stat-icon" style="background: rgba(99, 102, 241, 0.15); color: var(--solid-primary); border: 2px solid var(--solid-primary);"><i class="fas fa-users"></i></div>
             <div>
                 <div style="font-size: 2rem; font-weight: 900; line-height: 1;"><?= $count_users ?></div>
-                <div style="color: var(--text-muted); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-top: 5px;">สมาชิกทั้งหมด</div>
+                <div style="color: var(--text-muted); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-top: 5px;">สมาชิก</div>
             </div>
         </div>
+
         <div class="stat-card">
             <div class="stat-icon" style="background: rgba(16, 185, 129, 0.15); color: var(--solid-success); border: 2px solid var(--solid-success);"><i class="fas fa-store"></i></div>
             <div>
                 <div style="font-size: 2rem; font-weight: 900; line-height: 1;"><?= $count_shops ?></div>
-                <div style="color: var(--text-muted); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-top: 5px;">ร้านค้าที่เปิดอยู่</div>
+                <div style="color: var(--text-muted); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-top: 5px;">ร้านค้า</div>
             </div>
         </div>
+
         <div class="stat-card">
-            <div class="stat-icon" style="background: rgba(245, 158, 11, 0.15); color: var(--solid-warning); border: 2px solid var(--solid-warning);"><i class="fas fa-box"></i></div>
-            <div>
-                <div style="font-size: 2rem; font-weight: 900; line-height: 1;"><?= $count_products ?></div>
-                <div style="color: var(--text-muted); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-top: 5px;">สินค้า (ขายอยู่)</div>
-            </div>
-            <div class="stat-card">
             <div class="stat-icon" style="background: rgba(245, 158, 11, 0.15); color: var(--solid-warning); border: 2px solid var(--solid-warning);"><i class="fas fa-bullhorn"></i></div>
             <div>
-                <div style="font-size: 2rem; font-weight: 900; line-height: 1;"><?= $count_pending_wtb ?></div>
+                <div style="font-size: 2rem; font-weight: 900; line-height: 1; color: var(--solid-warning);"><?= $count_pending_wtb ?></div>
                 <div style="color: var(--text-muted); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-top: 5px;">WTB รออนุมัติ</div>
             </div>
         </div>
-        </div>
+
         <div class="stat-card" style="border-color: var(--solid-danger);">
             <div class="stat-icon" style="background: rgba(239, 68, 68, 0.15); color: var(--solid-danger); border: 2px solid var(--solid-danger);"><i class="fas fa-trash-alt"></i></div>
             <div>
                 <div style="font-size: 2rem; font-weight: 900; line-height: 1; color: var(--solid-danger);"><?= $count_trashed_products + $count_trashed_comments ?></div>
-                <div style="color: var(--text-muted); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-top: 5px;">ไฟล์ในถังขยะ</div>
+                <div style="color: var(--text-muted); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-top: 5px;">ถังขยะ</div>
             </div>
         </div>
     </div>
