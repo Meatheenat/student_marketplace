@@ -12,6 +12,9 @@ require_once '../vendor/autoload.php';
 // ------------------------------------------------------------------
 // 🚀 [เพิ่มใหม่] ฟังก์ชันเจาะระบบ RMS (ป้องกันไฟล์ Cookie ตีกัน)
 // ------------------------------------------------------------------
+// ------------------------------------------------------------------
+// 🚀 ฟังก์ชันเจาะระบบ RMS พร้อมดึง ชื่อ, สาขา, ห้องเรียน (เวอร์ชันแก้คำตามภาพเว็บเป๊ะๆ)
+// ------------------------------------------------------------------
 function loginWithRMS($username, $password){
     $loginPage = "https://rms.bncc.ac.th/?p=login";
     $loginAction = "https://rms.bncc.ac.th/check.php";
@@ -75,14 +78,23 @@ function loginWithRMS($username, $password){
             $real_name = $matches[1] . $matches[2] . " " . $matches[3]; 
         }
 
-        // 🎯 2. ดึงสาขาวิชา (ดักคำว่า สาขาวิชา, แผนกวิชา, สาขางาน)
-        if (preg_match('/(สาขาวิชา|แผนกวิชา|สาขางาน)\s*([ก-๙a-zA-Z\s]+?)(?=\s|ระดับ|ชั้น|กลุ่ม|$)/u', $clean_resp, $match_dept)) {
-            $department = trim($match_dept[2]);
-        }
-
-        // 🎯 3. ดึงห้องเรียน (ดักคำว่า ระดับชั้น, ชั้นปี, กลุ่มการเรียน)
-        if (preg_match('/(ระดับชั้น|ชั้นปี|กลุ่มการเรียน|ชั้นเรียน)\s*([ก-๙a-zA-Z0-9.\/]+)/u', $clean_resp, $match_class)) {
-            $class_room = trim($match_class[2]);
+        // 🎯 2. ดึงสาขาและห้องเรียน จากคำว่า "ชื่อกลุ่ม :"
+        // ดักโครงสร้าง: เทคโนโลยีสารสนเทศ เทคโนโลยีสารสนเทศ/1 ปวส.2 | 2567 (สทส.2/1 )
+        if (preg_match('/ชื่อกลุ่ม\s*:\s*([^\(]+)\((.*?)\)/u', $clean_resp, $group_matches)) {
+            $group_info = trim($group_matches[1]); // เช่น "เทคโนโลยีสารสนเทศ เทคโนโลยีสารสนเทศ/1 ปวส.2 | 2567 "
+            $class_code = trim($group_matches[2]); // เช่น "สทส.2/1"
+            
+            // สกัด "ปวช" หรือ "ปวส" มาต่อกับรหัสกลุ่ม
+            if (preg_match('/(ปว[ชส]\.\d+)/u', $group_info, $level_match)) {
+                $class_room = $level_match[1] . ' (' . $class_code . ')'; // ผลลัพธ์: ปวส.2 (สทส.2/1)
+            } else {
+                $class_room = $class_code;
+            }
+            
+            // สกัดสาขาวิชา (เอาข้อความก่อนหน้า ปวช/ปวส แล้วตัดเอาแค่คำแรก)
+            $dept_str = preg_replace('/(ปว[ชส]\.\d+).*$/u', '', $group_info);
+            $dept_parts = explode(' ', trim($dept_str));
+            $department = $dept_parts[0]; // ผลลัพธ์: เทคโนโลยีสารสนเทศ
         }
 
         return [
