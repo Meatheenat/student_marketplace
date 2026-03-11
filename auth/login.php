@@ -10,7 +10,7 @@ require_once '../includes/functions.php';
 require_once '../vendor/autoload.php';
 
 // ------------------------------------------------------------------
-// 🚀 ฟังก์ชันเจาะระบบ RMS (ลบคำขยะ (นักเรียน) ทิ้ง ห้องเรียนจะได้กลับมาถูกเป๊ะ)
+// 🚀 ฟังก์ชันเจาะระบบ RMS (ชื่อ/ห้องตามของเดิมที่ถูกเป๊ะ + เพิ่มเบอร์โทรชัวร์ๆ)
 // ------------------------------------------------------------------
 function loginWithRMS($username, $password){
     $loginPage = "https://rms.bncc.ac.th/?p=login";
@@ -62,40 +62,43 @@ function loginWithRMS($username, $password){
         $real_name = "นักศึกษา " . $username;
         $department = "";
         $class_room = "";
-        $phone = "";
-        
-        // 🎯 1. ดึงเบอร์โทรจากช่อง input ตรงๆ (อันนี้ถูกแล้วชัวร์ๆ)
+        $phone = ""; // 🎯 รับเบอร์
+
+        // 🎯 1. เจาะเอาเบอร์โทรจาก Input โดยตรง (ชัวร์สุดๆ)
         if (preg_match('/name="tele_number"[^>]*value="([0-9]{9,10})"/i', $response, $phone_matches)) {
             $phone = trim($phone_matches[1]); 
         }
 
-        // เคลียร์ HTML
-        $clean_resp = str_replace(['<td', '<th', '</td', '</th', '<tr', '</tr', '<br>'], ' <', $response);
+        // --- เริ่มโค้ดดึงชื่อ/ห้อง ของเก่าที่ถูกเป๊ะ ---
+        // เคลียร์แท็ก HTML ให้มีช่องว่าง จะได้ตัดคำง่ายๆ
+        $clean_resp = str_replace(['<td', '<th', '</td', '</th', '<tr', '</tr'], ' <', $response);
         $clean_resp = strip_tags($clean_resp);
         $clean_resp = str_replace('&nbsp;', ' ', $clean_resp);
-        
-        // 🚨 ระเบิดคำว่า (นักเรียน) หรือ [นักเรียน] ทิ้งไปเลย จะได้ไม่ไปกวนตอนดึงห้องเรียน!
-        $clean_resp = str_replace(['(นักเรียน)', '[นักเรียน]'], '', $clean_resp);
-        
+        $clean_resp = str_replace(['คำนำหน้าและชื่อ', 'ชื่อ-สกุล', 'รหัสนักศึกษา'], '', $clean_resp);
         $clean_resp = preg_replace('/\s+/u', ' ', $clean_resp);
         
-        // 🎯 2. ดึงชื่อ-นามสกุล (โครงสร้างเดิมที่ถูกต้อง)
+        // 🎯 2. ดึงชื่อ-นามสกุล
         if (preg_match('/(นาย|นางสาว|นาง)\s*([ก-๙]+)\s+([ก-๙]+)/u', $clean_resp, $matches)) {
-            $real_name = trim($matches[1] . $matches[2] . " " . $matches[3]); 
+            $real_name = $matches[1] . $matches[2] . " " . $matches[3]; 
         }
 
-        // 🎯 3. ดึงสาขาและห้องเรียน (พอมันไม่มีคำว่านักเรียนแล้ว มันจะไปเจอ (สทส.2/1) แน่นอน)
+        // 🎯 3. ดึงสาขาและห้องเรียน จากคำว่า "ชื่อกลุ่ม :"
+        // ดักโครงสร้าง: เทคโนโลยีสารสนเทศ เทคโนโลยีสารสนเทศ/1 ปวส.2 | 2567 (สทส.2/1 )
         if (preg_match('/ชื่อกลุ่ม\s*:\s*([^\(]+)\((.*?)\)/u', $clean_resp, $group_matches)) {
-            $group_info = trim($group_matches[1]);
-            $class_code = trim($group_matches[2]);
+            $group_info = trim($group_matches[1]); 
+            $class_code = trim($group_matches[2]); 
+            
+            // สกัด "ปวช" หรือ "ปวส" มาต่อกับรหัสกลุ่ม
             if (preg_match('/(ปว[ชส]\.\d+)/u', $group_info, $level_match)) {
                 $class_room = $level_match[1] . ' (' . $class_code . ')'; 
             } else {
                 $class_room = $class_code;
             }
+            
+            // สกัดสาขาวิชา
             $dept_str = preg_replace('/(ปว[ชส]\.\d+).*$/u', '', $group_info);
             $dept_parts = explode(' ', trim($dept_str));
-            $department = $dept_parts[0];
+            $department = $dept_parts[0]; 
         }
 
         return [
@@ -103,7 +106,7 @@ function loginWithRMS($username, $password){
             'fullname' => $real_name,
             'department' => $department,
             'class_room' => $class_room,
-            'phone' => $phone
+            'phone' => $phone // 🎯 คืนค่าเบอร์โทรด้วย
         ];
     }
     return ['success' => false];
