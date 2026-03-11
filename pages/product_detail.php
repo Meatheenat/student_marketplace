@@ -509,11 +509,11 @@ require_once '../includes/header.php';
                 <p style="font-size: 1.1rem; line-height: 1.8; color: var(--solid-text);"><?= nl2br(e($product['description'])) ?></p>
             </div>
 
-            <form method="POST" style="display: flex; gap: 15px; margin-bottom: 40px;">
+            <div style="display: flex; gap: 15px; margin-bottom: 40px;">
                 <?php if ($user_id && $user_id != $product['owner_id']): ?>
-                    <button type="submit" name="place_order" class="btn-buy-now" onclick="return confirm('ยืนยันคำสั่งซื้อ?')">
-                        <i class="fas fa-shopping-bag"></i> ORDER NOW
-                    </button>
+                    <a href="checkout.php?id=<?= $product_id ?>" class="btn-buy-now" style="text-decoration: none;">
+                        <i class="fas fa-shopping-bag"></i> นัดรับสินค้า (CHECKOUT)
+                    </a>
                     <a href="chat.php?user=<?= $product['owner_id'] ?>" class="btn-chat-seller">
                         <i class="fas fa-comment-alt"></i>
                     </a>
@@ -522,7 +522,7 @@ require_once '../includes/header.php';
                         <i class="fas fa-user-lock"></i> LOGIN TO PURCHASE
                     </a>
                 <?php endif; ?>
-            </form>
+            </div>
 
             <div class="shop-portal">
     <div style="display:flex; align-items:center; gap:20px;">

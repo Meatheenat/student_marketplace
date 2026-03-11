@@ -244,3 +244,5 @@ CREATE TABLE ban_appeals (
 );
 -- เปลี่ยนโครงสร้างคอลัมน์ status ให้รองรับค่าที่ส่งมาจาก PHP
 ALTER TABLE shops MODIFY COLUMN status ENUM('pending', 'approved', 'blocked') DEFAULT 'pending';
+ALTER TABLE orders ADD COLUMN meetup_location VARCHAR(255) NULL;
+ALTER TABLE orders ADD COLUMN meetup_time VARCHAR(100) NULL;
