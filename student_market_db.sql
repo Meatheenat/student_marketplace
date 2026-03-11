@@ -258,3 +258,7 @@ CREATE TABLE IF NOT EXISTS wtb_posts (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+ALTER TABLE wtb_posts 
+ADD COLUMN category_id INT DEFAULT NULL AFTER user_id,
+ADD COLUMN image_url VARCHAR(255) DEFAULT NULL AFTER description,
+ADD COLUMN expected_condition VARCHAR(50) DEFAULT 'any' AFTER image_url;
