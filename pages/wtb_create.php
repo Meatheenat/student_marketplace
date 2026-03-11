@@ -131,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         align-items: center;
         justify-content: center;
         width: 100%;
-        max-width: 200px; 
+        max-width: 300px; 
         aspect-ratio: 1;
         margin: 0 auto; 
         border: 3px dashed var(--border-color);
