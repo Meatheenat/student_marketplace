@@ -187,7 +187,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         padding: 20px;
         border-radius: 18px;
         background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-        color: #ffffff;
+        color: #000000;
         font-weight: 800;
         font-size: 1.15rem;
         border: none;
