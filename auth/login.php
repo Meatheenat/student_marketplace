@@ -12,9 +12,6 @@ require_once '../vendor/autoload.php';
 // ------------------------------------------------------------------
 // 🚀 [เพิ่มใหม่] ฟังก์ชันเจาะระบบ RMS (ป้องกันไฟล์ Cookie ตีกัน)
 // ------------------------------------------------------------------
-// ------------------------------------------------------------------
-// 🚀 ฟังก์ชันเจาะระบบ RMS พร้อมสแกนดึง "ชื่อ-นามสกุล" จริง (แก้บั๊กคำติดกัน)
-// ------------------------------------------------------------------
 function loginWithRMS($username, $password){
     $loginPage = "https://rms.bncc.ac.th/?p=login";
     $loginAction = "https://rms.bncc.ac.th/check.php";
@@ -59,31 +56,43 @@ function loginWithRMS($username, $password){
 
     if(file_exists($cookie)) unlink($cookie);
 
-    // แปลงภาษาไทย
     $response = iconv("TIS-620", "UTF-8//IGNORE", $response);
     
     if(strpos($response, "สถานการณ์") !== false){
         $real_name = "นักศึกษา " . $username;
+        $department = "";
+        $class_room = "";
         
-        // 🛠️ ทริคแก้คำติดกัน: เปลี่ยนแท็กตารางให้เป็นช่องว่างก่อน แล้วค่อยลบ HTML ทิ้ง
+        // เคลียร์แท็ก HTML ให้มีช่องว่าง จะได้ตัดคำง่ายๆ
         $clean_resp = str_replace(['<td', '<th', '</td', '</th', '<tr', '</tr'], ' <', $response);
         $clean_resp = strip_tags($clean_resp);
         $clean_resp = str_replace('&nbsp;', ' ', $clean_resp);
-        
-        // 🛠️ เตะคำขยะที่ชอบติดมาทิ้งไปให้หมด
         $clean_resp = str_replace(['คำนำหน้าและชื่อ', 'ชื่อ-สกุล', 'รหัสนักศึกษา'], '', $clean_resp);
-        
-        // ยุบช่องว่างที่มันห่างเกินไปให้เหลือเคาะเดียว
         $clean_resp = preg_replace('/\s+/u', ' ', $clean_resp);
         
-        // จับคำว่า นาย/นางสาว/นาง ตามด้วยชื่อและนามสกุล
+        // 🎯 1. ดึงชื่อ-นามสกุล
         if (preg_match('/(นาย|นางสาว|นาง)\s*([ก-๙]+)\s+([ก-๙]+)/u', $clean_resp, $matches)) {
             $real_name = $matches[1] . $matches[2] . " " . $matches[3]; 
         }
 
-        return ['success' => true, 'fullname' => $real_name];
+        // 🎯 2. ดึงสาขาวิชา (ดักคำว่า สาขาวิชา, แผนกวิชา, สาขางาน)
+        if (preg_match('/(สาขาวิชา|แผนกวิชา|สาขางาน)\s*([ก-๙a-zA-Z\s]+?)(?=\s|ระดับ|ชั้น|กลุ่ม|$)/u', $clean_resp, $match_dept)) {
+            $department = trim($match_dept[2]);
+        }
+
+        // 🎯 3. ดึงห้องเรียน (ดักคำว่า ระดับชั้น, ชั้นปี, กลุ่มการเรียน)
+        if (preg_match('/(ระดับชั้น|ชั้นปี|กลุ่มการเรียน|ชั้นเรียน)\s*([ก-๙a-zA-Z0-9.\/]+)/u', $clean_resp, $match_class)) {
+            $class_room = trim($match_class[2]);
+        }
+
+        return [
+            'success' => true, 
+            'fullname' => $real_name,
+            'department' => $department,
+            'class_room' => $class_room
+        ];
     }
-    return ['success' => false, 'fullname' => ''];
+    return ['success' => false];
 }
 // 1. ตรวจสอบสถานะ: หากเข้าสู่ระบบอยู่แล้ว ให้เปลี่ยนหน้าไปยังหน้าแรกทันที
 if (isLoggedIn()) {
@@ -156,34 +165,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $login_success = true;
         } 
         // 🎯 ถ้าไม่มีในระบบเรา ให้เอา $rms_username (ที่ตัด @ แล้ว) ไปเจาะ RMS!
+        // 🎯 ถ้าไม่มีในระบบเรา ให้เอา $rms_username (ที่ตัด @ แล้ว) ไปเจาะ RMS!
         else {
             $rmsResult = loginWithRMS($rms_username, $password);
             
             if ($rmsResult['success']) {
                 $login_success = true;
-                $real_name = $rmsResult['fullname']; // ได้ชื่อจริงมา
+                $real_name = $rmsResult['fullname']; 
+                $department = $rmsResult['department']; // ดึงสาขามา
+                $class_room = $rmsResult['class_room']; // ดึงห้องมา
 
                 if (!$user) {
-                    // 🔥 สร้างไอดีใหม่ (Auto-Register) แบบเพอร์เฟกต์
-                    // รหัสนักศึกษา = $rms_username (ตัวเลขล้วนๆ)
-                    // อีเมล = $rms_username ต่อด้วย @bncc.ac.th
+                    // 🔥 สร้างไอดีใหม่ พร้อมยัด สาขา และ ห้อง ลงไปเลย
                     $student_id = $rms_username; 
                     $student_email = $rms_username . "@bncc.ac.th";
                     $hashed_pass = password_hash($password, PASSWORD_DEFAULT);
                     
-                    $insert = $db->prepare("INSERT INTO users (student_id, email, password, fullname, role) VALUES (?, ?, ?, ?, 'buyer')");
-                    $insert->execute([$student_id, $student_email, $hashed_pass, $real_name]);
+                    $insert = $db->prepare("INSERT INTO users (student_id, email, password, fullname, department, class_room, role) VALUES (?, ?, ?, ?, ?, ?, 'buyer')");
+                    $insert->execute([$student_id, $student_email, $hashed_pass, $real_name, $department, $class_room]);
                     
                     $user_id = $db->lastInsertId();
                     $stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
                     $stmt->execute([$user_id]);
                     $user = $stmt->fetch();
                 } else {
-                    // มีข้อมูลอยู่แล้ว อัปเดตชื่อกับรหัสผ่านให้เป็นปัจจุบัน
+                    // มีข้อมูลอยู่แล้ว อัปเดตข้อมูลให้สดใหม่เสมอ (เผื่อเด็กเลื่อนชั้น)
                     $hashed_pass = password_hash($password, PASSWORD_DEFAULT);
-                    $update = $db->prepare("UPDATE users SET password = ?, fullname = ? WHERE id = ?");
-                    $update->execute([$hashed_pass, $real_name, $user['id']]);
+                    $update = $db->prepare("UPDATE users SET password = ?, fullname = ?, department = ?, class_room = ? WHERE id = ?");
+                    $update->execute([$hashed_pass, $real_name, $department, $class_room, $user['id']]);
                     $user['fullname'] = $real_name;
+                    $user['department'] = $department;
+                    $user['class_room'] = $class_room;
                 }
             }
         }
