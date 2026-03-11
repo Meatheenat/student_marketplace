@@ -626,25 +626,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php echo displayFlashMessage(); ?>
 
         <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer>
-            // 💡 ระบบเปิด-ปิด หน้าต่างคู่มือ
-    const openGuideBtn = document.getElementById('openGuideBtn');
-    const closeGuideBtn = document.getElementById('closeGuideBtn');
-    const guideModal = document.getElementById('loginGuideModal');
-
-    openGuideBtn.addEventListener('click', () => {
-        guideModal.classList.add('active');
-    });
-
-    closeGuideBtn.addEventListener('click', () => {
-        guideModal.classList.remove('active');
-    });
-
-    // คลิกพื้นหลังสีดำเพื่อปิด
-    guideModal.addEventListener('click', (e) => {
-        if (e.target === guideModal) {
-            guideModal.classList.remove('active');
-        }
-    });
+     
         </script>
 
         <form action="login.php" method="POST">
@@ -771,6 +753,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         setTimeout(() => {
             togglePass.style.color = '#0f172a';
         }, 100);
+    });
+           // 💡 ระบบเปิด-ปิด หน้าต่างคู่มือ
+    const openGuideBtn = document.getElementById('openGuideBtn');
+    const closeGuideBtn = document.getElementById('closeGuideBtn');
+    const guideModal = document.getElementById('loginGuideModal');
+
+    openGuideBtn.addEventListener('click', () => {
+        guideModal.classList.add('active');
+    });
+
+    closeGuideBtn.addEventListener('click', () => {
+        guideModal.classList.remove('active');
+    });
+
+    // คลิกพื้นหลังสีดำเพื่อปิด
+    guideModal.addEventListener('click', (e) => {
+        if (e.target === guideModal) {
+            guideModal.classList.remove('active');
+        }
     });
 </script>
 
