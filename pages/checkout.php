@@ -13,8 +13,8 @@ if (!isLoggedIn()) {
 $product_id = $_GET['id'] ?? 0;
 $db = getDB();
 
-// ดึงข้อมูลสินค้า
-$stmt = $db->prepare("SELECT * FROM products WHERE id = ? AND status = 'available'");
+// 🎯 ดึงข้อมูลสินค้า (แก้ให้เช็คแค่ is_deleted = 0 ปลดล็อกให้กดซื้อได้เลย)
+$stmt = $db->prepare("SELECT * FROM products WHERE id = ? AND is_deleted = 0");
 $stmt->execute([$product_id]);
 $product = $stmt->fetch();
 
@@ -43,7 +43,7 @@ if ($product['seller_id'] == $_SESSION['user_id']) {
                 <div class="card-body p-4">
                     
                     <div class="d-flex align-items-center mb-4 pb-4" style="border-bottom: 2px dashed var(--border-color);">
-                        <img src="../assets/images/products/<?= htmlspecialchars($product['image']) ?>" alt="Product" style="width: 100px; height: 100px; object-fit: cover; border-radius: 15px;">
+                        <img src="../assets/images/products/<?= htmlspecialchars($product['image_url'] ?? $product['image']) ?>" alt="Product" style="width: 100px; height: 100px; object-fit: cover; border-radius: 15px;">
                         <div class="ms-4">
                             <h5 style="font-weight: 700; color: var(--text-main);"><?= htmlspecialchars($product['title']) ?></h5>
                             <p class="text-muted mb-1">ราคา: <span class="text-primary fw-bold">฿<?= number_format($product['price']) ?></span></p>
