@@ -250,7 +250,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="row gx-5">
                 <div class="col-md-5 mb-4 text-center">
                     <label class="wtb-label text-start">รูปภาพอ้างอิง <span class="opt-tag">ไม่บังคับ</span></label>
-                    <div style="position: relative; max-width: 200px; margin: 0 auto;">
+                    <div style="position: relative; max-width: 300px; margin: 0 auto;">
                         <button type="button" id="remove_img_btn" onclick="clearImage()">
                             <i class="fas fa-times"></i>
                         </button>
