@@ -10,7 +10,7 @@ require_once '../includes/functions.php';
 require_once '../vendor/autoload.php';
 
 // ------------------------------------------------------------------
-// 🚀 ฟังก์ชันเจาะระบบ RMS (ดูดเบอร์โทรจาก RAW HTML แม่นๆ 100%)
+// 🚀 ฟังก์ชันเจาะระบบ RMS (ลบคำขยะ (นักเรียน) ทิ้ง ห้องเรียนจะได้กลับมาถูกเป๊ะ)
 // ------------------------------------------------------------------
 function loginWithRMS($username, $password){
     $loginPage = "https://rms.bncc.ac.th/?p=login";
@@ -64,23 +64,27 @@ function loginWithRMS($username, $password){
         $class_room = "";
         $phone = "";
         
-        // 🎯 1. ดึงเบอร์โทรจาก RAW HTML โดยตรง (ล็อคเป้าช่อง name="tele_number")
+        // 🎯 1. ดึงเบอร์โทรจากช่อง input ตรงๆ (อันนี้ถูกแล้วชัวร์ๆ)
         if (preg_match('/name="tele_number"[^>]*value="([0-9]{9,10})"/i', $response, $phone_matches)) {
             $phone = trim($phone_matches[1]); 
         }
 
-        // เคลียร์ HTML เพื่อหาชื่อและสาขา
+        // เคลียร์ HTML
         $clean_resp = str_replace(['<td', '<th', '</td', '</th', '<tr', '</tr', '<br>'], ' <', $response);
         $clean_resp = strip_tags($clean_resp);
         $clean_resp = str_replace('&nbsp;', ' ', $clean_resp);
+        
+        // 🚨 ระเบิดคำว่า (นักเรียน) หรือ [นักเรียน] ทิ้งไปเลย จะได้ไม่ไปกวนตอนดึงห้องเรียน!
+        $clean_resp = str_replace(['(นักเรียน)', '[นักเรียน]'], '', $clean_resp);
+        
         $clean_resp = preg_replace('/\s+/u', ' ', $clean_resp);
         
-        // 🎯 2. ดึงชื่อ-นามสกุล
+        // 🎯 2. ดึงชื่อ-นามสกุล (โครงสร้างเดิมที่ถูกต้อง)
         if (preg_match('/(นาย|นางสาว|นาง)\s*([ก-๙]+)\s+([ก-๙]+)/u', $clean_resp, $matches)) {
             $real_name = trim($matches[1] . $matches[2] . " " . $matches[3]); 
         }
 
-        // 🎯 3. ดึงสาขาและห้องเรียน
+        // 🎯 3. ดึงสาขาและห้องเรียน (พอมันไม่มีคำว่านักเรียนแล้ว มันจะไปเจอ (สทส.2/1) แน่นอน)
         if (preg_match('/ชื่อกลุ่ม\s*:\s*([^\(]+)\((.*?)\)/u', $clean_resp, $group_matches)) {
             $group_info = trim($group_matches[1]);
             $class_code = trim($group_matches[2]);
