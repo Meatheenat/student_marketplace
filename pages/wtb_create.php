@@ -113,13 +113,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
     }
 
-    /* 🎯 Upload Area Redesigned */
+    /* 🎯 Upload Area Redesigned - จำกัดความกว้าง ไม่ให้รูปใหญ่บวมจอ */
     .wtb-upload-area {
         display: flex;
         align-items: center;
         justify-content: center;
         width: 100%;
+        max-width: 300px; /* บังคับความกว้างสูงสุดไว้ที่ 300px พอดีๆ */
         aspect-ratio: 1;
+        margin: 0 auto; /* จัดให้อยู่กึ่งกลาง */
         border: 3px dashed var(--border-color);
         border-radius: 24px;
         background: var(--bg-main);
@@ -147,11 +149,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         transform: translateY(-5px);
     }
 
-    /* 🎯 แก้ให้รูปไม่ล้น และอยู่ตรงกลางสวยๆ */
     #img_preview {
         width: 100%;
         height: 100%;
-        object-fit: contain; /* เปลี่ยนจาก cover เป็น contain รูปจะได้ไม่ล้น/โดนตัด */
+        object-fit: contain; 
         display: none;
         z-index: 2;
         border-radius: 20px;
@@ -160,8 +161,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     /* 🎯 ปุ่มกากบาทลบรูป */
     #remove_img_btn {
         position: absolute;
-        top: 15px;
-        right: 15px;
+        top: -10px;
+        right: -10px;
         width: 35px;
         height: 35px;
         background: #ef4444;
@@ -205,7 +206,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         box-shadow: 0 15px 35px rgba(99, 102, 241, 0.5);
     }
 
-    /* Tag requirement */
     .req-star { color: #ef4444; margin-left: 4px; }
     .opt-tag { font-size: 0.7rem; color: var(--text-muted); background: var(--bg-main); padding: 3px 8px; border-radius: 6px; margin-left: 8px; font-weight: 600; text-transform: none; }
 
@@ -230,9 +230,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <form action="wtb_create.php" method="POST" enctype="multipart/form-data">
             
             <div class="row gx-5">
-                <div class="col-md-5 mb-4">
-                    <label class="wtb-label">รูปภาพอ้างอิง <span class="opt-tag">ไม่บังคับ</span></label>
-                    <div style="position: relative;">
+                <div class="col-md-5 mb-4 text-center">
+                    <label class="wtb-label text-start">รูปภาพอ้างอิง <span class="opt-tag">ไม่บังคับ</span></label>
+                    <div style="position: relative; max-width: 300px; margin: 0 auto;">
                         <div id="remove_img_btn" onclick="clearImage()">
                             <i class="fas fa-times"></i>
                         </div>
@@ -316,7 +316,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 placeholder.style.display = 'none';
                 container.style.borderStyle = 'solid';
                 container.style.borderColor = '#6366f1';
-                removeBtn.style.display = 'flex'; // โชว์ปุ่มกากบาท
+                removeBtn.style.display = 'flex'; 
             }
             reader.readAsDataURL(input.files[0]);
         }
@@ -324,13 +324,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // 🎯 เคลียร์รูปทิ้งตอนกดกากบาท
     function clearImage() {
-        inputField.value = ''; // ลบค่าไฟล์ที่เลือกไว้
+        inputField.value = ''; 
         preview.src = '';
         preview.style.display = 'none';
-        placeholder.style.display = 'block'; // โชว์ไอคอนอัปโหลดเหมือนเดิม
+        placeholder.style.display = 'block'; 
         container.style.borderStyle = 'dashed';
         container.style.borderColor = 'var(--border-color)';
-        removeBtn.style.display = 'none'; // ซ่อนปุ่มกากบาท
+        removeBtn.style.display = 'none'; 
     }
 </script>
 
