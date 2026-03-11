@@ -26,7 +26,8 @@ $count_trashed_comments = $db->query("SELECT COUNT(*) FROM reviews WHERE is_dele
 
 $count_pending_reports = $db->query("SELECT COUNT(*) FROM reports WHERE status = 'pending'")->fetchColumn();
 $count_comment_reports = $db->query("SELECT COUNT(*) FROM reports WHERE target_type = 'comment' AND status = 'pending'")->fetchColumn();
-
+// 🎯 วางต่อท้ายจาก $count_comment_reports
+$count_pending_wtb = $db->query("SELECT COUNT(*) FROM wtb_posts WHERE status = 'pending'")->fetchColumn();
 // ดึงประวัติการทำงาน
 $log_stmt = $db->query("SELECT l.*, u.fullname as admin_name FROM admin_logs l JOIN users u ON l.admin_id = u.id ORDER BY l.created_at DESC LIMIT 10");
 $admin_logs = $log_stmt->fetchAll();
@@ -206,6 +207,13 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
                 <div style="font-size: 2rem; font-weight: 900; line-height: 1;"><?= $count_products ?></div>
                 <div style="color: var(--text-muted); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-top: 5px;">สินค้า (ขายอยู่)</div>
             </div>
+            <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(245, 158, 11, 0.15); color: var(--solid-warning); border: 2px solid var(--solid-warning);"><i class="fas fa-bullhorn"></i></div>
+            <div>
+                <div style="font-size: 2rem; font-weight: 900; line-height: 1;"><?= $count_pending_wtb ?></div>
+                <div style="color: var(--text-muted); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-top: 5px;">WTB รออนุมัติ</div>
+            </div>
+        </div>
         </div>
         <div class="stat-card" style="border-color: var(--solid-danger);">
             <div class="stat-icon" style="background: rgba(239, 68, 68, 0.15); color: var(--solid-danger); border: 2px solid var(--solid-danger);"><i class="fas fa-trash-alt"></i></div>
