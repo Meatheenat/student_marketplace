@@ -380,13 +380,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         left: 20px;
         top: 50%;
         transform: translateY(-50%);
-        color: var(--login-icon-color);
+        color: #ffffff !important; /* 🎯 บังคับสีขาวล้วน */
+        filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.4)); /* 🎯 ใส่เงาดำบางๆ ให้ไอคอนลอยเด่นชัดขึ้น */
         font-size: 1.2rem;
         transition: 0.3s;
         pointer-events: none;
+        opacity: 1 !important;
     }
     .form-control-custom:focus + .input-icon {
-        color: #818cf8;
+        color: #ffffff !important;
+        filter: drop-shadow(0px 0px 6px rgba(255,255,255,0.8)); /* 🎯 เรืองแสงตอนกดพิมพ์ */
     }
 
     .pass-toggle-icon {
@@ -395,11 +398,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         top: 50%;
         transform: translateY(-50%);
         cursor: pointer;
-        color: var(--login-icon-color);
+        color: #ffffff !important; /* 🎯 บังคับสีขาวล้วน */
+        filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.4)); /* 🎯 ใส่เงาให้มองเห็นชัดๆ */
         padding: 5px;
         transition: 0.2s;
+        opacity: 1 !important;
     }
-    .pass-toggle-icon:hover { color: var(--text-main); }
+    .pass-toggle-icon:hover { 
+        color: #ffffff !important; 
+        filter: drop-shadow(0px 0px 6px rgba(255,255,255,0.8)); 
+    }
 
     .forgot-link {
         color: var(--text-muted);
@@ -602,8 +610,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         this.classList.toggle('fa-eye-slash');
         this.classList.toggle('fa-eye');
         
-        const isDark = document.documentElement.classList.contains('dark-theme');
-        this.style.color = type === 'text' ? (isDark ? '#ffffff' : '#1e293b') : 'var(--login-icon-color)';
+        // 🎯 บังคับให้ไอคอนเป็นสีขาวเสมอ ไม่ว่าจะเปิดตาหรือปิดตา
+        this.style.color = '#ffffff'; 
         
         this.animate([
             { transform: 'translateY(-50%) scale(1)' },
@@ -633,16 +641,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }, 500);
     };
 
+    // 🎯 ถ้ามีการกดปุ่มเปลี่ยนธีมเว็บ ก็ยังบังคับให้ไอคอนตาเป็นสีขาวเหมือนเดิม
     document.getElementById('theme-toggle')?.addEventListener('click', () => {
-        const type = passwordField.getAttribute('type');
-        if(type === 'text') {
-            setTimeout(() => {
-                const isDark = document.documentElement.classList.contains('dark-theme');
-                togglePass.style.color = isDark ? '#ffffff' : '#1e293b';
-            }, 100);
-        } else {
-             togglePass.style.color = 'var(--login-icon-color)';
-        }
+        setTimeout(() => {
+            togglePass.style.color = '#ffffff';
+        }, 100);
     });
 </script>
 
