@@ -380,7 +380,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         left: 20px;
         top: 50%;
         transform: translateY(-50%);
-        color: #ffffff !important; /* 🎯 บังคับสีขาวล้วน */
+        color: #000000 !important; /* 🎯 บังคับสีขาวล้วน */
         filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.4)); /* 🎯 ใส่เงาดำบางๆ ให้ไอคอนลอยเด่นชัดขึ้น */
         font-size: 1.2rem;
         transition: 0.3s;
@@ -398,7 +398,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         top: 50%;
         transform: translateY(-50%);
         cursor: pointer;
-        color: #ffffff !important; /* 🎯 บังคับสีขาวล้วน */
+        color: #000000 !important; /* 🎯 บังคับสีขาวล้วน */
         filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.4)); /* 🎯 ใส่เงาให้มองเห็นชัดๆ */
         padding: 5px;
         transition: 0.2s;
@@ -611,7 +611,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         this.classList.toggle('fa-eye');
         
         // 🎯 บังคับให้ไอคอนเป็นสีขาวเสมอ ไม่ว่าจะเปิดตาหรือปิดตา
-        this.style.color = '#ffffff'; 
+        this.style.color = '#000000'; 
         
         this.animate([
             { transform: 'translateY(-50%) scale(1)' },
@@ -644,7 +644,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 🎯 ถ้ามีการกดปุ่มเปลี่ยนธีมเว็บ ก็ยังบังคับให้ไอคอนตาเป็นสีขาวเหมือนเดิม
     document.getElementById('theme-toggle')?.addEventListener('click', () => {
         setTimeout(() => {
-            togglePass.style.color = '#ffffff';
+            togglePass.style.color = '#000000';
         }, 100);
     });
 </script>
