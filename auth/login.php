@@ -375,21 +375,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         transform: translateY(-2px);
     }
 
-    .input-icon {
+   .input-icon {
         position: absolute;
         left: 20px;
         top: 50%;
         transform: translateY(-50%);
-        color: #000000 !important; /* 🎯 บังคับสีขาวล้วน */
-        filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.4)); /* 🎯 ใส่เงาดำบางๆ ให้ไอคอนลอยเด่นชัดขึ้น */
+        color: #0f172a !important; /* 🎯 บังคับสีดำเข้ม */
         font-size: 1.2rem;
         transition: 0.3s;
         pointer-events: none;
         opacity: 1 !important;
     }
     .form-control-custom:focus + .input-icon {
-        color: #ffffff !important;
-        filter: drop-shadow(0px 0px 6px rgba(255,255,255,0.8)); /* 🎯 เรืองแสงตอนกดพิมพ์ */
+        color: #4f46e5 !important; /* 🎯 ตอนกดพิมพ์ให้ไอคอนเปลี่ยนเป็นสีม่วงหลักของเว็บ จะได้ดูมีลูกเล่น */
     }
 
     .pass-toggle-icon {
@@ -398,15 +396,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         top: 50%;
         transform: translateY(-50%);
         cursor: pointer;
-        color: #000000 !important; /* 🎯 บังคับสีขาวล้วน */
-        filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.4)); /* 🎯 ใส่เงาให้มองเห็นชัดๆ */
+        color: #0f172a !important; /* 🎯 บังคับสีดำเข้ม */
         padding: 5px;
         transition: 0.2s;
         opacity: 1 !important;
     }
     .pass-toggle-icon:hover { 
-        color: #ffffff !important; 
-        filter: drop-shadow(0px 0px 6px rgba(255,255,255,0.8)); 
+        color: #4f46e5 !important; /* 🎯 เอาเมาส์ชี้แล้วเปลี่ยนเป็นสีม่วง */
     }
 
     .forgot-link {
@@ -610,8 +606,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         this.classList.toggle('fa-eye-slash');
         this.classList.toggle('fa-eye');
         
-        // 🎯 บังคับให้ไอคอนเป็นสีขาวเสมอ ไม่ว่าจะเปิดตาหรือปิดตา
-        this.style.color = '#000000'; 
+        // 🎯 บังคับให้ไอคอนตาเป็นสีดำเข้มเสมอ ไม่ว่าจะเปิดหรือปิด
+        this.style.color = '#0f172a'; 
         
         this.animate([
             { transform: 'translateY(-50%) scale(1)' },
@@ -641,10 +637,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }, 500);
     };
 
-    // 🎯 ถ้ามีการกดปุ่มเปลี่ยนธีมเว็บ ก็ยังบังคับให้ไอคอนตาเป็นสีขาวเหมือนเดิม
+    // 🎯 เปลี่ยนธีมก็ยังบังคับให้เป็นสีดำเข้ม
     document.getElementById('theme-toggle')?.addEventListener('click', () => {
         setTimeout(() => {
-            togglePass.style.color = '#000000';
+            togglePass.style.color = '#0f172a';
         }, 100);
     });
 </script>
