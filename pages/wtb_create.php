@@ -113,9 +113,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
     }
 
-    /* Upload Area */
+    /* 🎯 Upload Area Redesigned */
     .wtb-upload-area {
-        display: block;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         width: 100%;
         aspect-ratio: 1;
         border: 3px dashed var(--border-color);
@@ -134,24 +136,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     .wtb-upload-placeholder {
         position: absolute;
-        top: 50%; left: 50%;
-        transform: translate(-50%, -50%);
         text-align: center;
         color: var(--text-muted);
         transition: 0.3s;
+        z-index: 1;
     }
 
     .wtb-upload-area:hover .wtb-upload-placeholder {
         color: #6366f1;
-        transform: translate(-50%, -55%);
+        transform: translateY(-5px);
     }
 
+    /* 🎯 แก้ให้รูปไม่ล้น และอยู่ตรงกลางสวยๆ */
     #img_preview {
         width: 100%;
         height: 100%;
-        object-fit: cover;
+        object-fit: contain; /* เปลี่ยนจาก cover เป็น contain รูปจะได้ไม่ล้น/โดนตัด */
         display: none;
-        transition: 0.3s;
+        z-index: 2;
+        border-radius: 20px;
+    }
+
+    /* 🎯 ปุ่มกากบาทลบรูป */
+    #remove_img_btn {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        width: 35px;
+        height: 35px;
+        background: #ef4444;
+        color: white;
+        border-radius: 50%;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 10;
+        box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);
+        transition: all 0.2s ease;
+    }
+
+    #remove_img_btn:hover {
+        transform: scale(1.15) rotate(90deg);
+        background: #dc2626;
     }
 
     .btn-submit-wtb {
@@ -205,15 +232,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="row gx-5">
                 <div class="col-md-5 mb-4">
                     <label class="wtb-label">รูปภาพอ้างอิง <span class="opt-tag">ไม่บังคับ</span></label>
-                    <label for="ref_image" class="wtb-upload-area" id="img_container">
-                        <div id="img_placeholder" class="wtb-upload-placeholder">
-                            <i class="fas fa-cloud-upload-alt" style="font-size: 3.5rem; margin-bottom: 15px;"></i>
-                            <h5 style="font-weight: 800; font-size: 1rem; margin-bottom: 5px;">คลิกเพื่ออัปโหลดรูป</h5>
-                            <p style="font-size: 0.8rem; margin: 0; opacity: 0.7;">(ช่วยให้คนขายหาของง่ายขึ้น)</p>
+                    <div style="position: relative;">
+                        <div id="remove_img_btn" onclick="clearImage()">
+                            <i class="fas fa-times"></i>
                         </div>
-                        <img id="img_preview" src="">
-                    </label>
-                    <input type="file" name="ref_image" id="ref_image" accept="image/*" style="display: none;" onchange="previewImage(this)">
+                        
+                        <label for="ref_image" class="wtb-upload-area" id="img_container">
+                            <div id="img_placeholder" class="wtb-upload-placeholder">
+                                <i class="fas fa-cloud-upload-alt" style="font-size: 3.5rem; margin-bottom: 15px;"></i>
+                                <h5 style="font-weight: 800; font-size: 1rem; margin-bottom: 5px;">คลิกเพื่ออัปโหลดรูป</h5>
+                                <p style="font-size: 0.8rem; margin: 0; opacity: 0.7;">(ช่วยให้คนขายหาของง่ายขึ้น)</p>
+                            </div>
+                            <img id="img_preview" src="">
+                        </label>
+                        <input type="file" name="ref_image" id="ref_image" accept="image/*" style="display: none;" onchange="previewImage(this)">
+                    </div>
                 </div>
 
                 <div class="col-md-7">
@@ -267,11 +300,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <script>
+    const inputField = document.getElementById('ref_image');
+    const preview = document.getElementById('img_preview');
+    const placeholder = document.getElementById('img_placeholder');
+    const container = document.getElementById('img_container');
+    const removeBtn = document.getElementById('remove_img_btn');
+
+    // 🎯 โชว์รูปตอนอัปโหลด
     function previewImage(input) {
-        const preview = document.getElementById('img_preview');
-        const placeholder = document.getElementById('img_placeholder');
-        const container = document.getElementById('img_container');
-        
         if (input.files && input.files[0]) {
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -280,9 +316,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 placeholder.style.display = 'none';
                 container.style.borderStyle = 'solid';
                 container.style.borderColor = '#6366f1';
+                removeBtn.style.display = 'flex'; // โชว์ปุ่มกากบาท
             }
             reader.readAsDataURL(input.files[0]);
         }
+    }
+
+    // 🎯 เคลียร์รูปทิ้งตอนกดกากบาท
+    function clearImage() {
+        inputField.value = ''; // ลบค่าไฟล์ที่เลือกไว้
+        preview.src = '';
+        preview.style.display = 'none';
+        placeholder.style.display = 'block'; // โชว์ไอคอนอัปโหลดเหมือนเดิม
+        container.style.borderStyle = 'dashed';
+        container.style.borderColor = 'var(--border-color)';
+        removeBtn.style.display = 'none'; // ซ่อนปุ่มกากบาท
     }
 </script>
 
