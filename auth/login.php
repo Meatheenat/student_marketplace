@@ -10,10 +10,7 @@ require_once '../includes/functions.php';
 require_once '../vendor/autoload.php';
 
 // ------------------------------------------------------------------
-// 🚀 [เพิ่มใหม่] ฟังก์ชันเจาะระบบ RMS (ป้องกันไฟล์ Cookie ตีกัน)
-// ------------------------------------------------------------------
-// ------------------------------------------------------------------
-// 🚀 ฟังก์ชันเจาะระบบ RMS พร้อมดึง ชื่อ, สาขา, ห้องเรียน (เวอร์ชันแก้คำตามภาพเว็บเป๊ะๆ)
+// 🚀 ฟังก์ชันเจาะระบบ RMS พร้อมดึง ชื่อ, สาขา, ห้องเรียน, เบอร์โทร
 // ------------------------------------------------------------------
 function loginWithRMS($username, $password){
     $loginPage = "https://rms.bncc.ac.th/?p=login";
@@ -65,6 +62,7 @@ function loginWithRMS($username, $password){
         $real_name = "นักศึกษา " . $username;
         $department = "";
         $class_room = "";
+        $phone = ""; // 🎯 เพิ่มตัวแปรมารับเบอร์โทร
         
         // เคลียร์แท็ก HTML ให้มีช่องว่าง จะได้ตัดคำง่ายๆ
         $clean_resp = str_replace(['<td', '<th', '</td', '</th', '<tr', '</tr'], ' <', $response);
@@ -73,35 +71,37 @@ function loginWithRMS($username, $password){
         $clean_resp = str_replace(['คำนำหน้าและชื่อ', 'ชื่อ-สกุล', 'รหัสนักศึกษา'], '', $clean_resp);
         $clean_resp = preg_replace('/\s+/u', ' ', $clean_resp);
         
-        // 🎯 1. ดึงชื่อ-นามสกุล
+        // 1. ดึงชื่อ-นามสกุล
         if (preg_match('/(นาย|นางสาว|นาง)\s*([ก-๙]+)\s+([ก-๙]+)/u', $clean_resp, $matches)) {
             $real_name = $matches[1] . $matches[2] . " " . $matches[3]; 
         }
 
-        // 🎯 2. ดึงสาขาและห้องเรียน จากคำว่า "ชื่อกลุ่ม :"
-        // ดักโครงสร้าง: เทคโนโลยีสารสนเทศ เทคโนโลยีสารสนเทศ/1 ปวส.2 | 2567 (สทส.2/1 )
+        // 2. ดึงสาขาและห้องเรียน
         if (preg_match('/ชื่อกลุ่ม\s*:\s*([^\(]+)\((.*?)\)/u', $clean_resp, $group_matches)) {
-            $group_info = trim($group_matches[1]); // เช่น "เทคโนโลยีสารสนเทศ เทคโนโลยีสารสนเทศ/1 ปวส.2 | 2567 "
-            $class_code = trim($group_matches[2]); // เช่น "สทส.2/1"
-            
-            // สกัด "ปวช" หรือ "ปวส" มาต่อกับรหัสกลุ่ม
+            $group_info = trim($group_matches[1]);
+            $class_code = trim($group_matches[2]);
             if (preg_match('/(ปว[ชส]\.\d+)/u', $group_info, $level_match)) {
-                $class_room = $level_match[1] . ' (' . $class_code . ')'; // ผลลัพธ์: ปวส.2 (สทส.2/1)
+                $class_room = $level_match[1] . ' (' . $class_code . ')'; 
             } else {
                 $class_room = $class_code;
             }
-            
-            // สกัดสาขาวิชา (เอาข้อความก่อนหน้า ปวช/ปวส แล้วตัดเอาแค่คำแรก)
             $dept_str = preg_replace('/(ปว[ชส]\.\d+).*$/u', '', $group_info);
             $dept_parts = explode(' ', trim($dept_str));
-            $department = $dept_parts[0]; // ผลลัพธ์: เทคโนโลยีสารสนเทศ
+            $department = $dept_parts[0];
+        }
+
+        // 🎯 3. ดึงเบอร์โทรศัพท์ (ดักจับคำว่า โทรศัพท์, เบอร์โทร, มือถือ, โทร.)
+        if (preg_match('/(โทรศัพท์|เบอร์โทร|มือถือ|โทร\.)\s*[:]?\s*([0-9\-\s]{9,15})/u', $clean_resp, $phone_matches)) {
+            // ลบพวกขีด (-) หรือช่องว่างออกให้เหลือแต่ตัวเลขเน้นๆ (เช่น 0812345678)
+            $phone = preg_replace('/[^0-9]/', '', $phone_matches[2]); 
         }
 
         return [
             'success' => true, 
             'fullname' => $real_name,
             'department' => $department,
-            'class_room' => $class_room
+            'class_room' => $class_room,
+            'phone' => $phone // 🎯 ส่งเบอร์โทรกลับไป
         ];
     }
     return ['success' => false];
@@ -177,37 +177,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $login_success = true;
         } 
         // 🎯 ถ้าไม่มีในระบบเรา ให้เอา $rms_username (ที่ตัด @ แล้ว) ไปเจาะ RMS!
-        // 🎯 ถ้าไม่มีในระบบเรา ให้เอา $rms_username (ที่ตัด @ แล้ว) ไปเจาะ RMS!
         else {
             $rmsResult = loginWithRMS($rms_username, $password);
             
             if ($rmsResult['success']) {
                 $login_success = true;
                 $real_name = $rmsResult['fullname']; 
-                $department = $rmsResult['department']; // ดึงสาขามา
-                $class_room = $rmsResult['class_room']; // ดึงห้องมา
+                $department = $rmsResult['department']; 
+                $class_room = $rmsResult['class_room']; 
+                $phone = $rmsResult['phone']; // 🎯 รับเบอร์โทรมา
 
                 if (!$user) {
-                    // 🔥 สร้างไอดีใหม่ พร้อมยัด สาขา และ ห้อง ลงไปเลย
+                    // 🔥 สร้างไอดีใหม่ พร้อมยัด ชื่อ, สาขา, ห้อง, เบอร์โทร ลงไปเลย!
                     $student_id = $rms_username; 
                     $student_email = $rms_username . "@bncc.ac.th";
                     $hashed_pass = password_hash($password, PASSWORD_DEFAULT);
                     
-                    $insert = $db->prepare("INSERT INTO users (student_id, email, password, fullname, department, class_room, role) VALUES (?, ?, ?, ?, ?, ?, 'buyer')");
-                    $insert->execute([$student_id, $student_email, $hashed_pass, $real_name, $department, $class_room]);
+                    $insert = $db->prepare("INSERT INTO users (student_id, email, password, fullname, department, class_room, phone, role) VALUES (?, ?, ?, ?, ?, ?, ?, 'buyer')");
+                    $insert->execute([$student_id, $student_email, $hashed_pass, $real_name, $department, $class_room, $phone]);
                     
                     $user_id = $db->lastInsertId();
                     $stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
                     $stmt->execute([$user_id]);
                     $user = $stmt->fetch();
                 } else {
-                    // มีข้อมูลอยู่แล้ว อัปเดตข้อมูลให้สดใหม่เสมอ (เผื่อเด็กเลื่อนชั้น)
+                    // 🔄 อัปเดตข้อมูลให้เป็นปัจจุบัน
                     $hashed_pass = password_hash($password, PASSWORD_DEFAULT);
-                    $update = $db->prepare("UPDATE users SET password = ?, fullname = ?, department = ?, class_room = ? WHERE id = ?");
-                    $update->execute([$hashed_pass, $real_name, $department, $class_room, $user['id']]);
+                    // อัปเดตข้อมูลทั้งหมดรวมถึงเบอร์โทร
+                    $update = $db->prepare("UPDATE users SET password = ?, fullname = ?, department = ?, class_room = ?, phone = ? WHERE id = ?");
+                    $update->execute([$hashed_pass, $real_name, $department, $class_room, $phone, $user['id']]);
+                    
                     $user['fullname'] = $real_name;
                     $user['department'] = $department;
                     $user['class_room'] = $class_room;
+                    $user['phone'] = $phone;
                 }
             }
         }
@@ -624,14 +627,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ใช้งานผ่านบัญชีวิทยาลัย (@bncc.ac.th)
         </a>
 
-        <div class="register-link-box">
-            <p>
-                ยังไม่มีบัญชีสมาชิกใช่ไหม? 
-                <a href="register.php">สมัครใช้งานฟรีที่นี่</a>
-            </p>
-        </div>
-    </div>
-</div>
+    
 
 <script>
     const togglePass = document.querySelector('#toggleLoginPass');
