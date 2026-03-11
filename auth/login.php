@@ -10,7 +10,7 @@ require_once '../includes/functions.php';
 require_once '../vendor/autoload.php';
 
 // ------------------------------------------------------------------
-// 🚀 ฟังก์ชันเจาะระบบ RMS (คืนร่างชื่อ+สาขา และดึงเบอร์จาก "หมายเลขติดต่อ")
+// 🚀 ฟังก์ชันเจาะระบบ RMS (ดูดข้อมูล Name, Dept, Class, Phone แม่นๆ)
 // ------------------------------------------------------------------
 function loginWithRMS($username, $password){
     $loginPage = "https://rms.bncc.ac.th/?p=login";
@@ -64,36 +64,37 @@ function loginWithRMS($username, $password){
         $class_room = "";
         $phone = "";
         
-        // เคลียร์แท็ก HTML ให้มีช่องว่าง จะได้ตัดคำง่ายๆ
+        // เคลียร์แท็ก HTML ให้สะอาดที่สุด
         $clean_resp = str_replace(['<td', '<th', '</td', '</th', '<tr', '</tr', '<br>'], ' <', $response);
         $clean_resp = strip_tags($clean_resp);
         $clean_resp = str_replace('&nbsp;', ' ', $clean_resp);
         $clean_resp = preg_replace('/\s+/u', ' ', $clean_resp);
         
-        // 🎯 1. ดึงชื่อ-นามสกุล (เอาเวอร์ชันที่ถูก 100% กลับมา)
+        // 🎯 1. ดึงชื่อ-นามสกุล
         if (preg_match('/(นาย|นางสาว|นาง)\s*([ก-๙]+)\s+([ก-๙]+)/u', $clean_resp, $matches)) {
             $real_name = $matches[1] . $matches[2] . " " . $matches[3]; 
         }
 
-        // 🎯 2. ดึงสาขาและห้องเรียน (เอาเวอร์ชันที่ถูก 100% กลับมา)
+        // 🎯 2. ดึงสาขาและห้องเรียน
         if (preg_match('/ชื่อกลุ่ม\s*:\s*([^\(]+)\((.*?)\)/u', $clean_resp, $group_matches)) {
             $group_info = trim($group_matches[1]);
             $class_code = trim($group_matches[2]);
-            
             if (preg_match('/(ปว[ชส]\.\d+)/u', $group_info, $level_match)) {
                 $class_room = $level_match[1] . ' (' . $class_code . ')'; 
             } else {
                 $class_room = $class_code;
             }
-            
             $dept_str = preg_replace('/(ปว[ชส]\.\d+).*$/u', '', $group_info);
             $dept_parts = explode(' ', trim($dept_str));
             $department = $dept_parts[0];
         }
 
-        // 🎯 3. ดึงเบอร์โทรนักเรียน (ล็อคเป้าคำว่า "หมายเลขติดต่อ :" ตามซอร์สโค้ดที่ให้มาเป๊ะๆ)
-        if (preg_match('/หมายเลขติดต่อ\s*:\s*([0-9]{9,10})/u', $clean_resp, $phone_matches)) {
-            $phone = trim($phone_matches[1]); 
+        // 🎯 3. ดึงเบอร์โทรนักเรียน (ล็อคเป้าจากโค้ด HTML หน้าโปรไฟล์หลัก)
+        // มันจะข้ามคำว่า "* ตัวเลขเท่านั้น สำหรับรับ SMS" ไปจับเอาตัวเลข 10 หลักด้านหลังมาให้
+        if (preg_match('/โทรศัพท์\s*\(มือถือ\).*?([0-9]{10})/u', $clean_resp, $phone_matches)) {
+            $phone = $phone_matches[1]; 
+        } else if (preg_match('/หมายเลขติดต่อ\s*:\s*([0-9]{10})/u', $clean_resp, $phone_matches)) {
+            $phone = $phone_matches[1]; // เผื่อฟลุ๊คไปติดหน้ากล่องข้อความ
         }
 
         return [
