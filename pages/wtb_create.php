@@ -213,6 +213,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .wtb-card { padding: 25px; }
         .wtb-upload-area { max-width: 250px; margin: 0 auto 20px; }
     }
+
+    /* 🎯 แก้อาการ Dropdown ตัวหนังสือกลืนกับพื้นหลัง */
+    .wtb-select option {
+        background-color: var(--bg-card);
+        color: var(--text-main);
+        font-weight: 600;
+        padding: 10px; /* เพิ่มระยะห่างให้กดง่ายขึ้น */
+    }
+
+    /* 🎯 บังคับสีเข้มสุดๆ สำหรับ Dark Mode โดยเฉพาะ (กันเบราว์เซอร์ดื้อ) */
+    .dark-theme .wtb-select option {
+        background-color: #0f172a; /* สีกรมท่าเข้มมาก */
+        color: #ffffff; /* ตัวหนังสือขาวสว่าง */
+    }
 </style>
 
 <div class="wtb-wrapper">
