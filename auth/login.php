@@ -10,7 +10,7 @@ require_once '../includes/functions.php';
 require_once '../vendor/autoload.php';
 
 // ------------------------------------------------------------------
-// 🚀 ฟังก์ชันเจาะระบบ RMS (ล็อคเป้าดึง ชื่อ, เบอร์, สาขา จากฟอร์ม)
+// 🚀 ฟังก์ชันเจาะระบบ RMS (คืนร่างชื่อ+สาขาที่ถูกแล้ว และแก้บั๊กเบอร์ผู้ปกครอง)
 // ------------------------------------------------------------------
 function loginWithRMS($username, $password){
     $loginPage = "https://rms.bncc.ac.th/?p=login";
@@ -59,43 +59,41 @@ function loginWithRMS($username, $password){
     $response = iconv("TIS-620", "UTF-8//IGNORE", $response);
     
     if(strpos($response, "สถานการณ์") !== false){
-        $real_name = "นักศึกษา " . $username; // ค่าเริ่มต้นเผื่อหาไม่เจอ
+        $real_name = "นักศึกษา " . $username;
         $department = "";
         $class_room = "";
         $phone = "";
         
-        // เคลียร์ HTML ให้ข้อความไหลมาต่อกัน
+        // เคลียร์แท็ก HTML ให้มีช่องว่าง จะได้ตัดคำง่ายๆ
         $clean_resp = str_replace(['<td', '<th', '</td', '</th', '<tr', '</tr'], ' <', $response);
         $clean_resp = strip_tags($clean_resp);
         $clean_resp = str_replace('&nbsp;', ' ', $clean_resp);
         $clean_resp = preg_replace('/\s+/u', ' ', $clean_resp);
         
-        // 🎯 1. ดึงชื่อ-สกุล (ล็อคเป้าคำว่า "ชื่อผู้ติดต่อ :")
-        if (preg_match('/ชื่อผู้ติดต่อ\s*:\s*(นาย|นางสาว|นาง)?\s*([ก-๙]+\s+[ก-๙]+)/u', $clean_resp, $name_match)) {
-            $real_name = trim($name_match[1] . $name_match[2]);
-        } else if (preg_match('/(นาย|นางสาว|นาง)\s*([ก-๙]+)\s+([ก-๙]+)/u', $clean_resp, $matches)) {
-            // สำรองเผื่อฟอร์มไม่ขึ้น
+        // 🎯 1. ดึงชื่อ-นามสกุล (เอาเวอร์ชันที่ถูก 100% กลับมา)
+        if (preg_match('/(นาย|นางสาว|นาง)\s*([ก-๙]+)\s+([ก-๙]+)/u', $clean_resp, $matches)) {
             $real_name = $matches[1] . $matches[2] . " " . $matches[3]; 
         }
 
-        // 🎯 2. ดึงสาขาและห้องเรียน (ล็อคเป้าคำว่า "ชื่อกลุ่ม :")
+        // 🎯 2. ดึงสาขาและห้องเรียน (เอาเวอร์ชันที่ถูก 100% กลับมา)
         if (preg_match('/ชื่อกลุ่ม\s*:\s*([^\(]+)\((.*?)\)/u', $clean_resp, $group_matches)) {
             $group_info = trim($group_matches[1]);
             $class_code = trim($group_matches[2]);
+            
             if (preg_match('/(ปว[ชส]\.\d+)/u', $group_info, $level_match)) {
                 $class_room = $level_match[1] . ' (' . $class_code . ')'; 
             } else {
                 $class_room = $class_code;
             }
+            
             $dept_str = preg_replace('/(ปว[ชส]\.\d+).*$/u', '', $group_info);
             $dept_parts = explode(' ', trim($dept_str));
             $department = $dept_parts[0];
         }
 
-        // 🎯 3. ดึงเบอร์โทร (ล็อคเป้าคำว่า "หมายเลขโทรศัพท์ติดต่อกลับ :")
-        if (preg_match('/หมายเลขโทรศัพท์ติดต่อกลับ\s*:\s*([0-9\-\s]{9,15})/u', $clean_resp, $phone_matches)) {
-            $phone = preg_replace('/[^0-9]/', '', $phone_matches[1]); 
-        } else if (preg_match('/(โทรศัพท์|เบอร์โทร|มือถือ|โทร\.)\s*[:]?\s*([0-9\-\s]{9,15})/u', $clean_resp, $phone_matches)) {
+        // 🎯 3. ดึงเบอร์โทรนักเรียน (พยายามดักคำว่า โทรศัพท์มือถือ โดยหลีกเลี่ยงผู้ปกครอง)
+        if (preg_match('/(โทรศัพท์มือถือ|เบอร์โทรนักเรียน|โทรศัพท์\s*\(นักเรียน\)|มือถือ)\s*[:]?\s*([0-9]{2,3}[-\s]?[0-9]{3,4}[-\s]?[0-9]{4})/u', $clean_resp, $phone_matches)) {
+            // ลบพวกขีด (-) หรือช่องว่างออกให้เหลือแต่ตัวเลข 10 หลัก
             $phone = preg_replace('/[^0-9]/', '', $phone_matches[2]); 
         }
 
