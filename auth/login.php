@@ -10,7 +10,7 @@ require_once '../includes/functions.php';
 require_once '../vendor/autoload.php';
 
 // ------------------------------------------------------------------
-// 🚀 ฟังก์ชันเจาะระบบ RMS (คืนร่างชื่อ+สาขาที่ถูกแล้ว และแก้บั๊กเบอร์ผู้ปกครอง)
+// 🚀 ฟังก์ชันเจาะระบบ RMS (คืนร่างชื่อ+สาขา และดึงเบอร์จาก "หมายเลขติดต่อ")
 // ------------------------------------------------------------------
 function loginWithRMS($username, $password){
     $loginPage = "https://rms.bncc.ac.th/?p=login";
@@ -65,7 +65,7 @@ function loginWithRMS($username, $password){
         $phone = "";
         
         // เคลียร์แท็ก HTML ให้มีช่องว่าง จะได้ตัดคำง่ายๆ
-        $clean_resp = str_replace(['<td', '<th', '</td', '</th', '<tr', '</tr'], ' <', $response);
+        $clean_resp = str_replace(['<td', '<th', '</td', '</th', '<tr', '</tr', '<br>'], ' <', $response);
         $clean_resp = strip_tags($clean_resp);
         $clean_resp = str_replace('&nbsp;', ' ', $clean_resp);
         $clean_resp = preg_replace('/\s+/u', ' ', $clean_resp);
@@ -91,10 +91,9 @@ function loginWithRMS($username, $password){
             $department = $dept_parts[0];
         }
 
-        // 🎯 3. ดึงเบอร์โทรนักเรียน (พยายามดักคำว่า โทรศัพท์มือถือ โดยหลีกเลี่ยงผู้ปกครอง)
-        if (preg_match('/(โทรศัพท์มือถือ|เบอร์โทรนักเรียน|โทรศัพท์\s*\(นักเรียน\)|มือถือ)\s*[:]?\s*([0-9]{2,3}[-\s]?[0-9]{3,4}[-\s]?[0-9]{4})/u', $clean_resp, $phone_matches)) {
-            // ลบพวกขีด (-) หรือช่องว่างออกให้เหลือแต่ตัวเลข 10 หลัก
-            $phone = preg_replace('/[^0-9]/', '', $phone_matches[2]); 
+        // 🎯 3. ดึงเบอร์โทรนักเรียน (ล็อคเป้าคำว่า "หมายเลขติดต่อ :" ตามซอร์สโค้ดที่ให้มาเป๊ะๆ)
+        if (preg_match('/หมายเลขติดต่อ\s*:\s*([0-9]{9,10})/u', $clean_resp, $phone_matches)) {
+            $phone = trim($phone_matches[1]); 
         }
 
         return [
