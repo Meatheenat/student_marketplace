@@ -572,6 +572,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         background: rgba(239, 68, 68, 0.15);
         color: #fca5a5;
     }
+    /* ============================================================
+       💡 GUIDE MODAL CSS (หน้าต่างคู่มือ)
+       ============================================================ */
+    .guide-modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+        display: flex; justify-content: center; align-items: center;
+        z-index: 10000; opacity: 0; pointer-events: none; transition: 0.3s ease;
+    }
+    .guide-modal-overlay.active { opacity: 1; pointer-events: all; }
+    
+    .guide-modal-card {
+        background: var(--login-card-bg); border: 1px solid var(--login-card-border);
+        border-radius: 24px; width: 90%; max-width: 450px; padding: 30px;
+        box-shadow: var(--login-card-shadow); transform: translateY(30px) scale(0.95);
+        transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1); opacity: 0;
+    }
+    .guide-modal-overlay.active .guide-modal-card { transform: translateY(0) scale(1); opacity: 1; }
+    
+    .guide-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+    .guide-modal-header h3 { margin: 0; color: var(--text-main); font-size: 1.4rem; font-weight: 800; }
+    .close-modal-btn { background: none; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer; transition: 0.3s; }
+    .close-modal-btn:hover { color: #ef4444; transform: scale(1.1); }
+    
+    .guide-step { display: flex; gap: 15px; margin-bottom: 20px; align-items: flex-start; }
+    .guide-step:last-child { margin-bottom: 0; }
+    .step-icon { width: 45px; height: 45px; border-radius: 14px; background: rgba(99, 102, 241, 0.1); color: #6366f1; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; flex-shrink: 0; }
+    .dark-theme .step-icon { background: rgba(99, 102, 241, 0.2); color: #818cf8; }
+    
+    .step-text h4 { margin: 0 0 5px 0; color: var(--text-main); font-size: 0.95rem; font-weight: 800; }
+    .step-text p { margin: 0; color: var(--text-muted); font-size: 0.85rem; line-height: 1.6; }
 </style>
 
 <div class="login-master-wrapper">
@@ -584,11 +616,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="login-header">
             <h2>BNCC Market</h2>
             <p>ยินดีต้อนรับกลับมาอีกครั้ง 👋</p>
+            <div style="margin-top: 10px;">
+                <a href="javascript:void(0)" id="openGuideBtn" style="color: #6366f1; font-size: 0.85rem; text-decoration: underline; font-weight: 700;">
+                    <i class="fas fa-info-circle"></i> อ่านคู่มือการเข้าสู่ระบบ
+                </a>
+            </div>
         </div>
 
         <?php echo displayFlashMessage(); ?>
 
-        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer>
+            // 💡 ระบบเปิด-ปิด หน้าต่างคู่มือ
+    const openGuideBtn = document.getElementById('openGuideBtn');
+    const closeGuideBtn = document.getElementById('closeGuideBtn');
+    const guideModal = document.getElementById('loginGuideModal');
+
+    openGuideBtn.addEventListener('click', () => {
+        guideModal.classList.add('active');
+    });
+
+    closeGuideBtn.addEventListener('click', () => {
+        guideModal.classList.remove('active');
+    });
+
+    // คลิกพื้นหลังสีดำเพื่อปิด
+    guideModal.addEventListener('click', (e) => {
+        if (e.target === guideModal) {
+            guideModal.classList.remove('active');
+        }
+    });
+        </script>
 
         <form action="login.php" method="POST">
             <div class="form-group">
@@ -632,7 +689,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ใช้งานผ่านบัญชีวิทยาลัย (@bncc.ac.th)
         </a>
 
-    
+    <div id="loginGuideModal" class="guide-modal-overlay">
+    <div class="guide-modal-card">
+        <div class="guide-modal-header">
+            <h3>💡 คู่มือการเข้าสู่ระบบ</h3>
+            <button type="button" id="closeGuideBtn" class="close-modal-btn"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="guide-modal-body">
+            
+            <div class="guide-step">
+                <div class="step-icon"><i class="fas fa-graduation-cap"></i></div>
+                <div class="step-text">
+                    <h4>1. สำหรับนักศึกษา (ใช้งานครั้งแรก)</h4>
+                    <p>กรอก <b>"รหัสนักศึกษา"</b> (เช่น 67319010004) และ <b>"รหัสผ่านระบบ RMS"</b> ของวิทยาลัย ระบบจะดึงข้อมูล ชื่อ, สาขา, ห้องเรียน และเบอร์โทร ให้อัตโนมัติ!</p>
+                </div>
+            </div>
+
+            <div class="guide-step">
+                <div class="step-icon"><i class="fab fa-google"></i></div>
+                <div class="step-text">
+                    <h4>2. เข้าสู่ระบบด้วย Google</h4>
+                    <p>คลิกที่ปุ่มเชื่อมต่อด้านล่าง แล้วเลือกใช้อีเมล <b>@bncc.ac.th</b> ของวิทยาลัย เพื่อเข้าสู่ระบบอย่างรวดเร็ว</p>
+                </div>
+            </div>
+
+            <div class="guide-step">
+                <div class="step-icon"><i class="fas fa-user-plus"></i></div>
+                <div class="step-text">
+                    <h4>3. สำหรับบุคคลภายนอก/ครูอาจารย์</h4>
+                    <p>หากไม่มีรหัส RMS ให้กดปุ่ม <b>"สมัครใช้งานฟรีที่นี่"</b> ด้านล่างสุด เพื่อสร้างบัญชีใหม่ด้วยตนเอง</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
 
 <script>
     const togglePass = document.querySelector('#toggleLoginPass');
