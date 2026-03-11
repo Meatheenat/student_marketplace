@@ -246,3 +246,5 @@ CREATE TABLE ban_appeals (
 ALTER TABLE shops MODIFY COLUMN status ENUM('pending', 'approved', 'blocked') DEFAULT 'pending';
 ALTER TABLE orders ADD COLUMN meetup_location VARCHAR(255) NULL;
 ALTER TABLE orders ADD COLUMN meetup_time VARCHAR(100) NULL;
+ALTER TABLE orders ADD COLUMN buyer_note TEXT NULL;
+ALTER TABLE products MODIFY COLUMN price DECIMAL(10,2) NOT NULL DEFAULT '0.00';

@@ -81,8 +81,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $title       = trim($_POST['title'] ?? '');
-    $price       = (float)($_POST['price'] ?? 0);
+   $title       = trim($_POST['title'] ?? '');
+    
+    // 🎯 ดักจับเอาลูกน้ำ (,) ออกให้หมดก่อน แล้วค่อยแปลงเป็นตัวเลขเพียวๆ
+    $raw_price   = str_replace(',', '', $_POST['price'] ?? '0');
+    $price       = (float)$raw_price;
     $category_id = (int)($_POST['category_id'] ?? 0);
     $p_status    = $_POST['product_status'] ?? 'in-stock'; 
     $description = trim($_POST['description'] ?? '');
