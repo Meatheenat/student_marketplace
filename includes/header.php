@@ -43,7 +43,7 @@ if (isLoggedIn()) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $pageTitle ?? 'BNCC Market'; ?></title>
-<link rel="icon" type="image/png" href="<?= defined('BASE_URL') ? BASE_URL : '/s673190104/student_marketplace/' ?>assets/images/favicon.png">
+    <link rel="icon" type="image/png" href="<?= defined('BASE_URL') ? BASE_URL : '/s673190104/student_marketplace/' ?>assets/images/favicon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/style.css">
