@@ -1,7 +1,7 @@
 <?php
 /**
  * BNCC MARKET - WTB BOARD (Want To Buy)
- * Version: 2.0 Premium Professional UI
+ * Version: 2.0 Premium Professional UI (Updated with Edit & Admin Delete)
  */
 $pageTitle = "กระดานตามหาของ - BNCC Market";
 require_once '../includes/header.php';
@@ -20,13 +20,13 @@ if (isset($_GET['delete']) && isLoggedIn()) {
     redirect('wtb_board.php');
 }
 
-// 2. ดึงข้อมูลประกาศตามหา (เฉพาะสถานะ active และ Join ข้อมูลที่จำเป็น)
+// 2. ดึงข้อมูลประกาศตามหา (เฉพาะสถานะ active และ Join ข้อมูลที่จำเป็น + ดักจับ Soft Delete)
 $stmt = $db->query("
     SELECT w.*, u.fullname, u.profile_img, c.category_name 
     FROM wtb_posts w 
     JOIN users u ON w.user_id = u.id 
     LEFT JOIN categories c ON w.category_id = c.id
-    WHERE w.status = 'active' 
+    WHERE w.status = 'active' AND w.is_deleted = 0
     ORDER BY w.created_at DESC
 ");
 $posts = $stmt->fetchAll();
@@ -356,15 +356,34 @@ $posts = $stmt->fetchAll();
                                 </span>
                             </div>
 
-                            <?php if (isLoggedIn() && $_SESSION['user_id'] == $post['user_id']): ?>
-                                <a href="wtb_board.php?delete=<?= $post['id'] ?>" class="btn-wtb-danger" onclick="return confirm('คุณต้องการปิดประกาศนี้ใช่หรือไม่?')">
-                                    <i class="fas fa-check-circle"></i> ปิดประกาศนี้
-                                </a>
-                            <?php else: ?>
-                                <a href="chat.php?user=<?= $post['user_id'] ?>" class="btn-wtb-primary">
-                                    <i class="fas fa-comment-alt"></i> ติดต่อเสนอราคา
-                                </a>
-                            <?php endif; ?>
+                            <div class="d-flex flex-column gap-2">
+                                <?php if (isLoggedIn()): ?>
+                                    <?php if ($_SESSION['user_id'] == $post['user_id']): ?>
+                                        <div class="d-flex gap-2">
+                                            <a href="wtb_edit.php?id=<?= $post['id'] ?>" class="btn-wtb-primary flex-grow-1" style="background: rgba(79, 70, 229, 0.1); color: var(--wtb-accent) !important; border: 1px solid var(--wtb-accent);">
+                                                <i class="fas fa-edit"></i> แก้ไข
+                                            </a>
+                                            <a href="wtb_board.php?delete=<?= $post['id'] ?>" class="btn-wtb-danger flex-grow-1" onclick="return confirm('คุณต้องการปิดประกาศนี้ใช่หรือไม่?')">
+                                                <i class="fas fa-check-circle"></i> ปิดประกาศ
+                                            </a>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <?php if ($_SESSION['role'] == 'admin'): ?>
+                                        <a href="../admin/wtb_delete_admin.php?id=<?= $post['id'] ?>" class="btn-wtb-danger w-100" style="background: #ef4444; color: #fff !important; border: none;" onclick="return confirm('แอดมิน: ยืนยันการลบประกาศนี้ไปที่ถังขยะ?')">
+                                            <i class="fas fa-trash-alt"></i> ลบประกาศ (Admin)
+                                        </a>
+                                    <?php endif; ?>
+
+                                    <?php if ($_SESSION['user_id'] != $post['user_id']): ?>
+                                        <a href="chat.php?user=<?= $post['user_id'] ?>" class="btn-wtb-primary">
+                                            <i class="fas fa-comment-alt"></i> ติดต่อเสนอราคา
+                                        </a>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <a href="../auth/login.php" class="btn-wtb-primary">เข้าสู่ระบบเพื่อติดต่อ</a>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
                 </article>
@@ -373,7 +392,7 @@ $posts = $stmt->fetchAll();
             <div class="wtb-empty-state">
                 <div class="mb-4"><i class="fas fa-search fa-5x text-muted opacity-25"></i></div>
                 <h2 class="text-muted fw-bold">ยังไม่มีประกาศตามหาในขณะนี้</h2>
-                <p class="text-muted">อยากได้อะไรเป็นเป็นพิเศษไหม? ลองสร้างประกาศดูสิ!</p>
+                <p class="text-muted">อยากได้อะไรเป็นพิเศษไหม? ลองสร้างประกาศดูสิ!</p>
             </div>
         <?php endif; ?>
     </div>
