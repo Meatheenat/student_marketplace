@@ -28,9 +28,17 @@ if ($action === 'fetch') {
     $unread_count = $unread_stmt->fetchColumn();
 
     // ปรับแต่งข้อมูลก่อนส่งกลับ (แปลงเวลาและใส่ไอคอน)
-    foreach($notifs as &$n) {
+   foreach($notifs as &$n) {
         $n['time'] = date('d/m H:i', strtotime($n['created_at']));
-        
+
+        // 🎯 FIXED 404: ตรวจสอบและซ่อมแซมลิงก์ให้เป็น Absolute Path
+        if (!empty($n['link']) && $n['link'] !== '#') {
+            // ถ้าลิงก์ไม่ได้เริ่มด้วย http และไม่มีชื่อโปรเจกต์ student_marketplace ให้เติมเข้าไป
+            if (strpos($n['link'], 'http') === false && strpos($n['link'], 'student_marketplace') === false) {
+                // ลบ / ข้างหน้าออก (ถ้ามี) แล้วแปะ BASE_URL เข้าไป
+                $n['link'] = BASE_URL . ltrim($n['link'], '/');
+            }
+        }
         // กำหนดไอคอนตามประเภท (Type) ในฐานข้อมูล
         if($n['type'] == 'order') {
             $n['icon'] = '<i class="fas fa-shopping-bag" style="color: #10b981;"></i>';
