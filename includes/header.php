@@ -28,9 +28,9 @@ if (session_status() === PHP_SESSION_NONE) {
 // ปัญหาคือใน functions.php พี่ตั้ง BASE_URL ไว้ผิด (ตกโฟลเดอร์ student_marketplace)
 // ถ้าเราใช้ if(!defined) มันจะไปดึงตัวที่ผิดมาใช้ ทำให้พังหมด
 // วิธีแก้: เราทำการ Hardcode (บังคับ) ค่าที่ถูกต้อง 100% ลงไปเลย ไม่ต้องสน BASE_URL เดิม
-// $base_path = '/s673190104/student_marketplace/';
+$base_path = '/s673190104/student_marketplace/';
 // 🎯 FIXED: ใช้ BASE_URL จาก functions.php เพื่อให้พาร์ทถูกต้อง 100% ทุกลิงก์
-$base_path = defined('BASE_URL') ? BASE_URL : '/s673190104/student_marketplace/';
+//$base_path = defined('BASE_URL') ? BASE_URL : '/s673190104/student_marketplace/';
 
 // --------------------------------------------------------------------------------------------
 // 3. ROUTING VISIBILITY CONTROLLERS (Access Control Lists)
