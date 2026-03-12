@@ -1750,7 +1750,7 @@ if (isLoggedIn()) {
                     <i class="fas fa-clipboard-check nav-menu-icon"></i>
                     <span>อนุมัติรายการสินค้า</span>
                 </a>
-                <a href="<?= $base_path ?>admin/approve_shop.php" class="nav-menu-item nav-item-admin <?= $current_page == 'approve_shop.php' ? 'is-active' : '' ?>">
+                <a href="<?= $base_path ?>student_marketplace/admin/approve_shop.php" class="nav-menu-item nav-item-admin <?= $current_page == 'approve_shop.php' ? 'is-active' : '' ?>">
                     <i class="fas fa-store-slash nav-menu-icon"></i>
                     <span>อนุมัติคำร้องเปิดร้าน</span>
                 </a>
