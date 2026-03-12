@@ -116,18 +116,10 @@ $pending_posts = $stmt->fetchAll();
             </div>
         <?php endforeach; ?>
     <?php else: ?>
-       <div class="col-12 text-center" style="grid-column: 1 / -1; width: 100%; padding: 100px 20px; border: 3px dashed var(--wtb-border-color); border-radius: 32px; background: var(--wtb-card-bg); margin: 20px 0;">
-            <div style="max-width: 500px; margin: 0 auto;">
-                <i class="fas fa-check-circle" style="font-size: 5rem; color: #10b981; opacity: 0.3; margin-bottom: 20px; display: block;"></i>
-                <h3 style="font-weight: 900; color: var(--wtb-text-dark); font-size: 1.8rem; letter-spacing: -0.5px;">ไม่มีโพสต์ค้างรออนุมัติ</h3>
-                <p class="text-muted fw-bold" style="font-size: 1rem;">ยอดเยี่ยมมาก! คุณตรวจสอบและจัดการโพสต์ทั้งหมดเรียบร้อยแล้ว</p>
-                
-                <div class="mt-4">
-                    <a href="admin_dashboard.php" class="btn btn-outline-primary rounded-pill px-4 fw-bold">
-                        <i class="fas fa-arrow-left me-2"></i> กลับสู่แดชบอร์ด
-                    </a>
-                </div>
-            </div>
+        <div class="text-center" style="padding: 100px 20px; border: 3px dashed var(--adm-border); border-radius: 32px;">
+            <i class="fas fa-check-circle" style="font-size: 4rem; color: #10b981; opacity: 0.3;"></i>
+            <h3 class="mt-4" style="font-weight: 800; color: var(--adm-text);">ไม่มีโพสต์ค้างรออนุมัติ</h3>
+            <p class="text-muted">คุณตรวจสอบโพสต์ทั้งหมดเรียบร้อยแล้ว!</p>
         </div>
     <?php endif; ?>
 </div>
