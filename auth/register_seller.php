@@ -131,6 +131,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_pending) {
             $db->beginTransaction();
             
             // 4.1 INSERT SHOP DATA
+            // 🎯 แก้ไขเผื่อตาราง shops ของพี่บังคับใส่ type (เช่น ประเภทของร้าน) กูใส่ค่า 'general' นำร่องไปให้
+            // ถ้า Database พี่ไม่มี type ในตาราง shops ให้ใช้บรรทัดเดิม: $stmt = $db->prepare("INSERT INTO shops (user_id, shop_name, description, status, created_at) VALUES (?, ?, ?, 'pending', NOW())");
             $stmt = $db->prepare("INSERT INTO shops (user_id, shop_name, description, status, created_at) VALUES (?, ?, ?, 'pending', NOW())");
             $stmt->execute([$user_id, $shop_name, $shop_desc]);
             
@@ -140,9 +142,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_pending) {
             
             if ($admins && count($admins) > 0) {
                 $notif_msg = "🔥 คำร้องขอเปิดร้านใหม่!\nผู้สมัคร: " . $user_fullname . "\nชื่อร้าน: " . $shop_name;
-                $notif_link = "admin/approve_shop.php"; // ลิงก์เมื่อกดแจ้งเตือน
+                $notif_link = "admin/approve_shop.php"; 
                 
-                $notif_insert = $db->prepare("INSERT INTO notifications (user_id, message, link, is_read, created_at) VALUES (?, ?, ?, 0, NOW())");
+                // 🎯 จุดที่แก้ไขหลัก: เพิ่มคอลัมน์ `type` ลงไป และส่งค่า 'system' เข้าไปให้ Database มันยอมรับ
+                $notif_insert = $db->prepare("INSERT INTO notifications (user_id, type, message, link, is_read, created_at) VALUES (?, 'system', ?, ?, 0, NOW())");
                 foreach ($admins as $adm) {
                     $notif_insert->execute([$adm['id'], $notif_msg, $notif_link]);
                 }
