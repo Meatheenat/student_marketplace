@@ -1,30 +1,32 @@
 <?php
-/**
- * ============================================================================================
- * BNCC MARKETPLACE - ENTERPRISE MASTER HEADER SYSTEM
- * ============================================================================================
- * Architecture: Model-View-Controller (Frontend Bound)
- * Engine: PHP 8.x + Native Vanilla JS + CSS3 Advanced Variables
- * Components: Auth Guard, Notification Engine, Dynamic Theming, Routing Controller
- * ============================================================================================
- */
-
-// --------------------------------------------------------------------------------------------
-// 1. CORE DEPENDENCIES & INITIALIZATION
-// --------------------------------------------------------------------------------------------
+// Core System Initialization
 require_once __DIR__ . '/functions.php';
 
-// Determine the current active page for navigation highlighting and logic mapping
+// Determine the current active page for navigation highlighting
 $current_page = basename($_SERVER['PHP_SELF']);
 
-// Ensure session is started safely to prevent "Headers Already Sent" anomalies
+// Ensure session is started safely
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// --------------------------------------------------------------------------------------------
-// 2. ROUTING VISIBILITY CONTROLLERS (Access Control Lists)
-// --------------------------------------------------------------------------------------------
+$current_dir = dirname($_SERVER['PHP_SELF']);
+$dir_depth = substr_count(ltrim($current_dir, '/'), '/');
+
+// สร้าง Path ย้อนกลับ (../) ตามความลึก หรือใช้ BASE_URL ถ้าระบุไว้
+if (defined('BASE_URL')) {
+    $base_path_assets = BASE_URL;
+} else {
+    // ตัวอย่าง: ถ้าอยู่ /s673190104/student_marketplace/admin (depth=3) ให้ถอยไปที่ root ของโปรเจกต์
+    // เนื่องจากเราไม่รู้โครงสร้าง Server เป๊ะๆ การใช้ absolute path จาก HTTP_HOST ปลอดภัยที่สุด
+    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
+    $host = $_SERVER['HTTP_HOST'];
+    // สันนิษฐานว่า student_marketplace คือ Root ของโปรเจกต์
+    $project_folder = '/s673190104/student_marketplace/'; 
+    $base_path_assets = $protocol . $host . $project_folder;
+}
+
+// Define visibility arrays for specific pages
 $hide_home_list = [
     'login.php', 
     'register.php', 
@@ -43,52 +45,31 @@ $hide_auth_list = [
     'verify_otp.php'
 ];
 
-// --------------------------------------------------------------------------------------------
-// 3. USER DATA NORMALIZATION
-// --------------------------------------------------------------------------------------------
-// 🎯 DYNAMIC BASE URL GENERATOR (FIXES 404 ISSUES)
-// ตรวจสอบระดับความลึกของโฟลเดอร์ปัจจุบัน เพื่อสร้าง Path อ้างอิง (Absolute Path) แบบ Dynamic
-// ป้องกันปัญหาการเข้าลิงก์ซ้อน (เช่น admin/admin/approve_shop.php)
-$current_dir = dirname($_SERVER['PHP_SELF']);
-$dir_depth = substr_count(ltrim($current_dir, '/'), '/');
-
-// สร้าง Path ย้อนกลับ (../) ตามความลึก หรือใช้ BASE_URL ถ้าระบุไว้
-if (defined('BASE_URL')) {
-    $base_path_assets = BASE_URL;
-} else {
-    // ตัวอย่าง: ถ้าอยู่ /s673190104/student_marketplace/admin (depth=3) ให้ถอยไปที่ root ของโปรเจกต์
-    // เนื่องจากเราไม่รู้โครงสร้าง Server เป๊ะๆ การใช้ absolute path จาก HTTP_HOST ปลอดภัยที่สุด
-    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
-    $host = $_SERVER['HTTP_HOST'];
-    // สันนิษฐานว่า student_marketplace คือ Root ของโปรเจกต์
-    $project_folder = '/s673190104/student_marketplace/'; 
-    $base_path_assets = $protocol . $host . $project_folder;
-}
-
-// Process User Avatar
+// Process User Avatar with fallback mechanism
 if (isset($_SESSION['profile_img']) && !empty($_SESSION['profile_img'])) {
+    // ตรวจสอบว่าเป็น URL ภายนอกหรือไม่ (เช่น Google Avatar)
     if (filter_var($_SESSION['profile_img'], FILTER_VALIDATE_URL)) {
         $user_avatar = $_SESSION['profile_img'];
     } else {
-        $user_avatar = $base_path_assets . "assets/images/profiles/" . $_SESSION['profile_img'];
+        $user_avatar = $base_path . "assets/images/profiles/" . $_SESSION['profile_img'];
     }
 } else {
-    $user_avatar = $base_path_assets . "assets/images/profiles/default_profile.png";
+    $user_avatar = $base_path . "assets/images/profiles/default_profile.png";
 }
 
-// --------------------------------------------------------------------------------------------
-// 4. REAL-TIME DATA FETCHING (Message Counter)
-// --------------------------------------------------------------------------------------------
+// Initialize unread message counter
 $unread_msg_count = 0;
 
+// Fetch real-time notification data if user is authenticated
 if (isLoggedIn()) {
     try {
         $db = getDB();
-        $msg_query = "SELECT COUNT(id) FROM messages WHERE receiver_id = ? AND is_read = 0";
+        $msg_query = "SELECT COUNT(*) FROM messages WHERE receiver_id = ? AND is_read = 0";
         $msg_stmt = $db->prepare($msg_query);
         $msg_stmt->execute([$_SESSION['user_id']]);
-        $unread_msg_count = (int)$msg_stmt->fetchColumn();
+        $unread_msg_count = $msg_stmt->fetchColumn();
     } catch (PDOException $e) {
+        // Fail silently on header to prevent UI breakage, default to 0
         $unread_msg_count = 0;
     }
 }
@@ -98,38 +79,31 @@ if (isLoggedIn()) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    
-    <meta name="theme-color" content="#4f46e5" id="meta-theme-color">
+    <meta name="theme-color" content="#4f46e5" id="theme-color-meta">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="BNCC Market">
-    <meta name="application-name" content="BNCC Market">
-    
-    <meta name="description" content="BNCC Market - Enterprise Student Marketplace for Buying, Selling, and Requesting Items within the Campus.">
-    <meta name="keywords" content="BNCC, Marketplace, Student, E-commerce, Buy, Sell">
+    <meta name="description" content="BNCC Market - Enterprise Student Marketplace">
     
     <title>
         <?php 
         if (isset($pageTitle)) {
             echo htmlspecialchars($pageTitle) . ' | BNCC Market';
         } else {
-            echo 'BNCC Market | ระบบตลาดกลางวิทยาลัย';
+            echo 'BNCC Market | แหล่งรวมสินค้าคุณภาพ';
         }
         ?>
     </title>
     
-    <link rel="icon" type="image/png" sizes="32x32" href="<?= $base_path_assets ?>assets/images/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="<?= $base_path_assets ?>assets/images/favicon-16x16.png">
-    <link rel="shortcut icon" href="<?= $base_path_assets ?>assets/images/favicon.ico">
+    <link rel="icon" type="image/png" href="<?= $base_path ?>assets/images/favicon.png">
     
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="<?= $base_path_assets ?>assets/css/style.css">
+    <link rel="stylesheet" href="<?= $base_path ?>assets/css/style.css">
+
     <style>
         /* Global Design System & Variables */
         :root {
