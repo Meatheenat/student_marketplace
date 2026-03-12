@@ -1,7 +1,17 @@
 <?php
+/**
+ * =========================================================================
+ * BNCC MARKETPLACE: SELLER REGISTRATION MODULE
+ * =========================================================================
+ * Description: ระบบลงทะเบียนเปิดร้านค้าสำหรับผู้ซื้อทั่วไป (Buyer) 
+ * พร้อมระบบแจ้งเตือนแอดมินผ่าน Web Notification และ LINE Notify แบบเจาะจง
+ * =========================================================================
+ */
 require_once '../includes/functions.php';
 
-// 1. ตรวจสอบสถานะการเข้าสู่ระบบ (ถ้ายังไม่ Login ให้ดีดไปหน้า Login)
+// ---------------------------------------------------------
+// 1. AUTHENTICATION & ROLE CHECK GUARD
+// ---------------------------------------------------------
 if (!isLoggedIn()) {
     $_SESSION['flash_message'] = "กรุณาเข้าสู่ระบบก่อนดำเนินการสมัครเป็นผู้ขาย";
     $_SESSION['flash_type'] = "warning";
@@ -9,9 +19,8 @@ if (!isLoggedIn()) {
     exit();
 }
 
-// 2. ตรวจสอบว่าผู้ใช้เป็น Seller อยู่แล้วหรือไม่ (ถ้าเป็นแล้วไม่ให้สมัครซ้ำ)
-if ($_SESSION['role'] === 'seller') {
-    $_SESSION['flash_message'] = "บัญชีของคุณได้รับการอนุมัติเป็นร้านค้าเรียบร้อยแล้ว";
+if (isset($_SESSION['role']) && $_SESSION['role'] === 'seller') {
+    $_SESSION['flash_message'] = "บัญชีของคุณได้รับการอนุมัติเป็นร้านค้าเรียบร้อยแล้ว ยินดีต้อนรับสู่ระบบผู้ขาย!";
     $_SESSION['flash_type'] = "info";
     header("Location: ../seller/dashboard.php");
     exit();
@@ -19,8 +28,11 @@ if ($_SESSION['role'] === 'seller') {
 
 $db = getDB();
 $user_id = $_SESSION['user_id'];
+$user_fullname = $_SESSION['fullname'] ?? 'ผู้ใช้ระบบ';
 
-// ตรวจสอบว่ามีคำขอที่รอดำเนินการ (Pending) อยู่หรือไม่
+// ---------------------------------------------------------
+// 2. CHECK PENDING SHOP STATUS
+// ---------------------------------------------------------
 $stmt_check = $db->prepare("SELECT status, shop_name FROM shops WHERE user_id = ? ORDER BY created_at DESC LIMIT 1");
 $stmt_check->execute([$user_id]);
 $existing_shop = $stmt_check->fetch(PDO::FETCH_ASSOC);
@@ -32,13 +44,71 @@ if ($existing_shop && $existing_shop['status'] === 'pending') {
 
 $form_errors = [];
 
-// ประมวลผลฟอร์มเมื่อมีการกดส่งข้อมูล
+// ---------------------------------------------------------
+// 3. TARGETED LINE NOTIFY FUNCTION (The Engine)
+// ---------------------------------------------------------
+/**
+ * ส่งแจ้งเตือนผ่าน LINE Bot ไปยังแอดมินที่มี line_user_id (อิงจากภาพ Screenshot)
+ * @param PDO $db Connection ของฐานข้อมูล
+ * @param string $message ข้อความที่จะส่ง
+ */
+function notifyAdminsViaLineTargeted($db, $message) {
+    // ⚠️ ต้องใช้ Channel Access Token ของ Messaging API (ไม่ใช่ Notify Token ธรรมดา) หากต้องการ Push Message รายบุคคล
+    // หรือถ้าพี่ใช้ LINE Notify Token เดียวกันสำหรับกลุ่มแอดมิน ให้ใช้ฟังก์ชันเดิมแบบยิงเข้ากลุ่มได้เลย
+    // โค้ดนี้เขียนเผื่อรองรับโครงสร้างตาราง `users` ที่มี `line_user_id`
+    
+    // ตั้งค่า Token ของ LINE Messaging API
+    $line_bot_token = "YOUR_LINE_MESSAGING_API_TOKEN"; 
+    
+    if (empty($line_bot_token) || $line_bot_token === "YOUR_LINE_MESSAGING_API_TOKEN") {
+        return; // ข้ามถ้ายังไม่ตั้งค่า
+    }
+
+    try {
+        // ดึงเฉพาะแอดมินที่มี line_user_id ไม่เป็นค่าว่างหรือ NULL
+        $stmt = $db->query("SELECT line_user_id FROM users WHERE role IN ('admin', 'teacher') AND line_user_id IS NOT NULL AND line_user_id != ''");
+        $admin_lines = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        if (count($admin_lines) > 0) {
+            $url = 'https://api.line.me/v2/bot/message/multicast';
+            $data = [
+                'to' => $admin_lines, // ส่งไปยัง array ของ line_user_id
+                'messages' => [
+                    [
+                        'type' => 'text',
+                        'text' => $message
+                    ]
+                ]
+            ];
+
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Content-Type: application/json',
+                'Authorization: Bearer ' . $line_bot_token
+            ]);
+            
+            $result = curl_exec($ch);
+            curl_close($ch);
+        }
+    } catch (Exception $e) {
+        // ล้มเหลวเงียบๆ ไม่ให้กระทบการทำงานหลักของเว็บ
+        error_log("LINE Notify Error: " . $e->getMessage());
+    }
+}
+
+// ---------------------------------------------------------
+// 4. FORM PROCESSING & NOTIFICATION LOGIC
+// ---------------------------------------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_pending) {
     $shop_name = isset($_POST['shop_name']) ? trim($_POST['shop_name']) : '';
     $shop_desc = isset($_POST['shop_description']) ? trim($_POST['shop_description']) : '';
     $accept_terms = isset($_POST['accept_terms']) ? true : false;
 
-    // ตรวจสอบความถูกต้องของข้อมูล (Validation) - แก้ไขให้รับ 1 ตัวอักษรขึ้นไป
+    // แก้ไข Validation ให้รับตั้งแต่ 1 ตัวอักษรขึ้นไป
     if (empty($shop_name)) {
         $form_errors[] = "กรุณาระบุชื่อร้านค้าของคุณ";
     } elseif (mb_strlen($shop_name) > 50) {
@@ -46,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_pending) {
     }
 
     if (empty($shop_desc)) {
-        $form_errors[] = "กรุณาระบุรายละเอียดร้านค้าเพื่อเป็นข้อมูลให้ผู้ซื้อ";
+        $form_errors[] = "กรุณาระบุรายละเอียดร้านค้าเพื่อเป็นข้อมูลให้ผู้ดูแลระบบตรวจสอบ";
     } elseif (mb_strlen($shop_desc) > 500) {
         $form_errors[] = "รายละเอียดร้านค้าไม่ควรเกิน 500 ตัวอักษร";
     }
@@ -55,39 +125,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_pending) {
         $form_errors[] = "คุณต้องกดยอมรับเงื่อนไขการให้บริการก่อนส่งคำขอ";
     }
 
-    // หากไม่มีข้อผิดพลาด ให้บันทึกลงฐานข้อมูล
+    // ผ่านการเช็คฟอร์ม -> ดำเนินการบันทึก
     if (empty($form_errors)) {
         try {
             $db->beginTransaction();
-            // บันทึกข้อมูลร้านค้าโดยกำหนดสถานะเป็น 'pending' รอแอดมินอนุมัติ
+            
+            // 4.1 INSERT SHOP DATA
             $stmt = $db->prepare("INSERT INTO shops (user_id, shop_name, description, status, created_at) VALUES (?, ?, ?, 'pending', NOW())");
             $stmt->execute([$user_id, $shop_name, $shop_desc]);
+            
+            // 4.2 INTERNAL WEB NOTIFICATION (SYSTEM BELL)
+            $admin_stmt = $db->query("SELECT id FROM users WHERE role IN ('admin', 'teacher')");
+            $admins = $admin_stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            if ($admins && count($admins) > 0) {
+                $notif_msg = "🔥 คำร้องขอเปิดร้านใหม่!\nผู้สมัคร: " . $user_fullname . "\nชื่อร้าน: " . $shop_name;
+                $notif_link = "admin/approve_shop.php"; // ลิงก์เมื่อกดแจ้งเตือน
+                
+                $notif_insert = $db->prepare("INSERT INTO notifications (user_id, message, link, is_read, created_at) VALUES (?, ?, ?, 0, NOW())");
+                foreach ($admins as $adm) {
+                    $notif_insert->execute([$adm['id'], $notif_msg, $notif_link]);
+                }
+            }
+
+            // 4.3 LINE NOTIFICATION TO ADMINS
+            $line_msg = "🔔 แจ้งเตือนจากระบบ BNCC Market\n\n"
+                      . "มีนักศึกษาส่งคำร้องขอเปิดร้านค้าใหม่\n"
+                      . "👤 ผู้สมัคร: " . $user_fullname . "\n"
+                      . "🏪 ชื่อร้าน: " . $shop_name . "\n"
+                      . "📝 รายละเอียด: " . mb_strimwidth($shop_desc, 0, 50, "...") . "\n\n"
+                      . "👉 โปรดตรวจสอบและอนุมัติในระบบหลังบ้าน";
+                      
+            // รันฟังก์ชันส่งไลน์หาแอดมินที่มี line_user_id
+            notifyAdminsViaLineTargeted($db, $line_msg);
+
             $db->commit();
             
-            $_SESSION['flash_message'] = "ส่งคำขอเปิดร้านค้าสำเร็จ กรุณารอแอดมินตรวจสอบข้อมูล 1-2 วันทำการ";
+            $_SESSION['flash_message'] = "ส่งคำขอเปิดร้านค้าสำเร็จ! ระบบได้ส่งแจ้งเตือนไปหาผู้ดูแลระบบแล้ว กรุณารอ 1-2 วันทำการ";
             $_SESSION['flash_type'] = "success";
             header("Location: register_seller.php");
             exit();
+            
         } catch (PDOException $e) {
             $db->rollBack();
-            $form_errors[] = "เกิดข้อผิดพลาดในการบันทึกข้อมูล: " . $e->getMessage();
+            $form_errors[] = "เกิดข้อผิดพลาดในการบันทึกข้อมูลระดับระบบ: " . $e->getMessage();
         }
     }
 }
 
-$pageTitle = "ลงทะเบียนเปิดร้านค้า - BNCC Market";
+// ---------------------------------------------------------
+// 5. RENDER FRONTEND UI
+// ---------------------------------------------------------
+$pageTitle = "ลงทะเบียนเปิดร้านค้า (Seller Program) - BNCC Market";
 require_once '../includes/header.php';
 ?>
 
 <style>
-    /* ============================================================
-       SELLER REGISTRATION STYLESHEET
-       ============================================================ */
     :root {
         --seller-hue-primary: 238;
         --seller-color-primary: hsl(var(--seller-hue-primary), 80%, 60%);
         --seller-color-primary-dark: hsl(var(--seller-hue-primary), 80%, 50%);
         --seller-color-primary-light: hsl(var(--seller-hue-primary), 80%, 95%);
+        --seller-color-primary-soft: rgba(79, 70, 229, 0.08);
         
         --seller-color-success: #10b981;
         --seller-color-danger: #ef4444;
@@ -99,37 +198,46 @@ require_once '../includes/header.php';
         
         --seller-text-main: #0f172a;
         --seller-text-muted: #64748b;
+        --seller-text-light: #94a3b8;
         
         --seller-radius-sm: 8px;
         --seller-radius-md: 16px;
         --seller-radius-lg: 24px;
+        --seller-radius-pill: 9999px;
         
         --seller-shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         --seller-shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         --seller-shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
+        --seller-shadow-glow: 0 0 20px rgba(79, 70, 229, 0.2);
         
         --seller-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        --seller-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     }
 
     .dark-theme {
         --seller-surface-bg: #111827;
         --seller-surface-alt: #0b0f19;
         --seller-border-color: #1f2937;
+        
         --seller-text-main: #f8fafc;
         --seller-text-muted: #94a3b8;
+        --seller-text-light: #475569;
+        
         --seller-color-primary-light: rgba(79, 70, 229, 0.15);
+        --seller-color-primary-soft: rgba(79, 70, 229, 0.1);
         --seller-shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
     }
 
+    /* Container System */
     .onboarding-container {
         max-width: 1100px;
-        margin: 40px auto;
+        margin: 60px auto;
         padding: 0 20px;
-        min-height: calc(100vh - 200px);
+        min-height: calc(100vh - 250px);
         display: flex;
         align-items: center;
         justify-content: center;
-        animation: scaleFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        animation: scaleFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
     .onboarding-layout {
@@ -141,11 +249,13 @@ require_once '../includes/header.php';
         box-shadow: var(--seller-shadow-lg);
         overflow: hidden;
         width: 100%;
+        position: relative;
     }
 
+    /* Left side presentation */
     .onboarding-presentation {
-        padding: 50px 40px;
-        background: linear-gradient(135deg, var(--seller-color-primary-light) 0%, var(--seller-surface-alt) 100%);
+        padding: 60px 45px;
+        background: linear-gradient(145deg, var(--seller-color-primary-light) 0%, var(--seller-surface-alt) 100%);
         border-right: 1px solid var(--seller-border-color);
         display: flex;
         flex-direction: column;
@@ -154,65 +264,95 @@ require_once '../includes/header.php';
         overflow: hidden;
     }
 
+    .onboarding-presentation::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, var(--seller-color-primary-soft) 10%, transparent 10%);
+        background-size: 20px 20px;
+        opacity: 0.3;
+        z-index: 0;
+        animation: slowDrift 60s linear infinite;
+        pointer-events: none;
+    }
+
+    .presentation-content-wrapper {
+        position: relative;
+        z-index: 1;
+    }
+
     .presentation-badge {
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        padding: 8px 16px;
-        background: var(--seller-color-primary);
+        padding: 8px 18px;
+        background: linear-gradient(135deg, var(--seller-color-primary), var(--seller-color-primary-dark));
         color: #ffffff;
-        border-radius: 50px;
-        font-size: 0.8rem;
+        border-radius: var(--seller-radius-pill);
+        font-size: 0.85rem;
         font-weight: 800;
         text-transform: uppercase;
         letter-spacing: 1.5px;
-        margin-bottom: 24px;
+        margin-bottom: 25px;
         width: fit-content;
-        box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+        box-shadow: var(--seller-shadow-md);
+        animation: floatUpDown 3s ease-in-out infinite;
     }
 
     .presentation-headline {
-        font-size: 2.2rem;
+        font-size: 2.4rem;
         font-weight: 900;
         color: var(--seller-text-main);
-        line-height: 1.2;
-        margin-bottom: 16px;
+        line-height: 1.25;
+        margin-bottom: 18px;
         letter-spacing: -0.5px;
     }
 
     .presentation-subheadline {
-        font-size: 1.05rem;
+        font-size: 1.1rem;
         color: var(--seller-text-muted);
         line-height: 1.6;
-        margin-bottom: 40px;
+        margin-bottom: 45px;
+        font-weight: 500;
     }
 
     .feature-list-group {
         display: flex;
         flex-direction: column;
-        gap: 24px;
+        gap: 28px;
     }
 
     .feature-list-item {
         display: flex;
         align-items: flex-start;
-        gap: 16px;
+        gap: 18px;
+        transition: var(--seller-transition);
+        padding: 10px;
+        border-radius: var(--seller-radius-md);
+    }
+
+    .feature-list-item:hover {
+        background: var(--seller-color-primary-soft);
+        transform: translateX(10px);
     }
 
     .feature-icon-wrapper {
-        width: 48px;
-        height: 48px;
-        border-radius: var(--seller-radius-sm);
+        width: 52px;
+        height: 52px;
+        border-radius: var(--seller-radius-md);
         background: var(--seller-surface-bg);
-        border: 1px solid var(--seller-border-color);
+        border: 2px solid var(--seller-color-primary-light);
         display: flex;
         justify-content: center;
         align-items: center;
         color: var(--seller-color-primary);
-        font-size: 1.25rem;
+        font-size: 1.4rem;
         flex-shrink: 0;
         box-shadow: var(--seller-shadow-sm);
-        transition: var(--seller-transition);
+        transition: var(--seller-bounce);
     }
 
     .feature-list-item:hover .feature-icon-wrapper {
@@ -223,21 +363,22 @@ require_once '../includes/header.php';
     }
 
     .feature-text-content h4 {
-        font-size: 1.05rem;
+        font-size: 1.1rem;
         font-weight: 800;
         color: var(--seller-text-main);
-        margin: 0 0 4px 0;
+        margin: 0 0 6px 0;
     }
 
     .feature-text-content p {
-        font-size: 0.9rem;
+        font-size: 0.95rem;
         color: var(--seller-text-muted);
         margin: 0;
         line-height: 1.5;
     }
 
+    /* Right side interaction */
     .onboarding-interaction {
-        padding: 50px 40px;
+        padding: 60px 50px;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -245,40 +386,43 @@ require_once '../includes/header.php';
     }
 
     .interaction-header {
-        margin-bottom: 32px;
+        margin-bottom: 35px;
     }
 
     .interaction-header h2 {
         font-weight: 900;
         color: var(--seller-text-main);
-        margin-bottom: 8px;
-        font-size: 1.8rem;
+        margin-bottom: 10px;
+        font-size: 1.9rem;
     }
 
     .interaction-header p {
         color: var(--seller-text-muted);
-        font-size: 0.95rem;
+        font-size: 1rem;
         margin: 0;
+        line-height: 1.5;
     }
 
     .validation-alert-box {
-        background: rgba(239, 68, 68, 0.1);
+        background: rgba(239, 68, 68, 0.08);
         border-left: 4px solid var(--seller-color-danger);
         padding: 16px 20px;
         border-radius: 0 var(--seller-radius-sm) var(--seller-radius-sm) 0;
-        margin-bottom: 24px;
+        margin-bottom: 25px;
+        animation: shakeError 0.5s cubic-bezier(.36,.07,.19,.97) both;
     }
 
     .validation-alert-list {
         margin: 0;
         padding-left: 20px;
         color: var(--seller-color-danger);
-        font-size: 0.9rem;
+        font-size: 0.95rem;
         font-weight: 600;
+        line-height: 1.6;
     }
 
     .input-field-group {
-        margin-bottom: 24px;
+        margin-bottom: 25px;
         position: relative;
     }
 
@@ -286,35 +430,40 @@ require_once '../includes/header.php';
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font-size: 0.95rem;
+        font-size: 1rem;
         font-weight: 800;
         color: var(--seller-text-main);
-        margin-bottom: 8px;
+        margin-bottom: 10px;
     }
 
     .input-required-mark {
         color: var(--seller-color-danger);
+        margin-left: 4px;
     }
 
     .input-character-count {
-        font-size: 0.75rem;
+        font-size: 0.8rem;
         font-weight: 600;
-        color: var(--seller-text-muted);
+        color: var(--seller-text-light);
         transition: color 0.3s;
+        background: var(--seller-surface-alt);
+        padding: 2px 8px;
+        border-radius: var(--seller-radius-pill);
     }
 
     .input-character-count.limit-reached {
-        color: var(--seller-color-danger);
+        color: #ffffff;
+        background: var(--seller-color-danger);
     }
 
     .form-input-element {
         width: 100%;
-        padding: 14px 18px;
+        padding: 16px 20px;
         border-radius: var(--seller-radius-md);
         border: 2px solid var(--seller-border-color);
         background: var(--seller-surface-alt);
         color: var(--seller-text-main);
-        font-size: 1rem;
+        font-size: 1.05rem;
         font-family: inherit;
         transition: var(--seller-transition);
     }
@@ -326,20 +475,21 @@ require_once '../includes/header.php';
     }
 
     .form-input-element::placeholder {
-        color: var(--seller-text-muted);
-        opacity: 0.5;
+        color: var(--seller-text-light);
+        font-weight: 400;
     }
 
     .form-input-element.is-valid {
         border-color: var(--seller-color-success);
+        background: rgba(16, 185, 129, 0.02);
     }
 
     .terms-agreement-wrapper {
         display: flex;
         align-items: flex-start;
-        gap: 12px;
-        margin-bottom: 32px;
-        padding: 16px;
+        gap: 15px;
+        margin-bottom: 35px;
+        padding: 20px;
         background: var(--seller-color-primary-light);
         border-radius: var(--seller-radius-md);
         border: 1px dashed rgba(79, 70, 229, 0.3);
@@ -348,17 +498,18 @@ require_once '../includes/header.php';
 
     .terms-agreement-wrapper:hover {
         background: rgba(79, 70, 229, 0.1);
+        border-style: solid;
     }
 
     .custom-check-element {
-        width: 24px;
-        height: 24px;
+        width: 26px;
+        height: 26px;
         border-radius: 6px;
         border: 2px solid var(--seller-color-primary);
         appearance: none;
         cursor: pointer;
         position: relative;
-        transition: var(--seller-transition);
+        transition: var(--seller-bounce);
         margin-top: 2px;
         flex-shrink: 0;
         background: var(--seller-surface-bg);
@@ -367,7 +518,7 @@ require_once '../includes/header.php';
     .custom-check-element:checked {
         background: var(--seller-color-primary);
         border-color: var(--seller-color-primary);
-        animation: checkBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        transform: scale(1.05);
     }
 
     .custom-check-element:checked::after {
@@ -379,11 +530,11 @@ require_once '../includes/header.php';
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        font-size: 0.8rem;
+        font-size: 0.9rem;
     }
 
     .custom-check-label {
-        font-size: 0.9rem;
+        font-size: 0.95rem;
         color: var(--seller-text-muted);
         line-height: 1.6;
         cursor: pointer;
@@ -393,45 +544,66 @@ require_once '../includes/header.php';
     .custom-check-label strong {
         color: var(--seller-color-primary);
         font-weight: 800;
+        text-decoration: underline;
+        text-decoration-color: transparent;
+        transition: 0.3s;
+    }
+
+    .custom-check-label strong:hover {
+        text-decoration-color: var(--seller-color-primary);
     }
 
     .action-submit-btn {
         width: 100%;
-        padding: 18px;
+        padding: 20px;
         background: linear-gradient(135deg, var(--seller-color-primary), var(--seller-color-primary-dark));
         color: #ffffff;
         border: none;
         border-radius: var(--seller-radius-md);
-        font-size: 1.1rem;
+        font-size: 1.15rem;
         font-weight: 800;
         cursor: pointer;
-        transition: var(--seller-transition);
+        transition: var(--seller-bounce);
         display: flex;
         justify-content: center;
         align-items: center;
-        gap: 10px;
-        box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
+        gap: 12px;
+        box-shadow: var(--seller-shadow-md);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .action-submit-btn::before {
+        content: '';
+        position: absolute;
+        top: 0; left: -100%;
+        width: 100%; height: 100%;
+        background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent);
+        transition: 0.5s;
     }
 
     .action-submit-btn:not(:disabled):hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 25px rgba(79, 70, 229, 0.4);
+        transform: translateY(-4px);
+        box-shadow: var(--seller-shadow-glow);
+    }
+
+    .action-submit-btn:not(:disabled):hover::before {
+        left: 100%;
     }
 
     .action-submit-btn:not(:disabled):active {
-        transform: translateY(0);
+        transform: translateY(0) scale(0.98);
     }
 
     .action-submit-btn:disabled {
         background: var(--seller-surface-alt);
-        color: var(--seller-text-muted);
+        color: var(--seller-text-light);
         border: 2px solid var(--seller-border-color);
         cursor: not-allowed;
         box-shadow: none;
-        opacity: 0.7;
     }
 
-    /* Pending State UI */
+    /* PENDING STATE */
     .pending-review-state {
         text-align: center;
         padding: 40px 20px;
@@ -439,16 +611,16 @@ require_once '../includes/header.php';
     }
 
     .pending-anim-icon {
-        width: 120px;
-        height: 120px;
+        width: 130px;
+        height: 130px;
         background: rgba(245, 158, 11, 0.1);
         color: var(--seller-color-warning);
         border-radius: 50%;
         display: flex;
         justify-content: center;
         align-items: center;
-        font-size: 4rem;
-        margin: 0 auto 30px auto;
+        font-size: 4.5rem;
+        margin: 0 auto 35px auto;
         position: relative;
     }
 
@@ -456,76 +628,111 @@ require_once '../includes/header.php';
         content: '';
         position: absolute;
         top: -10px; left: -10px; right: -10px; bottom: -10px;
-        border: 3px dashed var(--seller-color-warning);
+        border: 4px dashed var(--seller-color-warning);
         border-radius: 50%;
-        animation: spinnerBorder 15s linear infinite;
+        animation: spinnerBorder 12s linear infinite;
         opacity: 0.4;
     }
 
     .pending-review-title {
-        font-size: 2rem;
+        font-size: 2.2rem;
         font-weight: 900;
         color: var(--seller-text-main);
-        margin-bottom: 16px;
+        margin-bottom: 18px;
+        letter-spacing: -0.5px;
     }
 
     .pending-review-desc {
         color: var(--seller-text-muted);
-        font-size: 1.05rem;
+        font-size: 1.1rem;
         line-height: 1.6;
         max-width: 400px;
-        margin: 0 auto 32px auto;
+        margin: 0 auto 35px auto;
     }
 
     .pending-shop-preview {
         background: var(--seller-surface-alt);
         border: 1px solid var(--seller-border-color);
         border-radius: var(--seller-radius-md);
-        padding: 20px;
+        padding: 25px;
         text-align: left;
-        margin-bottom: 32px;
+        margin-bottom: 35px;
         display: flex;
         align-items: center;
-        gap: 15px;
-    }
-
-    .preview-shop-icon {
-        width: 50px;
-        height: 50px;
-        background: var(--seller-surface-bg);
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        color: var(--seller-color-primary);
+        gap: 20px;
         box-shadow: var(--seller-shadow-sm);
     }
 
-    @keyframes scaleFadeIn {
-        0% { opacity: 0; transform: scale(0.95) translateY(20px); }
-        100% { opacity: 1; transform: scale(1) translateY(0); }
+    .preview-shop-icon {
+        width: 60px;
+        height: 60px;
+        background: var(--seller-surface-bg);
+        border-radius: var(--seller-radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        color: var(--seller-color-primary);
+        border: 1px solid var(--seller-border-color);
     }
 
-    @keyframes checkBounce {
-        0% { transform: scale(0.8); }
-        50% { transform: scale(1.1); }
-        100% { transform: scale(1); }
+    .preview-meta-label {
+        font-size: 0.85rem;
+        color: var(--seller-text-light);
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 4px;
     }
 
-    @keyframes spinnerBorder {
-        100% { transform: rotate(360deg); }
+    .preview-meta-value {
+        font-size: 1.4rem;
+        font-weight: 900;
+        color: var(--seller-text-main);
     }
 
+    .btn-return-profile {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 16px 30px;
+        border-radius: var(--seller-radius-md);
+        font-weight: 800;
+        font-size: 1.05rem;
+        background: var(--seller-surface-alt);
+        color: var(--seller-text-main);
+        border: 2px solid var(--seller-border-color);
+        text-decoration: none;
+        transition: var(--seller-transition);
+        width: 100%;
+    }
+
+    .btn-return-profile:hover {
+        background: var(--seller-border-color);
+        color: var(--seller-text-main);
+    }
+
+    /* KEYFRAMES */
+    @keyframes scaleFadeIn { 0% { opacity: 0; transform: scale(0.96) translateY(20px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+    @keyframes slowDrift { 0% { transform: rotate(0deg) translate(0, 0); } 100% { transform: rotate(360deg) translate(-50px, -50px); } }
+    @keyframes floatUpDown { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    @keyframes spinnerBorder { 100% { transform: rotate(360deg); } }
+    @keyframes shakeError { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+
+    /* RESPONSIVE */
     @media (max-width: 992px) {
         .onboarding-layout { grid-template-columns: 1fr; }
-        .onboarding-presentation { border-right: none; border-bottom: 1px solid var(--seller-border-color); padding: 40px 30px; }
-        .onboarding-interaction { padding: 40px 30px; }
+        .onboarding-presentation { border-right: none; border-bottom: 1px solid var(--seller-border-color); padding: 50px 30px; text-align: center; }
+        .presentation-content-wrapper { display: flex; flex-direction: column; align-items: center; }
+        .feature-list-item { text-align: left; }
+        .onboarding-interaction { padding: 50px 30px; }
     }
-
     @media (max-width: 576px) {
-        .onboarding-presentation, .onboarding-interaction { padding: 30px 20px; }
-        .presentation-headline { font-size: 1.8rem; }
+        .onboarding-presentation, .onboarding-interaction { padding: 40px 20px; }
+        .presentation-headline { font-size: 2rem; }
+        .feature-list-item { flex-direction: column; align-items: center; text-align: center; }
+        .pending-review-title { font-size: 1.8rem; }
     }
 </style>
 
@@ -533,40 +740,43 @@ require_once '../includes/header.php';
     <div class="onboarding-layout">
         
         <div class="onboarding-presentation">
-            <div class="presentation-badge">
-                <i class="fas fa-rocket"></i> Seller Program
-            </div>
-            <h1 class="presentation-headline">เริ่มต้นธุรกิจบนพื้นที่ของวิทยาลัย</h1>
-            <p class="presentation-subheadline">
-                เปลี่ยนความสามารถ สิ่งของ หรือไอเดียของคุณให้เป็นรายได้เสริมที่มั่นคงผ่านแพลตฟอร์ม BNCC Market
-            </p>
-            
-            <div class="feature-list-group">
-                <div class="feature-list-item">
-                    <div class="feature-icon-wrapper"><i class="fas fa-bullseye"></i></div>
-                    <div class="feature-text-content">
-                        <h4>เข้าถึงกลุ่มเป้าหมายโดยตรง</h4>
-                        <p>สินค้าของคุณจะแสดงต่อนักศึกษาและบุคลากรภายในวิทยาลัยโดยอัตโนมัติ</p>
-                    </div>
+            <div class="presentation-content-wrapper">
+                <div class="presentation-badge">
+                    <i class="fas fa-rocket"></i> Seller Program
                 </div>
-                <div class="feature-list-item">
-                    <div class="feature-icon-wrapper"><i class="fas fa-shield-alt"></i></div>
-                    <div class="feature-text-content">
-                        <h4>ปลอดภัยและตรวจสอบได้</h4>
-                        <p>ระบบคัดกรองร้านค้าเพื่อสร้างความมั่นใจให้กับผู้ซื้อทุกคนในชุมชน</p>
+                <h1 class="presentation-headline">เริ่มต้นธุรกิจบนพื้นที่ของวิทยาลัย</h1>
+                <p class="presentation-subheadline">
+                    เปลี่ยนความสามารถ สิ่งของมือสอง หรือไอเดียสร้างสรรค์ของคุณให้เป็นรายได้เสริมที่มั่นคงผ่านแพลตฟอร์ม BNCC Market อย่างเป็นทางการ
+                </p>
+                
+                <div class="feature-list-group">
+                    <div class="feature-list-item">
+                        <div class="feature-icon-wrapper"><i class="fas fa-bullseye"></i></div>
+                        <div class="feature-text-content">
+                            <h4>เข้าถึงกลุ่มเป้าหมายโดยตรง</h4>
+                            <p>สินค้าของคุณจะแสดงต่อนักศึกษาและบุคลากรภายในวิทยาลัยนับพันคนโดยอัตโนมัติ</p>
+                        </div>
                     </div>
-                </div>
-                <div class="feature-list-item">
-                    <div class="feature-icon-wrapper"><i class="fas fa-chart-line"></i></div>
-                    <div class="feature-text-content">
-                        <h4>จัดการร้านค้าครบวงจร</h4>
-                        <p>มีระบบจัดการหลังบ้าน สต๊อกสินค้า และดูสถิติการขายฟรีไม่มีค่าธรรมเนียม</p>
+                    <div class="feature-list-item">
+                        <div class="feature-icon-wrapper"><i class="fas fa-shield-alt"></i></div>
+                        <div class="feature-text-content">
+                            <h4>ปลอดภัยและตรวจสอบได้</h4>
+                            <p>ระบบคัดกรองข้อมูลร้านค้าเพื่อสร้างความมั่นใจสูงสุดให้กับผู้ซื้อทุกคนในชุมชน</p>
+                        </div>
+                    </div>
+                    <div class="feature-list-item">
+                        <div class="feature-icon-wrapper"><i class="fas fa-chart-line"></i></div>
+                        <div class="feature-text-content">
+                            <h4>จัดการร้านค้าครบวงจรฟรี</h4>
+                            <p>มีระบบจัดการหลังบ้าน สต๊อกสินค้า และดูสถิติยอดขายฟรี 100% ไม่มีหักค่าธรรมเนียม</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="onboarding-interaction">
+            
             <?php if ($is_pending): ?>
                 
                 <div class="pending-review-state">
@@ -575,7 +785,7 @@ require_once '../includes/header.php';
                     </div>
                     <h2 class="pending-review-title">คำขออยู่ระหว่างพิจารณา</h2>
                     <p class="pending-review-desc">
-                        เราได้รับข้อมูลการขอเปิดร้านค้าของคุณแล้ว ขณะนี้ผู้ดูแลระบบกำลังตรวจสอบความถูกต้อง โปรดรอประมาณ 1-2 วันทำการ
+                        ระบบได้รับข้อมูลการขอเปิดร้านค้าของคุณเรียบร้อยแล้ว ระบบได้แจ้งเตือนผู้ดูแลให้ทราบแล้ว โปรดรอการพิจารณาประมาณ 1-2 วันทำการ
                     </p>
                     
                     <div class="pending-shop-preview">
@@ -583,14 +793,14 @@ require_once '../includes/header.php';
                             <i class="fas fa-store"></i>
                         </div>
                         <div>
-                            <div style="font-size: 0.8rem; color: var(--seller-text-muted); font-weight: 700; text-transform: uppercase;">ชื่อร้านค้าที่เสนอ</div>
-                            <div style="font-size: 1.2rem; font-weight: 800; color: var(--seller-text-main);">
+                            <div class="preview-meta-label">ชื่อร้านค้าที่เสนอ</div>
+                            <div class="preview-meta-value">
                                 <?= htmlspecialchars($existing_shop['shop_name']) ?>
                             </div>
                         </div>
                     </div>
                     
-                    <a href="../pages/profile.php" class="action-submit-btn" style="text-decoration: none; background: var(--seller-surface-alt); color: var(--seller-text-main); border: 2px solid var(--seller-border-color); box-shadow: none;">
+                    <a href="../pages/profile.php" class="btn-return-profile">
                         <i class="fas fa-arrow-left"></i> กลับไปหน้าโปรไฟล์
                     </a>
                 </div>
@@ -599,7 +809,7 @@ require_once '../includes/header.php';
                 
                 <div class="interaction-header">
                     <h2>ข้อมูลร้านค้าเบื้องต้น</h2>
-                    <p>กรอกรายละเอียดเพื่อส่งให้ผู้ดูแลระบบพิจารณาอนุมัติเปิดร้าน</p>
+                    <p>กรอกรายละเอียดเพื่อส่งให้ผู้ดูแลระบบพิจารณาอนุมัติเปิดร้านในระบบ</p>
                 </div>
 
                 <?php if (!empty($form_errors)): ?>
@@ -622,7 +832,7 @@ require_once '../includes/header.php';
                         <input type="text" name="shop_name" id="inputShopName" class="form-input-element" 
                                placeholder="เช่น BNCC Stationery" 
                                value="<?= htmlspecialchars($_POST['shop_name'] ?? '') ?>" 
-                               maxlength="50" autocomplete="off">
+                               maxlength="50" autocomplete="off" autofocus>
                     </div>
 
                     <div class="input-field-group">
@@ -631,7 +841,7 @@ require_once '../includes/header.php';
                             <span class="input-character-count" id="counterShopDesc">0 / 500</span>
                         </div>
                         <textarea name="shop_description" id="inputShopDesc" class="form-input-element" rows="4" 
-                                  placeholder="อธิบายสั้นๆ ว่าร้านของคุณขายอะไร มีจุดเด่นหรือบริการอะไรบ้าง..." 
+                                  placeholder="อธิบายสั้นๆ ว่าร้านของคุณขายอะไร มีสินค้าประเภทไหน หรือมีจุดเด่นบริการอะไรให้ลูกค้ารู้จัก..." 
                                   maxlength="500"><?= htmlspecialchars($_POST['shop_description'] ?? '') ?></textarea>
                     </div>
 
@@ -639,12 +849,13 @@ require_once '../includes/header.php';
                         <input type="checkbox" name="accept_terms" id="inputAcceptTerms" class="custom-check-element" 
                                <?= isset($_POST['accept_terms']) ? 'checked' : '' ?>>
                         <label for="inputAcceptTerms" class="custom-check-label">
-                            ข้าพเจ้ายืนยันว่าข้อมูลถูกต้อง และยอมรับ <strong>กฎระเบียบการซื้อขาย</strong> ภายในวิทยาลัย หากฝ่าฝืนยินยอมให้ระงับบัญชี
+                            ข้าพเจ้ายืนยันว่าข้อมูลถูกต้อง และยอมรับ <strong>กฎระเบียบการซื้อขาย</strong> ภายในวิทยาลัย หากมีการฉ้อโกงหรือละเมิดกฎ ยินยอมให้ระงับบัญชีถาวร
                         </label>
                     </div>
 
                     <button type="submit" class="action-submit-btn" id="btnSubmitRequest" disabled>
-                        ส่งคำขอเปิดร้านค้า <i class="fas fa-arrow-right ms-2"></i>
+                        <span>ส่งคำขอเปิดร้านค้า</span>
+                        <i class="fas fa-arrow-right"></i>
                     </button>
                     
                 </form>
@@ -655,10 +866,9 @@ require_once '../includes/header.php';
 </div>
 
 <script>
-/**
- * Real-time Form Validation System
- */
 document.addEventListener('DOMContentLoaded', function() {
+    'use strict';
+
     const elShopName = document.getElementById('inputShopName');
     const elShopDesc = document.getElementById('inputShopDesc');
     const elTerms = document.getElementById('inputAcceptTerms');
@@ -673,16 +883,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const valName = elShopName.value.trim();
         const valDesc = elShopDesc.value.trim();
         
-        // แก้ไขเงื่อนไขตรงนี้: รับค่าแค่ 1 ตัวอักษรขึ้นไปก็ให้ผ่านได้
+        // อนุญาตให้ผ่านถ้ามีอย่างน้อย 1 ตัวอักษรขึ้นไป
         const isNameValid = valName.length >= 1 && valName.length <= 50;
         const isDescValid = valDesc.length >= 1 && valDesc.length <= 500;
         const isTermsChecked = elTerms.checked;
 
-        // Visual feedback for valid inputs
         isNameValid ? elShopName.classList.add('is-valid') : elShopName.classList.remove('is-valid');
         isDescValid ? elShopDesc.classList.add('is-valid') : elShopDesc.classList.remove('is-valid');
 
-        // Enable button only if all criteria meet
         if (isNameValid && isDescValid && isTermsChecked) {
             elBtnSubmit.removeAttribute('disabled');
         } else {
@@ -701,7 +909,9 @@ document.addEventListener('DOMContentLoaded', function() {
         cntDesc.classList.toggle('limit-reached', lenDesc >= 500);
     }
 
-    ['input', 'keyup', 'change', 'paste'].forEach(evt => {
+    const trackingEvents = ['input', 'keyup', 'change', 'paste', 'cut'];
+    
+    trackingEvents.forEach(evt => {
         if(elShopName) {
             elShopName.addEventListener(evt, () => {
                 updateCharCounters();
@@ -722,8 +932,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     regForm.addEventListener('submit', function(e) {
         if (!elBtnSubmit.disabled) {
-            elBtnSubmit.innerHTML = '<i class="fas fa-circle-notch fa-spin me-2"></i> กำลังดำเนินการ...';
-            elBtnSubmit.style.opacity = '0.8';
+            elBtnSubmit.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i><span>กำลังส่งข้อมูลและแจ้งแอดมิน...</span>';
+            elBtnSubmit.style.opacity = '0.9';
             elBtnSubmit.style.cursor = 'wait';
         }
     });
