@@ -239,23 +239,14 @@ function logAdminAction($action_type, $target_type, $target_id, $details) {
 function sendNotification($user_id, $type, $message, $link = '#') {
     $db = getDB();
     
+    // 🎯 แก้ไข: ให้เก็บเฉพาะพาธสัมพัทธ์ (Relative Path) ลง DB เท่านั้น
     if ($link !== '#' && !filter_var($link, FILTER_VALIDATE_URL)) {
-        $clean_link = ltrim($link, '/');
-        
-        // 🎯 ตรวจสอบว่าลิงก์มีชื่อโฟลเดอร์โปรเจกต์ "ครบถ้วน" หรือยัง
-        // ถ้าไม่มีก้อน student_marketplace ให้เอา BASE_URL (ที่มีพาร์ทครบ) ไปแปะหน้าทันที
-        if (strpos($clean_link, 'student_marketplace') === false) {
-            $link = BASE_URL . $clean_link;
-        } else {
-            // ถ้ามีชื่อโปรเจกต์แล้ว แต่ยังไม่มี http (เป็นพาร์ทจาก root domain)
-            // ให้เติม protocol และ host เข้าไปข้างหน้าให้สมบูรณ์
-            $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-            $host = $_SERVER['HTTP_HOST'];
-            $link = "$protocol://$host/" . $clean_link;
-        }
+        // ลบ / ข้างหน้า และลบชื่อโฟลเดอร์โครงการออกถ้ามันติดมา เพื่อให้ใน DB สะอาดที่สุด
+        $link = ltrim($link, '/');
+        $remove = ['s673190104/student_marketplace/', 's673190104/', 'student_marketplace/'];
+        $link = str_ireplace($remove, '', $link);
     }
 
-    // บันทึกลงฐานข้อมูลพร้อมเวลาปัจจุบัน
     $stmt = $db->prepare("INSERT INTO notifications (user_id, type, message, link, created_at) VALUES (?, ?, ?, ?, NOW())");
     return $stmt->execute([$user_id, $type, $message, $link]);
 }
