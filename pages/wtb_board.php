@@ -385,6 +385,31 @@ $posts = $stmt->fetchAll();
         .wtb-grid { grid-template-columns: 1fr; }
         .wtb-card-img-wrap { height: 200px; }
     }
+/* ===============================
+   FIX BUTTON LAYOUT
+   =============================== */
+
+.wtb-card-footer .action-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+}
+
+.wtb-card-footer .action-row .btn-action{
+    width:100%;
+}
+
+.btn-pro-admin{
+    width:100%;
+}
+
+@media (max-width:500px){
+
+    .wtb-card-footer .action-row{
+        grid-template-columns:1fr;
+    }
+
+}
 
     
 </style>
