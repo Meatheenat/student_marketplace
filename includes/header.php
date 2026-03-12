@@ -2350,12 +2350,12 @@ if (isLoggedIn()) {
                     <i class="fas fa-store nav-menu-icon"></i>
                     <span>แผงควบคุมร้านค้า</span>
                 </a>
-            <?php else: ?>
-                <a href="<?= $base_path ?>auth/register_seller.php" class="nav-menu-item">
-                    <i class="fas fa-store-alt nav-menu-icon"></i>
-                    <span>ลงทะเบียนเปิดร้านค้า</span>
-                </a>
-            <?php endif; ?>
+            <?php elseif (!in_array($_SESSION['role'], ['admin', 'teacher'])): ?>
+    <a href="<?= $base_path ?>auth/register_seller.php" class="nav-menu-item">
+        <i class="fas fa-store-alt nav-menu-icon"></i>
+        <span>ลงทะเบียนเปิดร้านค้า</span>
+    </a>
+<?php endif; ?>
 
             <?php if (in_array($_SESSION['role'], ['admin', 'teacher'])): ?>
                 <div class="nav-group-label">ส่วนการจัดการ (Administration)</div>
