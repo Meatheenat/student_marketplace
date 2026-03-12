@@ -852,6 +852,51 @@ if (isLoggedIn()) {
             100% { background-position: -200% 0; }
         }
 
+        @keyframes bell-shake {
+            0% { transform: rotate(0); }
+            10% { transform: rotate(15deg); }
+            20% { transform: rotate(-10deg); }
+            30% { transform: rotate(10deg); }
+            40% { transform: rotate(-10deg); }
+            50% { transform: rotate(5deg); }
+            60% { transform: rotate(-5deg); }
+            70% { transform: rotate(0); }
+            100% { transform: rotate(0); }
+        }
+
+        @keyframes heartbeat {
+            0% { transform: scale(1); }
+            14% { transform: scale(1.3); }
+            28% { transform: scale(1); }
+            42% { transform: scale(1.3); }
+            70% { transform: scale(1); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes bounce-in {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes slide-in-bounce {
+            0% { transform: translateX(-100%); opacity: 0; }
+            60% { transform: translateX(10px); opacity: 1; }
+            80% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+
+        @keyframes glow-pulse {
+            0%, 100% { box-shadow: 0 0 5px rgba(99, 102, 241, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.8), 0 0 30px rgba(99, 102, 241, 0.4); }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+
         /* Global Preloader Component */
         .bncc-preloader {
             position: fixed;
@@ -2450,6 +2495,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.badge.style.display = 'flex';
                 this.badge.textContent = data.unread_count > 99 ? '99+' : data.unread_count;
                 this.badge.classList.add('animate-pop');
+                // Add bell shake animation for unread notifications
+                this.toggleBtn.querySelector('i').style.animation = 'bell-shake 0.6s ease-in-out';
+                setTimeout(() => {
+                    this.toggleBtn.querySelector('i').style.animation = '';
+                }, 600);
             } else {
                 this.badge.style.display = 'none';
                 this.badge.classList.remove('animate-pop');
