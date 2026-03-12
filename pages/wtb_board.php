@@ -1,54 +1,60 @@
 <?php
-/**
- * BNCC MARKET - WTB BOARD (Want To Buy)
- * Version: 5.0 Premium UI (Full Structure - Admin/Teacher Soft Delete Support)
- * -------------------------------------------------------------------------
- * โครงสร้างเดิมของมึง 100% เพิ่มเติมฟังก์ชันตามสั่ง ไม่ตัดทอนบรรทัดให้มึงด่าแน่นอน
- * ระบบนี้รองรับ Soft Delete เพื่อความปลอดภัยของข้อมูลนักศึกษา
- */
+
+
+
 $pageTitle = "กระดานตามหาของ - BNCC Market";
 require_once '../includes/header.php';
 require_once '../includes/functions.php';
 
+
 $db = getDB();
 
-/* ============================================================
-   1. SYSTEM LOGIC: ACTIONS (Owner/Member)
-   ============================================================ */
 
-// 🎯 ระบบจัดการปิดประกาศสำหรับเจ้าของ (เปลี่ยนสถานะเป็น closed)
-// ฟังก์ชันนี้จะทำงานเมื่อเจ้าของกดปุ่ม "ปิดประกาศ"
 if (isset($_GET['delete']) && isLoggedIn()) {
     $del_id = (int)$_GET['delete'];
     
-    // ตรวจสอบความเป็นเจ้าของโพสต์เพื่อป้องกันการแฮก URL
+    // ตรวจสอบความปลอดภัย: ดึง User ID ของเจ้าของโพสต์มาเทียบ
     $check_stmt = $db->prepare("SELECT user_id FROM wtb_posts WHERE id = ?");
     $check_stmt->execute([$del_id]);
     $post_owner = $check_stmt->fetchColumn();
     
-    // ถ้าเป็นเจ้าของจริง ให้ทำการปิดโพสต์ (Closed)
+    // เงื่อนไข: ต้องเป็นเจ้าของเท่านั้นถึงจะปิดประกาศผ่านฟังก์ชันนี้ได้
     if ($post_owner == $_SESSION['user_id']) {
         $stmt = $db->prepare("UPDATE wtb_posts SET status = 'closed' WHERE id = ?");
+        
         if ($stmt->execute([$del_id])) {
-            $_SESSION['flash_message'] = "ปิดประกาศตามหาเรียบร้อยแล้ว";
+            $_SESSION['flash_message'] = "ดำเนินการปิดประกาศเรียบร้อยแล้ว";
             $_SESSION['flash_type'] = "success";
+        } else {
+            $_SESSION['flash_message'] = "เกิดข้อผิดพลาดในการเข้าถึงเซิร์ฟเวอร์";
+            $_SESSION['flash_type'] = "danger";
         }
     } else {
-        // กรณีคนอื่นแอบมาส่งค่า ID ของโพสต์คนอื่น
-        $_SESSION['flash_message'] = "มึงไม่ใช่เจ้าของโพสต์ อย่าหาทำไอสัส";
+        $_SESSION['flash_message'] = "⚠️ ตรวจพบการพยายามเข้าถึงที่ไม่ได้รับอนุญาต";
         $_SESSION['flash_type'] = "danger";
     }
+    
+    // ดีดกลับหน้าบอร์ดทันทีหลังทำรายการ
     redirect('wtb_board.php');
 }
 
 /* ============================================================
-   2. DATA RETRIEVAL (SQL WITH SOFT DELETE FILTER)
+   SECTION 2: DATA RETRIEVAL (DATABASE QUERY)
    ============================================================ */
 
-// 🎯 ดึงข้อมูลประกาศตามหา (ดักจับเฉพาะที่ Active และ "ไม่ถูกลบ" is_deleted = 0)
-// ใช้การ Join กับตาราง Users และ Categories เพื่อดึงข้อมูลมาแสดงผลในการ์ด
+/**
+ * 🎯 การดึงข้อมูลประกาศ WTB มาแสดงผล
+ * เงื่อนไขหลัก: 
+ * 1. status ต้องเป็น 'active' (ผ่านการอนุมัติ)
+ * 2. is_deleted ต้องเป็น 0 (ยังไม่ถูกลบโดย Soft Delete)
+ */
 $stmt = $db->query("
-    SELECT w.*, u.fullname, u.profile_img, c.category_name 
+    SELECT 
+        w.*, 
+        u.fullname, 
+        u.profile_img, 
+        u.role as user_role,
+        c.category_name 
     FROM wtb_posts w 
     JOIN users u ON w.user_id = u.id 
     LEFT JOIN categories c ON w.category_id = c.id
@@ -61,51 +67,53 @@ $posts = $stmt->fetchAll();
 
 <style>
     /* ============================================================
-       🎨 PREMIUM DESIGN SYSTEM (UX/UI & ANIMATIONS)
+       SECTION 3: PREMIUM DESIGN SYSTEM (CSS)
        ============================================================ */
+    
     :root {
+        --wtb-primary: #4f46e5;
+        --wtb-primary-light: #818cf8;
         --wtb-bg-page: #f1f5f9;
         --wtb-card-bg: #ffffff;
-        --wtb-accent: #4f46e5;
-        --wtb-accent-soft: rgba(79, 70, 229, 0.1);
+        --wtb-border-color: #e2e8f0;
         --wtb-text-dark: #1e293b;
-        --wtb-text-light: #64748b;
-        --wtb-border: #e2e8f0;
-        --wtb-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        --wtb-text-muted: #64748b;
         --wtb-danger: #ef4444;
         --wtb-success: #10b981;
+        --wtb-warning: #f59e0b;
+        --wtb-shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        --wtb-shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        --wtb-radius: 28px;
     }
 
-    /* สไตล์สำหรับโหมดมืด (Dark Mode) */
+    /* สไตล์สำหรับ Dark Mode ที่รองรับโครงสร้างเดิมของพี่ */
     .dark-theme {
         --wtb-bg-page: #0f172a;
         --wtb-card-bg: #1e293b;
         --wtb-text-dark: #f8fafc;
-        --wtb-text-light: #94a3b8;
-        --wtb-border: #334155;
-        --wtb-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+        --wtb-text-muted: #94a3b8;
+        --wtb-border-color: #334155;
     }
 
     body { 
         background-color: var(--wtb-bg-page) !important; 
         color: var(--wtb-text-dark); 
-        transition: background 0.3s ease; 
+        transition: background-color 0.4s ease;
     }
 
-    .wtb-main-container {
+    .wtb-main-wrapper {
         max-width: 1300px;
         margin: 50px auto;
         padding: 0 25px;
-        animation: fadeInBoard 0.7s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    /* --- Header Section --- */
-    .wtb-header-section {
+    /* --- 🏰 Header Section Design --- */
+    .wtb-header {
         margin-bottom: 50px;
         display: flex;
         justify-content: space-between;
         align-items: flex-end;
-        border-bottom: 3px solid var(--wtb-border);
+        border-bottom: 3px solid var(--wtb-border-color);
         padding-bottom: 30px;
         position: relative;
     }
@@ -113,14 +121,16 @@ $posts = $stmt->fetchAll();
     .wtb-header-title h1 {
         font-size: 2.8rem;
         font-weight: 900;
-        color: var(--wtb-text-dark);
         letter-spacing: -1.5px;
-        margin-bottom: 5px;
+        margin: 0;
+        background: linear-gradient(135deg, var(--wtb-primary) 0%, #a855f7 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
 
-    .btn-create-wtb {
+    .btn-create {
         background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
-        color: #fff !important;
+        color: #ffffff !important;
         padding: 16px 35px;
         border-radius: 20px;
         font-weight: 800;
@@ -132,201 +142,251 @@ $posts = $stmt->fetchAll();
         gap: 12px;
     }
 
-    .btn-create-wtb:hover {
+    .btn-create:hover {
         transform: translateY(-5px) scale(1.05);
         box-shadow: 0 15px 30px rgba(67, 56, 202, 0.4);
     }
 
-    /* --- Grid System สำหรับแสดงผลการ์ด --- */
+    /* --- 📦 Grid & Card Layout (ป้องกันปัญหา Overlap) --- */
     .wtb-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        /* ใช้ minmax 320px เพื่อให้การ์ดไม่แคบเกินไป และ auto-fill เพื่อความยืดหยุ่น */
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); 
         gap: 35px;
+        margin-bottom: 80px;
     }
 
-    /* --- การ์ดประกาศดีไซน์พรีเมียม --- */
     .wtb-pro-card {
         background: var(--wtb-card-bg);
-        border: 1px solid var(--wtb-border);
-        border-radius: 30px;
+        border: 2px solid var(--wtb-border-color);
+        border-radius: var(--wtb-radius);
         overflow: hidden;
         display: flex;
         flex-direction: column;
-        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-        box-shadow: var(--wtb-shadow);
         height: 100%;
+        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        box-shadow: var(--wtb-shadow-sm);
         position: relative;
     }
 
     .wtb-pro-card:hover {
         transform: translateY(-12px);
-        border-color: var(--wtb-accent);
-        box-shadow: 0 30px 60px rgba(0,0,0,0.12);
+        border-color: var(--wtb-primary);
+        box-shadow: var(--wtb-shadow-lg);
     }
 
-    /* 📸 สัดส่วนรูปภาพ 240px แบบ Fixed Ratio ป้องกันรูปเบี้ยว */
-    .wtb-card-image-wrap {
+    /* --- 🖼️ 🎯 Image Ratio Control: แก้ปัญหารูปกางแนวนอนล้นบอร์ด --- */
+    .wtb-card-img-wrap {
         width: 100%;
-        height: 240px; 
+        height: 250px; /* บังคับความสูงคงที่เพื่อให้ Layout เท่ากันทุกใบ */
         background-color: var(--wtb-bg-page);
         overflow: hidden;
         position: relative;
-        border-bottom: 1px solid var(--wtb-border);
+        border-bottom: 1px solid var(--wtb-border-color);
     }
 
-    .wtb-card-image-wrap img {
+    .wtb-card-img-wrap img {
         width: 100%;
         height: 100%;
-        object-fit: cover; 
+        object-fit: cover; /* ตัดส่วนรูปภาพให้เข้ากึ่งกลางกรอบ ไม่เบี้ยวไม่ยืด */
         object-position: center;
-        transition: transform 0.6s ease;
+        transition: transform 0.8s ease;
     }
 
-    .wtb-pro-card:hover .wtb-card-image-wrap img {
-        transform: scale(1.1);
+    .wtb-pro-card:hover .wtb-card-img-wrap img {
+        transform: scale(1.12); /* เอฟเฟกต์ซูมเบาๆ ตอน Hover */
     }
 
-    .wtb-no-image-placeholder {
-        width: 100%;
-        height: 100%;
+    .wtb-placeholder {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        color: var(--wtb-text-light);
-        opacity: 0.4;
+        height: 100%;
+        color: var(--wtb-text-muted);
+        opacity: 0.35;
     }
 
-    /* --- ส่วนข้อมูลด้านในของการ์ด --- */
-    .wtb-card-content {
-        padding: 25px;
+    /* --- 📝 Content Section --- */
+    .wtb-card-body {
+        padding: 30px;
         flex-grow: 1;
         display: flex;
         flex-direction: column;
     }
 
-    .wtb-user-bar {
+    .wtb-user-info {
         display: flex;
         align-items: center;
-        gap: 12px;
-        margin-bottom: 20px;
+        gap: 15px;
+        margin-bottom: 25px;
     }
 
     .wtb-user-avatar {
-        width: 40px;
-        height: 40px;
+        width: 45px;
+        height: 45px;
         border-radius: 50%;
         object-fit: cover;
-        border: 2px solid var(--wtb-accent);
+        border: 2px solid var(--wtb-primary);
+        padding: 2px;
+        background: var(--wtb-card-bg);
     }
 
     .wtb-user-name {
-        font-size: 0.95rem;
+        font-size: 1.05rem;
         font-weight: 800;
-        color: var(--wtb-text-dark);
+        margin: 0;
     }
 
-    .wtb-post-date {
-        font-size: 0.75rem;
-        color: var(--wtb-text-light);
+    .wtb-date {
+        font-size: 0.8rem;
+        color: var(--wtb-text-muted);
+        font-weight: 600;
     }
 
-    .wtb-item-title {
-        font-size: 1.4rem;
+    .wtb-post-title {
+        font-size: 1.5rem;
         font-weight: 900;
         color: var(--wtb-text-dark);
         margin-bottom: 12px;
-        line-height: 1.2;
+        line-height: 1.25;
     }
 
-    .wtb-item-desc {
+    .wtb-description {
         font-size: 0.95rem;
-        color: var(--wtb-text-light);
-        line-height: 1.6;
-        margin-bottom: 20px;
+        color: var(--wtb-text-muted);
+        line-height: 1.65;
+        margin-bottom: 25px;
         display: -webkit-box;
-        -webkit-line-clamp: 2;
+        -webkit-line-clamp: 2; /* ตัดบรรทัดเพื่อให้ UI เสมอกัน */
         -webkit-box-orient: vertical;
         overflow: hidden;
     }
 
-    /* --- ส่วนของ Tags --- */
-    .wtb-tags-wrap {
+    /* --- 🏷️ Tags Section --- */
+    .wtb-tags {
         display: flex;
         flex-wrap: wrap;
-        gap: 8px;
+        gap: 10px;
         margin-bottom: 25px;
     }
 
-    .wtb-tag {
-        padding: 6px 14px;
+    .wtb-tag-pill {
+        padding: 8px 16px;
         border-radius: 12px;
         font-size: 0.75rem;
         font-weight: 800;
         text-transform: uppercase;
-        border: 1px solid var(--wtb-border);
+        letter-spacing: 0.5px;
+        background: var(--wtb-bg-page);
+        border: 1px solid var(--wtb-border-color);
     }
 
-    .tag-category { background: var(--wtb-accent-soft); color: var(--wtb-accent); border-color: transparent; }
-    .tag-condition { background: #fef3c7; color: #d97706; border-color: transparent; }
+    .pill-category { background: rgba(79, 70, 229, 0.1); color: var(--wtb-primary); border: none; }
+    .pill-condition { background: #fef3c7; color: #d97706; border: none; }
 
-    /* --- ส่วนล่างของการ์ดและปุ่มกด --- */
+    /* --- 🛠️ 🎯 Footer & Action Buttons: แก้ปัญหาปุ่มและการจัดการสิทธิ์ --- */
     .wtb-card-footer {
         margin-top: auto;
-        padding-top: 20px;
-        border-top: 2px solid var(--wtb-border);
+        padding-top: 25px;
+        border-top: 2px solid var(--wtb-border-color);
         display: flex;
         flex-direction: column;
         gap: 15px;
     }
 
-    .wtb-budget-display {
+    .wtb-budget-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        margin-bottom: 5px;
     }
 
-    .budget-label { font-size: 0.8rem; font-weight: 700; color: var(--wtb-text-light); text-transform: uppercase; }
-    .budget-amount { font-size: 1.4rem; font-weight: 900; color: var(--wtb-success); }
+    .budget-amount {
+        font-size: 1.6rem;
+        font-weight: 900;
+        color: var(--wtb-success);
+    }
 
-    .btn-wtb-action {
+    .btn-action {
         width: 100%;
-        padding: 14px;
-        border-radius: 16px;
+        padding: 15px;
+        border-radius: 18px;
         font-weight: 800;
         text-align: center;
         text-decoration: none;
-        transition: 0.3s;
         display: block;
+        transition: all 0.3s ease;
         border: none;
         cursor: pointer;
     }
 
-    .btn-wtb-primary { background: var(--wtb-accent); color: #fff !important; }
-    .btn-wtb-primary:hover { transform: scale(1.02); filter: brightness(1.1); }
+    /* ปุ่มพรีเมียมสีม่วงหลัก */
+    .btn-pro-primary {
+        background: var(--wtb-primary);
+        color: #ffffff !important;
+        box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
+    }
 
-    .btn-wtb-outline { border: 2px solid var(--wtb-accent); color: var(--wtb-accent) !important; background: transparent; }
-    .btn-wtb-danger { background: #fee2e2; color: var(--wtb-danger) !important; }
-    .btn-wtb-admin { background: var(--wtb-danger); color: #fff !important; margin-top: 5px; }
+    .btn-pro-primary:hover {
+        filter: brightness(1.1);
+        transform: translateY(-2px);
+    }
 
-    /* Keyframes สำหรับ Animation */
-    @keyframes fadeInBoard { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    /* ปุ่มแก้ไข (Edit) */
+    .btn-pro-edit {
+        background: rgba(79, 70, 229, 0.08);
+        color: var(--wtb-primary) !important;
+        border: 2px solid var(--wtb-primary);
+    }
+
+    .btn-pro-edit:hover { background: rgba(79, 70, 229, 0.15); }
+
+    /* ปุ่มปิดประกาศ/ลบ (Danger) */
+    .btn-pro-danger {
+        background: #fee2e2;
+        color: var(--wtb-danger) !important;
+    }
+
+    .btn-pro-danger:hover { background: #fecaca; }
+
+    /* ปุ่มแอดมินลบถาวร (Admin/Teacher) */
+    .btn-pro-admin {
+        background: var(--wtb-danger);
+        color: #ffffff !important;
+        margin-top: 8px;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+    }
+
+    .btn-pro-admin:hover { filter: brightness(1.15); }
+
+    /* --- Animations --- */
+    @keyframes fadeInBoard {
+        0% { opacity: 0; transform: translateY(30px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* --- Responsive Breakpoints --- */
+    @media (max-width: 992px) {
+        .wtb-header-title h1 { font-size: 2.3rem; }
+    }
 
     @media (max-width: 768px) {
-        .wtb-header-section { flex-direction: column; align-items: flex-start; gap: 20px; }
+        .wtb-header { flex-direction: column; align-items: flex-start; gap: 25px; }
         .wtb-grid { grid-template-columns: 1fr; }
+        .wtb-card-img-wrap { height: 200px; }
     }
 </style>
 
-<div class="wtb-main-container">
+<div class="wtb-main-wrapper">
     
-    <header class="wtb-header-section">
+    <header class="wtb-header">
         <div class="wtb-header-title">
-            <h1>กระดานตามหาของ</h1>
-            <p class="text-muted fw-bold">พื้นที่สำหรับประกาศหาสิ่งที่ต้องการ ใครมีของก็ทักไปขายได้เลย</p>
+            <h1>กระดานตามหาของ (WTB)</h1>
+            <p class="text-muted fw-bold">พื้นที่สำหรับประกาศความต้องการสินค้าภายในวิทยาลัย BNCC</p>
         </div>
-        <a href="wtb_create.php" class="btn-create-wtb">
-            <i class="fas fa-plus-circle fa-lg"></i> สร้างประกาศตามหา
+        <a href="wtb_create.php" class="btn-create">
+            <i class="fas fa-plus-circle fa-lg"></i> สร้างโพสต์ตามหา
         </a>
     </header>
 
@@ -335,46 +395,53 @@ $posts = $stmt->fetchAll();
     <div class="wtb-grid">
         <?php if (count($posts) > 0): ?>
             <?php foreach ($posts as $post): 
+                // จัดการเรื่องรูปโปรไฟล์ ถ้าไม่มีให้ใช้ Default
                 $avatar = !empty($post['profile_img']) ? "../assets/images/profiles/" . $post['profile_img'] : "../assets/images/profiles/default_profile.png";
-                $cond_labels = ['any' => 'รับทุกสภาพ', 'good' => 'สภาพดีเท่านั้น', 'new' => 'มือหนึ่งเท่านั้น'];
-                $cond_text = $cond_labels[$post['expected_condition']] ?? 'ไม่ระบุสภาพ';
+                
+                // แปลงข้อความ Condition ให้เป็นภาษาไทยอ่านง่าย
+                $cond_map = ['any' => 'ทุกสภาพ', 'good' => 'สภาพดีมาก', 'new' => 'มือหนึ่งเท่านั้น'];
+                $display_cond = $cond_map[$post['expected_condition']] ?? 'ไม่ระบุ';
             ?>
                 <article class="wtb-pro-card">
                     
-                    <div class="wtb-card-image-wrap">
+                    <div class="wtb-card-img-wrap">
                         <?php if ($post['image_url']): ?>
-                            <img src="../assets/images/products/<?= htmlspecialchars($post['image_url']) ?>" alt="ประกาศตามหา: <?= htmlspecialchars($post['title']) ?>">
+                            <img src="../assets/images/products/<?= htmlspecialchars($post['image_url']) ?>" alt="Reference for: <?= htmlspecialchars($post['title']) ?>">
                         <?php else: ?>
-                            <div class="wtb-no-image-placeholder">
-                                <i class="fas fa-image fa-4x mb-2"></i>
-                                <p class="fw-bold">ไม่มีรูปอ้างอิง</p>
+                            <div class="wtb-placeholder">
+                                <i class="fas fa-image fa-5x mb-3"></i>
+                                <p class="fw-bold">ไม่มีรูปภาพอ้างอิง</p>
                             </div>
                         <?php endif; ?>
                     </div>
 
-                    <div class="wtb-card-content">
-                        <div class="wtb-user-bar">
-                            <img src="<?= $avatar ?>" class="wtb-user-avatar">
+                    <div class="wtb-card-body">
+                        <div class="wtb-user-info">
+                            <img src="<?= $avatar ?>" class="wtb-user-avatar" alt="Avatar">
                             <div>
-                                <div class="wtb-user-name"><?= htmlspecialchars($post['fullname']) ?></div>
-                                <div class="wtb-post-date"><i class="far fa-calendar-alt"></i> <?= date('d M Y', strtotime($post['created_at'])) ?></div>
+                                <h4 class="wtb-user-name"><?= htmlspecialchars($post['fullname']) ?></h4>
+                                <span class="wtb-date"><i class="far fa-calendar-alt"></i> <?= date('d M Y • H:i', strtotime($post['created_at'])) ?></span>
                             </div>
                         </div>
 
-                        <h2 class="wtb-item-title"><?= htmlspecialchars($post['title']) ?></h2>
+                        <h2 class="wtb-post-title"><?= htmlspecialchars($post['title']) ?></h2>
                         
-                        <div class="wtb-tags-wrap">
-                            <span class="wtb-tag tag-category"><i class="fas fa-layer-group"></i> <?= htmlspecialchars($post['category_name'] ?? 'ทั่วไป') ?></span>
-                            <span class="wtb-tag tag-condition"><i class="fas fa-sparkles"></i> <?= $cond_text ?></span>
+                        <div class="wtb-tags">
+                            <span class="wtb-tag-pill pill-category">
+                                <i class="fas fa-tag"></i> <?= htmlspecialchars($post['category_name'] ?? 'ทั่วไป') ?>
+                            </span>
+                            <span class="wtb-tag-pill pill-condition">
+                                <i class="fas fa-sparkles"></i> <?= $display_cond ?>
+                            </span>
                         </div>
 
-                        <p class="wtb-item-desc"><?= nl2br(htmlspecialchars($post['description'])) ?></p>
+                        <p class="wtb-description"><?= nl2br(htmlspecialchars($post['description'])) ?></p>
 
                         <div class="wtb-card-footer">
-                            <div class="wtb-budget-display">
-                                <span class="budget-label">งบประมาณที่มี</span>
+                            <div class="wtb-budget-row">
+                                <span class="text-muted small fw-bold text-uppercase">งบประมาณ</span>
                                 <span class="budget-amount">
-                                    <?= $post['budget'] > 0 ? '฿' . number_format($post['budget']) : 'คุยราคากันเอง' ?>
+                                    <?= $post['budget'] > 0 ? '฿' . number_format($post['budget']) : 'ตกลงภายหลัง' ?>
                                 </span>
                             </div>
 
@@ -383,10 +450,10 @@ $posts = $stmt->fetchAll();
                                     
                                     <?php if ($_SESSION['user_id'] == $post['user_id']): ?>
                                         <div class="d-flex gap-2">
-                                            <a href="wtb_edit.php?id=<?= $post['id'] ?>" class="btn-wtb-action btn-wtb-outline flex-grow-1">
-                                                <i class="fas fa-edit"></i> แก้ไข
+                                            <a href="wtb_edit.php?id=<?= $post['id'] ?>" class="btn-action btn-pro-edit flex-grow-1">
+                                                <i class="fas fa-edit"></i> แก้ไขข้อมูล
                                             </a>
-                                            <a href="wtb_board.php?delete=<?= $post['id'] ?>" class="btn-wtb-action btn-wtb-danger flex-grow-1" onclick="return confirm('ยืนยันการปิดประกาศนี้?')">
+                                            <a href="wtb_board.php?delete=<?= $post['id'] ?>" class="btn-action btn-pro-danger flex-grow-1" onclick="return confirm('ยืนยันการปิดประกาศตามหานี้?')">
                                                 <i class="fas fa-check-circle"></i> ปิดประกาศ
                                             </a>
                                         </div>
@@ -394,23 +461,25 @@ $posts = $stmt->fetchAll();
 
                                     <?php if (in_array($_SESSION['role'], ['admin', 'teacher'])): ?>
                                         <?php if ($_SESSION['user_id'] != $post['user_id']): ?>
-                                            <a href="chat.php?user=<?= $post['user_id'] ?>" class="btn-wtb-action btn-wtb-primary mb-1">
-                                                <i class="fas fa-comment-alt"></i> ติดต่อเสนอสินค้า
+                                            <a href="chat.php?user=<?= $post['user_id'] ?>" class="btn-action btn-pro-primary">
+                                                <i class="fas fa-comment-alt"></i> ติดต่อเสนอเสนอสินค้า
                                             </a>
                                         <?php endif; ?>
-                                        <a href="../admin/wtb_delete_admin.php?id=<?= $post['id'] ?>" class="btn-wtb-action btn-wtb-admin" onclick="return confirm('⚠️ ยืนยันการลบประกาศนี้โดยแอดมิน/อาจารย์ (Soft Delete)?')">
-                                            <i class="fas fa-trash-alt"></i> ลบประกาศ (Admin/Teacher)
+                                        <a href="../admin/wtb_delete_admin.php?id=<?= $post['id'] ?>" class="btn-action btn-pro-admin" onclick="return confirm('⚠️ ยืนยันการลบประกาศนี้โดยแอดมิน/อาจารย์ (ข้อมูลจะถูกย้ายไปถังขยะ)?')">
+                                            <i class="fas fa-trash-alt"></i> ลบประกาศนี้ (Admin/Teacher)
                                         </a>
                                     <?php endif; ?>
 
                                     <?php if ($_SESSION['user_id'] != $post['user_id'] && !in_array($_SESSION['role'], ['admin', 'teacher'])): ?>
-                                        <a href="chat.php?user=<?= $post['user_id'] ?>" class="btn-wtb-action btn-wtb-primary">
-                                            <i class="fas fa-comment-alt"></i> ติดต่อเสนอราคา
+                                        <a href="chat.php?user=<?= $post['user_id'] ?>" class="btn-action btn-pro-primary">
+                                            <i class="fas fa-comment-alt"></i> ติดต่อเสนอสินค้า
                                         </a>
                                     <?php endif; ?>
 
                                 <?php else: ?>
-                                    <a href="../auth/login.php" class="btn-wtb-action btn-wtb-primary">เข้าสู่ระบบเพื่อติดต่อ</a>
+                                    <a href="../auth/login.php" class="btn-action btn-pro-primary">
+                                        <i class="fas fa-sign-in-alt"></i> เข้าสู่ระบบเพื่อติดต่อ
+                                    </a>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -418,13 +487,16 @@ $posts = $stmt->fetchAll();
                 </article>
             <?php endforeach; ?>
         <?php else: ?>
-            <div class="wtb-empty-state">
-                <div class="mb-4"><i class="fas fa-search fa-5x text-muted opacity-25"></i></div>
+            <div class="wtb-empty-state col-12 text-center py-5">
+                <i class="fas fa-search fa-5x text-muted opacity-20 mb-4"></i>
                 <h2 class="text-muted fw-bold">ยังไม่มีประกาศตามหาในขณะนี้</h2>
-                <p class="text-muted">มึงอยากได้อะไรเป็นเป็นพิเศษไหม? ลองสร้างประกาศดูสิ!</p>
+                <p class="text-muted">มึงอยากได้อะไรไหม? ลองสร้างประกาศเป็นคนแรกสิ!</p>
             </div>
         <?php endif; ?>
     </div>
 </div>
 
-<?php require_once '../includes/footer.php'; ?>
+<?php 
+
+require_once '../includes/footer.php'; 
+?>
