@@ -13,10 +13,11 @@ $host = $_SERVER['HTTP_HOST'];
  * ใช้ Path เต็มรูปแบบเพื่อให้ระบบอ้างอิงจาก Root ของ Domain เสมอ
  * ป้องกันการเกิด pages/admin/... หรือโฟลเดอร์ซ้อนกัน
  */
-$base_url = "$protocol://$host/s673190104/student_marketplace/"; 
+// 🎯 FIXED: บังคับ Path ให้ตรงกับโฟลเดอร์โปรเจกต์บน Host BNCC
+$project_folder = "s673190104/student_marketplace";
+$base_url = "$protocol://$host/$project_folder/"; 
 
 if (!defined('BASE_URL')) define('BASE_URL', $base_url);
-
 // 2. จัดการ Session และ Output Buffering
 if (ob_get_level() == 0) ob_start(); 
 if (session_status() === PHP_SESSION_NONE) {
@@ -236,14 +237,12 @@ function sendNotification($user_id, $type, $message, $link = '#') {
     if ($link !== '#' && !filter_var($link, FILTER_VALIDATE_URL)) {
         $clean_link = ltrim($link, '/');
         // ตรวจสอบว่าในลิงก์มีชื่อโปรเจกต์อยู่แล้วหรือไม่ เพื่อไม่ให้ซ้ำซ้อน
-        if (strpos($clean_link, 'student_marketplace') === false) {
-            $link = BASE_URL . $clean_link;
-        } else {
-            // ถ้ามี path เต็มมาอยู่แล้วแต่ขาด Domain ให้เติม protocol และ host
-            $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-            $host = $_SERVER['HTTP_HOST'];
-            $link = "$protocol://$host/" . $clean_link;
-        }
+       // 🎯 FIXED: ตรวจสอบว่าถ้ามีชื่อโฟลเดอร์โปรเจกต์อยู่แล้ว ไม่ต้องเติมซ้ำ
+if (strpos($clean_link, 'student_marketplace') !== false) {
+    $link = "$protocol://$host/" . $clean_link;
+} else {
+    $link = BASE_URL . $clean_link;
+}
     }
 
     $stmt = $db->prepare("INSERT INTO notifications (user_id, type, message, link, created_at) VALUES (?, ?, ?, ?, NOW())");
