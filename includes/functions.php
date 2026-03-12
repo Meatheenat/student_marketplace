@@ -4,10 +4,15 @@
  * [KEEP ALL FUNCTIONS - NO DELETION]
  */
 
-// 🚀 1. ระบบตรวจหา URL เริ่มต้นอัตโนมัติ (แก้ไขให้ใช้ได้ทั้ง Local และ Host จริง)
+// 🚀 1. ระบบตรวจหา URL เริ่มต้นอัตโนมัติ (🎯 FIXED: ป้องกันปัญหาลิงก์พัง/เบิ้ลโฟลเดอร์)
 $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
 $host = $_SERVER['HTTP_HOST'];
-// ปรับให้ตรงกับโครงสร้างโฟลเดอร์บน Host BNCC
+
+/**
+ * 🎯 จุดแก้ไขสำคัญ: 
+ * ใช้ Path เต็มรูปแบบเพื่อให้ระบบอ้างอิงจาก Root ของ Domain เสมอ
+ * ป้องกันการเกิด pages/admin/... หรือโฟลเดอร์ซ้อนกัน
+ */
 $base_url = "$protocol://$host/s673190104/student_marketplace/"; 
 
 if (!defined('BASE_URL')) define('BASE_URL', $base_url);
@@ -67,7 +72,7 @@ function checkRole($role) {
     if (!isLoggedIn()) {
         $_SESSION['flash_message'] = "คุณต้องเข้าสู่ระบบก่อน";
         $_SESSION['flash_type'] = "danger";
-        // 🎯 แก้จาก Path ตายตัว เป็นการใช้ BASE_URL เพื่อให้ทำงานบน Host ได้
+        // 🎯 ใช้ BASE_URL นำหน้าเพื่อให้ Redirect ถูกต้องทุกลำดับโฟลเดอร์
         redirect(BASE_URL . "auth/login.php");
     }
 
@@ -161,7 +166,7 @@ function sendLineMessagingAPI($userId, $message) {
 
     $postData = json_encode($data);
     $ch = curl_init($url);
-    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -222,16 +227,31 @@ function logAdminAction($action_type, $target_type, $target_id, $details) {
 
 /**
  * 🔔 ฟังก์ชันส่งการแจ้งเตือน (In-App Notification)
+ * 🎯 FIXED: บังคับให้ Link เป็นแบบ Absolute Path อัตโนมัติ ป้องกัน 404
  */
 function sendNotification($user_id, $type, $message, $link = '#') {
     $db = getDB();
-    $stmt = $db->prepare("INSERT INTO notifications (user_id, type, message, link) VALUES (?, ?, ?, ?)");
+    
+    // ถ้าลิงก์ไม่ได้เป็น # และไม่ได้เริ่มด้วย http ให้ทำการดึง BASE_URL มาแปะหน้า
+    if ($link !== '#' && !filter_var($link, FILTER_VALIDATE_URL)) {
+        $clean_link = ltrim($link, '/');
+        // ตรวจสอบว่าในลิงก์มีชื่อโปรเจกต์อยู่แล้วหรือไม่ เพื่อไม่ให้ซ้ำซ้อน
+        if (strpos($clean_link, 'student_marketplace') === false) {
+            $link = BASE_URL . $clean_link;
+        } else {
+            // ถ้ามี path เต็มมาอยู่แล้วแต่ขาด Domain ให้เติม protocol และ host
+            $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
+            $host = $_SERVER['HTTP_HOST'];
+            $link = "$protocol://$host/" . $clean_link;
+        }
+    }
+
+    $stmt = $db->prepare("INSERT INTO notifications (user_id, type, message, link, created_at) VALUES (?, ?, ?, ?, NOW())");
     return $stmt->execute([$user_id, $type, $message, $link]);
 }
 
 /**
  * 🎯 [ADDED] ฟังก์ชันเสริมสำหรับระบบติดตามร้านค้า (Follow System Helper)
- * ดึงสถานะการติดตาม และแจ้งเตือนผู้ติดตามแบบกลุ่ม
  */
 function isFollowing($user_id, $shop_id) {
     $db = getDB();
@@ -242,7 +262,6 @@ function isFollowing($user_id, $shop_id) {
 
 function notifyShopFollowers($shop_id, $message, $link = '#') {
     $db = getDB();
-    // คิวรีดึงรายชื่อ User ID ของผู้ติดตามทั้งหมดของร้านนี้
     $stmt = $db->prepare("SELECT user_id FROM follows WHERE shop_id = ?");
     $stmt->execute([$shop_id]);
     $followers = $stmt->fetchAll(PDO::FETCH_COLUMN);
@@ -251,9 +270,9 @@ function notifyShopFollowers($shop_id, $message, $link = '#') {
         sendNotification($follower_id, 'system', $message, $link);
     }
 }
+
 /**
  * 🥇 [NEW] ฟังก์ชันดึงป้ายยศ (User Roles & Badges)
- * แสดงป้าย Admin, Teacher หรือ ป้ายร้านค้าแนะนำ
  */
 function getUserBadge($role) {
     if ($role === 'admin') {
@@ -267,31 +286,25 @@ function getUserBadge($role) {
 
 /**
  * 🥇 [NEW] ฟังก์ชันตรวจสอบและดึงป้าย "ร้านค้าแนะนำ"
- * เงื่อนไข: ร้านที่คนติดตามมากที่สุด และมีคะแนนรีวิวเฉลี่ยสูงที่สุดในเว็บ
  */
 function getShopBadge($shop_id) {
     $db = getDB();
-    
-    // 1. หา Shop ID ที่มีคนติดตามสูงที่สุด (Followers)
-    $top_follow = $db->query("SELECT shop_id FROM follows GROUP BY shop_id ORDER BY COUNT(id) DESC LIMIT 1")->fetchColumn();
-    
-    // 2. หา Shop ID ที่มีคะแนนรีวิวเฉลี่ยสูงที่สุด (ต้องมีรีวิวอย่างน้อย 3 รายการเพื่อความน่าเชื่อถือ)
-    $top_rating = $db->query("SELECT p.shop_id FROM reviews r JOIN products p ON r.product_id = p.id WHERE r.is_deleted = 0 GROUP BY p.shop_id HAVING COUNT(r.id) >= 3 ORDER BY AVG(r.rating) DESC LIMIT 1")->fetchColumn();
+    try {
+        $top_follow = $db->query("SELECT shop_id FROM follows GROUP BY shop_id ORDER BY COUNT(id) DESC LIMIT 1")->fetchColumn();
+        $top_rating = $db->query("SELECT p.shop_id FROM reviews r JOIN products p ON r.product_id = p.id WHERE r.is_deleted = 0 GROUP BY p.shop_id HAVING COUNT(r.id) >= 3 ORDER BY AVG(r.rating) DESC LIMIT 1")->fetchColumn();
 
-    // ถ้าร้านนี้ได้อันดับ 1 ทั้งสองอย่าง
-    if ($shop_id == $top_follow && $shop_id == $top_rating) {
-        return '<span class="badge" style="background: linear-gradient(45deg, #fbbf24, #f59e0b); color:#000; border-radius:6px; padding:4px 10px; font-size:0.8rem; font-weight:900; box-shadow:0 4px 12px rgba(251,191,36,0.3); border:1px solid #000; margin-left:8px;"><i class="fas fa-medal"></i> ร้านค้าแนะนำ</span>';
-    }
+        if ($shop_id == $top_follow && $shop_id == $top_rating && $shop_id != false) {
+            return '<span class="badge" style="background: linear-gradient(45deg, #fbbf24, #f59e0b); color:#000; border-radius:6px; padding:4px 10px; font-size:0.8rem; font-weight:900; box-shadow:0 4px 12px rgba(251,191,36,0.3); border:1px solid #000; margin-left:8px;"><i class="fas fa-medal"></i> ร้านค้าแนะนำ</span>';
+        }
+    } catch (Exception $e) { return ''; }
     return '';
 }
 
 /**
- * 🛡️ [UPDATED] ฟังก์ชันเช็กสิทธิ์รีวิว: ตัด Cooldown 5 นาทีออกตามสั่ง
- * เงื่อนไขคงเหลือ: 1 คนรีวิวได้ 1 ครั้งต่อ 1 สินค้าเท่านั้น
+ * 🛡️ [UPDATED] ฟังก์ชันเช็กสิทธิ์รีวิว
  */
 function canUserReview($user_id, $product_id) {
     $db = getDB();
-    // เช็กแค่ว่าเคยรีวิวสินค้านี้ไปแล้วหรือยัง
     $stmt = $db->prepare("SELECT id FROM reviews WHERE user_id = ? AND product_id = ? AND is_deleted = 0");
     $stmt->execute([$user_id, $product_id]);
     if ($stmt->fetch()) {
@@ -299,9 +312,9 @@ function canUserReview($user_id, $product_id) {
     }
     return ['status' => true];
 }
+
 /**
- * 📧 [ACTIVE] ฟังก์ชันส่งรหัส OTP เข้า Email (ใช้อีเมลจำลอง + แต่ง HTML สวยๆ)
- * ใช้ตัวนี้ไปก่อนจนกว่าจะได้อีเมลทางการ
+ * 📧 [ACTIVE] ฟังก์ชันส่งรหัส OTP เข้า Email
  */
 function sendOTPToEmail($to_email, $otp_code) {
     $subject = "รหัสยืนยันตัวตน (OTP) - BNCC Market";
@@ -312,134 +325,177 @@ function sendOTPToEmail($to_email, $otp_code) {
     <head><title>รหัสยืนยันตัวตน</title></head>
     <body style='background-color: #f1f5f9; padding: 40px 20px; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;'>
         <div style='max-width: 500px; margin: 0 auto; background-color: #ffffff; padding: 40px 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; border: 1px solid #e2e8f0;'>
-            
             <img src='{$logo_url}' alt='BNCC Market' style='width: 80px; height: 80px; margin-bottom: 15px;'>
             <h2 style='color: #4f46e5; margin-top: 0; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;'>BNCC Market</h2>
-            
-            <p style='color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 25px;'>
-                สวัสดีครับ,<br>นี่คือรหัสความปลอดภัย (OTP) สำหรับยืนยันตัวตนของคุณเพื่อเข้าใช้งานระบบ
-            </p>
-            
+            <p style='color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 25px;'>สวัสดีครับ,<br>นี่คือรหัสความปลอดภัย (OTP) สำหรับยืนยันตัวตนของคุณเพื่อเข้าใช้งานระบบ</p>
             <div style='background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); padding: 25px; border-radius: 16px; margin-bottom: 25px; border: 1px solid #a5b4fc;'>
                 <span style='font-size: 40px; font-weight: 900; color: #4338ca; letter-spacing: 10px; display: block;'>{$otp_code}</span>
             </div>
-            
-            <p style='color: #ef4444; font-size: 14px; font-weight: bold; margin-bottom: 0; background: #fef2f2; padding: 12px; border-radius: 10px; display: inline-block;'>
-                ⚠️ โปรดอย่าเปิดเผยรหัสนี้ให้ใครทราบเด็ดขาด
-            </p>
-            
+            <p style='color: #ef4444; font-size: 14px; font-weight: bold; margin-bottom: 0; background: #fef2f2; padding: 12px; border-radius: 10px; display: inline-block;'>⚠️ โปรดอย่าเปิดเผยรหัสนี้ให้ใครทราบเด็ดขาด</p>
             <hr style='border: none; border-top: 1px dashed #cbd5e1; margin: 35px 0 25px;'>
-            
-            <p style='color: #94a3b8; font-size: 12px; margin: 0;'>
-                อีเมลฉบับนี้ถูกส่งจากระบบอัตโนมัติ กรุณาอย่าตอบกลับอีเมลนี้<br>
-                &copy; " . date('Y') . " BNCC Market. All rights reserved.
-            </p>
+            <p style='color: #94a3b8; font-size: 12px; margin: 0;'>อีเมลฉบับนี้ถูกส่งจากระบบอัตโนมัติ กรุณาอย่าตอบกลับอีเมลนี้<br>&copy; " . date('Y') . " BNCC Market. All rights reserved.</p>
         </div>
     </body>
-    </html>
-    ";
+    </html>";
+    /* =========================================================================
+
+   🚀 [FUTURE USE] โค้ดสำหรับใช้ PHPMailer (รอใช้อีเมลทางการของวิทยาลัย)
+
+   
+
+   วิธีสลับมาใช้ตัวนี้: 
+
+   1. ลบหรือคอมเมนต์ฟังก์ชัน sendOTPToEmail() ด้านบนทิ้ง
+
+   2. ลบเครื่องหมายคอมเมนต์ (/* และ * /) ของบล็อกด้านล่างนี้ออก
+
+   3. แก้ไข Username และ Password ให้เป็นอีเมลของวิทยาลัย
+
+   ========================================================================= */
+
+
+
+/*
+
+function sendOTPToEmail($to_email, $otp_code) {
+
+    require_once __DIR__ . '/../vendor/autoload.php';
+
     
+
+    $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+
+    
+
+    try {
+
+        // ⚙️ ตั้งค่าเซิร์ฟเวอร์ (สมมติว่าวิทยาลัยใช้ระบบของ Gmail/Google Workspace)
+
+        $mail->isSMTP();
+
+        $mail->Host       = 'smtp.gmail.com'; 
+
+        $mail->SMTPAuth   = true;
+
+        
+
+        // 🔑 ใส่ข้อมูลอีเมลทางการตรงนี้
+
+        $mail->Username   = 'official_email@bncc.ac.th'; // เปลี่ยนเป็นอีเมลวิทยาลัย
+
+        $mail->Password   = 'รหัสผ่าน_หรือ_App_Password'; // เปลี่ยนเป็นรหัสผ่าน
+
+        
+
+        $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+
+        $mail->Port       = 587;
+
+        $mail->CharSet    = 'UTF-8';
+
+
+
+        // 🎯 ตั้งค่าผู้ส่งและผู้รับ
+
+        $mail->setFrom('official_email@bncc.ac.th', 'BNCC Market');
+
+        $mail->addAddress($to_email);
+
+
+
+        // 🎨 เนื้อหาอีเมล (HTML สวยๆ เหมือนเดิม)
+
+        $mail->isHTML(true);
+
+        $mail->Subject = 'รหัสยืนยันตัวตน (OTP) - BNCC Market';
+
+     
+
+
+
+        $mail->Body = "
+
+        <html>
+
+        <head><title>รหัสยืนยันตัวตน</title></head>
+
+        <body style='background-color: #f1f5f9; padding: 40px 20px; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;'>
+
+            <div style='max-width: 500px; margin: 0 auto; background-color: #ffffff; padding: 40px 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; border: 1px solid #e2e8f0;'>
+
+                <img src='{$logo_url}' alt='BNCC Market' style='width: 80px; height: 80px; margin-bottom: 15px;'>
+
+                <h2 style='color: #4f46e5; margin-top: 0; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;'>BNCC Market</h2>
+
+                <p style='color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 25px;'>
+
+                    สวัสดีครับ,<br>นี่คือรหัสความปลอดภัย (OTP) สำหรับยืนยันตัวตนของคุณเพื่อเข้าใช้งานระบบ
+
+                </p>
+
+                <div style='background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); padding: 25px; border-radius: 16px; margin-bottom: 25px; border: 1px solid #a5b4fc;'>
+
+                    <span style='font-size: 40px; font-weight: 900; color: #4338ca; letter-spacing: 10px; display: block;'>{$otp_code}</span>
+
+                </div>
+
+                <p style='color: #ef4444; font-size: 14px; font-weight: bold; margin-bottom: 0; background: #fef2f2; padding: 12px; border-radius: 10px; display: inline-block;'>
+
+                    ⚠️ โปรดอย่าเปิดเผยรหัสนี้ให้ใครทราบเด็ดขาด
+
+                </p>
+
+                <hr style='border: none; border-top: 1px dashed #cbd5e1; margin: 35px 0 25px;'>
+
+                <p style='color: #94a3b8; font-size: 12px; margin: 0;'>
+
+                    อีเมลฉบับนี้ถูกส่งจากระบบอัตโนมัติ กรุณาอย่าตอบกลับอีเมลนี้<br>
+
+                    &copy; " . date('Y') . " BNCC Market. All rights reserved.
+
+                </p>
+
+            </div>
+
+        </body>
+
+        </html>
+
+        ";
+
+
+
+        $mail->send();
+
+        return true;
+
+    } catch (Exception $e) {
+
+        error_log("ส่งอีเมล OTP ไม่สำเร็จ: {$mail->ErrorInfo}");
+
+        return false;
+
+    }
+
+}
     $headers = "MIME-Version: 1.0\r\n";
     $headers .= "Content-type: text/html; charset=UTF-8\r\n";
     $headers .= "From: BNCC Market <system@bncc.ac.th>\r\n";
-
     @mail($to_email, $subject, $message, $headers);
-    
     return true;
 }
 
-/* =========================================================================
-   🚀 [FUTURE USE] โค้ดสำหรับใช้ PHPMailer (รอใช้อีเมลทางการของวิทยาลัย)
-   
-   วิธีสลับมาใช้ตัวนี้: 
-   1. ลบหรือคอมเมนต์ฟังก์ชัน sendOTPToEmail() ด้านบนทิ้ง
-   2. ลบเครื่องหมายคอมเมนต์ (/* และ * /) ของบล็อกด้านล่างนี้ออก
-   3. แก้ไข Username และ Password ให้เป็นอีเมลของวิทยาลัย
-   ========================================================================= */
-
-/*
-function sendOTPToEmail($to_email, $otp_code) {
-    require_once __DIR__ . '/../vendor/autoload.php';
-    
-    $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-    
-    try {
-        // ⚙️ ตั้งค่าเซิร์ฟเวอร์ (สมมติว่าวิทยาลัยใช้ระบบของ Gmail/Google Workspace)
-        $mail->isSMTP();
-        $mail->Host       = 'smtp.gmail.com'; 
-        $mail->SMTPAuth   = true;
-        
-        // 🔑 ใส่ข้อมูลอีเมลทางการตรงนี้
-        $mail->Username   = 'official_email@bncc.ac.th'; // เปลี่ยนเป็นอีเมลวิทยาลัย
-        $mail->Password   = 'รหัสผ่าน_หรือ_App_Password'; // เปลี่ยนเป็นรหัสผ่าน
-        
-        $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port       = 587;
-        $mail->CharSet    = 'UTF-8';
-
-        // 🎯 ตั้งค่าผู้ส่งและผู้รับ
-        $mail->setFrom('official_email@bncc.ac.th', 'BNCC Market');
-        $mail->addAddress($to_email);
-
-        // 🎨 เนื้อหาอีเมล (HTML สวยๆ เหมือนเดิม)
-        $mail->isHTML(true);
-        $mail->Subject = 'รหัสยืนยันตัวตน (OTP) - BNCC Market';
-     
-
-        $mail->Body = "
-        <html>
-        <head><title>รหัสยืนยันตัวตน</title></head>
-        <body style='background-color: #f1f5f9; padding: 40px 20px; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;'>
-            <div style='max-width: 500px; margin: 0 auto; background-color: #ffffff; padding: 40px 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; border: 1px solid #e2e8f0;'>
-                <img src='{$logo_url}' alt='BNCC Market' style='width: 80px; height: 80px; margin-bottom: 15px;'>
-                <h2 style='color: #4f46e5; margin-top: 0; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;'>BNCC Market</h2>
-                <p style='color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 25px;'>
-                    สวัสดีครับ,<br>นี่คือรหัสความปลอดภัย (OTP) สำหรับยืนยันตัวตนของคุณเพื่อเข้าใช้งานระบบ
-                </p>
-                <div style='background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); padding: 25px; border-radius: 16px; margin-bottom: 25px; border: 1px solid #a5b4fc;'>
-                    <span style='font-size: 40px; font-weight: 900; color: #4338ca; letter-spacing: 10px; display: block;'>{$otp_code}</span>
-                </div>
-                <p style='color: #ef4444; font-size: 14px; font-weight: bold; margin-bottom: 0; background: #fef2f2; padding: 12px; border-radius: 10px; display: inline-block;'>
-                    ⚠️ โปรดอย่าเปิดเผยรหัสนี้ให้ใครทราบเด็ดขาด
-                </p>
-                <hr style='border: none; border-top: 1px dashed #cbd5e1; margin: 35px 0 25px;'>
-                <p style='color: #94a3b8; font-size: 12px; margin: 0;'>
-                    อีเมลฉบับนี้ถูกส่งจากระบบอัตโนมัติ กรุณาอย่าตอบกลับอีเมลนี้<br>
-                    &copy; " . date('Y') . " BNCC Market. All rights reserved.
-                </p>
-            </div>
-        </body>
-        </html>
-        ";
-
-        $mail->send();
-        return true;
-    } catch (Exception $e) {
-        error_log("ส่งอีเมล OTP ไม่สำเร็จ: {$mail->ErrorInfo}");
-        return false;
-    }
-}
-*/
 /**
  * 📢 ฟังก์ชันแจ้งเตือนคนขาย (Web + LINE)
- * ใช้สำหรับแจ้งเตือนเมื่อมีคนคอมเม้นต์ หรือ กดถูกใจ
  */
 function notifySeller($seller_id, $message, $link = '#') {
     $db = getDB();
-    
-    // 1. ส่งแจ้งเตือนบนหน้าเว็บ (กระดิ่ง)
     sendNotification($seller_id, 'system', $message, $link);
-
-    // 2. ส่งแจ้งเตือนเข้า LINE (Messaging API)
-    // ดึง line_user_id ของคนขายออกมา
     $stmt = $db->prepare("SELECT line_user_id FROM users WHERE id = ? AND line_user_id IS NOT NULL");
     $stmt->execute([$seller_id]);
     $line_id = $stmt->fetchColumn();
-
     if ($line_id) {
-        // เรียกใช้ฟังก์ชันเดิมที่มีอยู่แล้วใน functions.php ของพี่
         sendLineMessagingAPI($line_id, "📢 BNCC Market: " . $message . "\nตรวจสอบได้ที่: " . $link);
     }
-    
     return true;
 }
