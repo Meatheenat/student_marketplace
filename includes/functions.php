@@ -19,7 +19,7 @@ $base_url = "$protocol://$host/$project_folder/";
 
 // คาดว่าของเดิมอาจจะเป็น: define('BASE_URL', '/s673190104/');
 // ให้แก้เป็น:
-define('BASE_URL', '/student_marketplace/');
+define('BASE_URL', '/s673190104/student_marketplace/');
 // 2. จัดการ Session และ Output Buffering
 if (ob_get_level() == 0) ob_start(); 
 if (session_status() === PHP_SESSION_NONE) {
