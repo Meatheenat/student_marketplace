@@ -17,7 +17,9 @@ $host = $_SERVER['HTTP_HOST'];
 $project_folder = "s673190104/student_marketplace";
 $base_url = "$protocol://$host/$project_folder/"; 
 
-if (!defined('BASE_URL')) define('BASE_URL', $base_url);
+// คาดว่าของเดิมอาจจะเป็น: define('BASE_URL', '/s673190104/');
+// ให้แก้เป็น:
+define('BASE_URL', '/s673190104/student_marketplace/');
 // 2. จัดการ Session และ Output Buffering
 if (ob_get_level() == 0) ob_start(); 
 if (session_status() === PHP_SESSION_NONE) {
