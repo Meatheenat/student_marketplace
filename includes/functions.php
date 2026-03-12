@@ -337,7 +337,30 @@ function sendOTPToEmail($to_email, $otp_code) {
         </div>
     </body>
     </html>";
-    /* =========================================================================
+    
+    $headers = "MIME-Version: 1.0\r\n";
+    $headers .= "Content-type: text/html; charset=UTF-8\r\n";
+    $headers .= "From: BNCC Market <system@bncc.ac.th>\r\n";
+    @mail($to_email, $subject, $message, $headers);
+    return true;
+}
+
+/**
+ * 📢 ฟังก์ชันแจ้งเตือนคนขาย (Web + LINE)
+ */
+function notifySeller($seller_id, $message, $link = '#') {
+    $db = getDB();
+    sendNotification($seller_id, 'system', $message, $link);
+    $stmt = $db->prepare("SELECT line_user_id FROM users WHERE id = ? AND line_user_id IS NOT NULL");
+    $stmt->execute([$seller_id]);
+    $line_id = $stmt->fetchColumn();
+    if ($line_id) {
+        sendLineMessagingAPI($line_id, "📢 BNCC Market: " . $message . "\nตรวจสอบได้ที่: " . $link);
+    }
+    return true;
+}
+
+/* =========================================================================
 
    🚀 [FUTURE USE] โค้ดสำหรับใช้ PHPMailer (รอใช้อีเมลทางการของวิทยาลัย)
 
@@ -478,24 +501,4 @@ function sendOTPToEmail($to_email, $otp_code) {
     }
 
 }
-    $headers = "MIME-Version: 1.0\r\n";
-    $headers .= "Content-type: text/html; charset=UTF-8\r\n";
-    $headers .= "From: BNCC Market <system@bncc.ac.th>\r\n";
-    @mail($to_email, $subject, $message, $headers);
-    return true;
-}
-
-/**
- * 📢 ฟังก์ชันแจ้งเตือนคนขาย (Web + LINE)
- */
-function notifySeller($seller_id, $message, $link = '#') {
-    $db = getDB();
-    sendNotification($seller_id, 'system', $message, $link);
-    $stmt = $db->prepare("SELECT line_user_id FROM users WHERE id = ? AND line_user_id IS NOT NULL");
-    $stmt->execute([$seller_id]);
-    $line_id = $stmt->fetchColumn();
-    if ($line_id) {
-        sendLineMessagingAPI($line_id, "📢 BNCC Market: " . $message . "\nตรวจสอบได้ที่: " . $link);
-    }
-    return true;
-}
+    */
