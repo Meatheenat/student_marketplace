@@ -198,7 +198,7 @@ if (isLoggedIn()) {
             /* Light Theme Contextual Mapping */
             --bncc-surface-light: #ffffff;
             --bncc-surface-light-alt: #f8fafc;
-            --bncc-background-light: #f1f5f9;
+            --bncc-background-light: #f8fafc;
             
             --bncc-text-primary-light: #0f172a;
             --bncc-text-secondary-light: #475569;
@@ -1995,6 +1995,68 @@ if (isLoggedIn()) {
         }
 
     </style>
+
+    <script>
+        // Enterprise JS Utilities Namespace
+        window.BNCCUtils = {
+            storage: {
+                set: function(key, value, ttlDays = 30) {
+                    const now = new Date();
+                    const item = {
+                        value: value,
+                        expiry: now.getTime() + (ttlDays * 24 * 60 * 60 * 1000),
+                    };
+                    localStorage.setItem(key, JSON.stringify(item));
+                },
+                get: function(key) {
+                    const itemStr = localStorage.getItem(key);
+                    if (!itemStr) return null;
+                    const item = JSON.parse(itemStr);
+                    const now = new Date();
+                    if (now.getTime() > item.expiry) {
+                        localStorage.removeItem(key);
+                        return null;
+                    }
+                    return item.value;
+                }
+            }
+        };
+
+        /**
+         * EARLY BLOCKING SCRIPTS
+         * Theme Initialization - Executes before DOM renders to prevent flash of wrong theme
+         */
+        (function() {
+            try {
+                var sysTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                // Fetch from specific BNCCUtils wrapper or fallback to raw localStorage
+                var savedThemeStr = localStorage.getItem('bncc_enterprise_theme');
+                var savedTheme = null;
+                
+                // Handle both JSON stringified (from Utils) and raw strings
+                if (savedThemeStr) {
+                    try {
+                        let parsed = JSON.parse(savedThemeStr);
+                        savedTheme = parsed.value ? parsed.value : parsed;
+                    } catch(e) {
+                        savedTheme = savedThemeStr;
+                    }
+                }
+                
+                var activeTheme = savedTheme || sysTheme;
+                
+                if (activeTheme === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    document.documentElement.classList.add('dark-theme');
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                    document.documentElement.classList.remove('dark-theme');
+                }
+            } catch (e) {
+                console.error("Theme Init Error:", e);
+            }
+        })();
+    </script>
 </head>
 <body id="bnccBodyElement">
 
@@ -2038,7 +2100,7 @@ if (isLoggedIn()) {
 
             <div class="nav-zone-right">
                 
-                <button id="sysBtnTheme" class="nav-action-btn theme-switcher-ui" aria-label="Toggle Dark Mode" title="สลับโหมดมืด/สว่าง">
+                <button id="sysBtnTheme" class="nav-action-btn theme-switcher-ui" aria-label="Toggle Color Theme" title="สลับโหมดมืด/สว่าง">
                     <i class="fas fa-sun icon-sun" aria-hidden="true"></i>
                     <i class="fas fa-moon icon-moon" aria-hidden="true"></i>
                 </button>
@@ -2053,6 +2115,7 @@ if (isLoggedIn()) {
                         </button>
 
                         <div id="sysPanelNotif" class="notif-dropdown-panel" role="menu" aria-label="Notifications Menu">
+                            
                             <div class="panel-header">
                                 <h3 class="panel-title"><i class="fas fa-bolt"></i> อัปเดตล่าสุด</h3>
                                 <button id="sysBtnMarkRead" class="btn-mark-read" aria-label="Mark all as read">อ่านทั้งหมด</button>
@@ -2068,6 +2131,7 @@ if (isLoggedIn()) {
                             <div class="panel-footer">
                                 <a href="#" class="btn-view-all">ดูประวัติการแจ้งเตือนทั้งหมด <i class="fas fa-arrow-right ms-1"></i></a>
                             </div>
+                            
                         </div>
                     </div>
 
@@ -2089,7 +2153,7 @@ if (isLoggedIn()) {
                             ?>
                             <span class="nav-profile-role"><?= $role_display ?></span>
                         </div>
-                        <img src="<?= $user_avatar ?>" alt="Avatar" class="nav-profile-avatar" loading="lazy">
+                        <img src="<?= $user_avatar ?>" alt="User Avatar" class="nav-profile-avatar" loading="lazy">
                     </a>
 
                 <?php else: ?>
@@ -2132,22 +2196,22 @@ if (isLoggedIn()) {
                             switch($_SESSION['role']) {
                                 case 'admin':
                                     $drawer_role_class = 'role-pill-admin';
-                                    $drawer_role_text = 'ผู้ดูแลระบบสูงสุด';
+                                    $drawer_role_text = 'ผู้ดูแลระบบ (Admin)';
                                     $drawer_role_icon = 'fa-crown';
                                     break;
                                 case 'teacher':
                                     $drawer_role_class = 'role-pill-teacher';
-                                    $drawer_role_text = 'อาจารย์ / ผู้ดูแล';
+                                    $drawer_role_text = 'อาจารย์ (Master)';
                                     $drawer_role_icon = 'fa-chalkboard-teacher';
                                     break;
                                 case 'seller':
                                     $drawer_role_class = 'role-pill-seller';
-                                    $drawer_role_text = 'ร้านค้าที่ได้รับการอนุมัติ';
+                                    $drawer_role_text = 'ผู้ขาย (Seller)';
                                     $drawer_role_icon = 'fa-store';
                                     break;
                                 case 'buyer':
                                     $drawer_role_class = 'role-pill-buyer';
-                                    $drawer_role_text = 'สมาชิกทั่วไป';
+                                    $drawer_role_text = 'สมาชิกผู้ซื้อ';
                                     $drawer_role_icon = 'fa-shopping-bag';
                                     break;
                             }
@@ -2191,7 +2255,7 @@ if (isLoggedIn()) {
                 <div class="drawer-section-label"><i class="fas fa-user-circle"></i> พื้นที่ส่วนตัว</div>
                 
                 <a href="<?= $base_path ?>pages/profile.php" class="drawer-menu-link <?= $current_page == 'profile.php' ? 'is-current-page' : '' ?>">
-                    <i class="fas fa-id-badge drawer-link-icon"></i>
+                    <i class="fas fa-id-card drawer-link-icon"></i>
                     <span>จัดการบัญชีผู้ใช้</span>
                 </a>
                 
@@ -2291,6 +2355,7 @@ if (isLoggedIn()) {
 
         /**
          * MODULE 1: PRELOADER MANAGER
+         * Controls the initial loading screen fade out
          */
         const Preloader = (function() {
             const el = document.getElementById('sysPreloader');
@@ -2298,9 +2363,11 @@ if (isLoggedIn()) {
             
             function hide() {
                 if(!el) return;
+                // Add minor delay for aesthetic purposes
                 setTimeout(() => {
                     el.classList.add('is-hidden');
                     body.classList.remove('noscroll');
+                    // Remove from DOM to save memory after transition completes
                     setTimeout(() => { if(el.parentNode) el.parentNode.removeChild(el); }, 1000);
                 }, 400);
             }
@@ -2309,7 +2376,9 @@ if (isLoggedIn()) {
                 init: function() {
                     if(!el) return;
                     body.classList.add('noscroll');
+                    // Primary trigger
                     window.addEventListener('load', hide);
+                    // Failsafe trigger (3 seconds max)
                     setTimeout(hide, 3000);
                 }
             };
@@ -2317,6 +2386,7 @@ if (isLoggedIn()) {
 
         /**
          * MODULE 2: SCROLL ENGINE
+         * Handles Navbar Glassmorphism State and Progress Bar
          */
         const ScrollEngine = (function() {
             const nav = document.getElementById('sysNavbar');
@@ -2326,11 +2396,16 @@ if (isLoggedIn()) {
             function onScroll() {
                 const y = window.scrollY || window.pageYOffset;
                 
+                // Navbar State
                 if(nav) {
-                    if (y > CONFIG.scrollThreshold) nav.classList.add('is-scrolled');
-                    else nav.classList.remove('is-scrolled');
+                    if (y > CONFIG.scrollThreshold) {
+                        nav.classList.add('is-scrolled');
+                    } else {
+                        nav.classList.remove('is-scrolled');
+                    }
                 }
 
+                // Progress Bar
                 if(prog) {
                     const docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
                     if(docHeight > 0) {
@@ -2350,6 +2425,7 @@ if (isLoggedIn()) {
                             isTicking = true;
                         }
                     }, { passive: true });
+                    // Initial run
                     onScroll();
                 }
             };
@@ -2357,6 +2433,7 @@ if (isLoggedIn()) {
 
         /**
          * MODULE 3: THEME CONTROLLER
+         * Manages Dark/Light mode switching and persistence
          */
         const ThemeManager = (function() {
             const btn = document.getElementById('sysBtnTheme');
@@ -2373,9 +2450,11 @@ if (isLoggedIn()) {
                 const newTheme = isDark ? 'dark' : 'light';
                 
                 html.setAttribute('data-theme', newTheme);
+                // Save string directly to avoid JSON parse errors
                 localStorage.setItem(CONFIG.themeStorageKey, newTheme);
                 updateMetaColor(isDark);
                 
+                // Visual feedback on button
                 if(btn) {
                     btn.style.transform = 'scale(0.9)';
                     setTimeout(() => btn.style.transform = 'scale(1)', 150);
@@ -2386,13 +2465,16 @@ if (isLoggedIn()) {
                 init: function() {
                     if(!btn) return;
                     btn.addEventListener('click', toggleTheme);
+                    
+                    // Sync Meta Color on init
                     updateMetaColor(html.classList.contains('dark-theme'));
                 }
             };
         })();
 
         /**
-         * MODULE 4: DRAWER CONTROLLER
+         * MODULE 4: DRAWER (SIDEBAR) CONTROLLER
+         * Off-canvas menu mechanics and accessibility
          */
         const DrawerController = (function() {
             const btnToggle = document.getElementById('sysBtnSidebar');
@@ -2407,6 +2489,7 @@ if (isLoggedIn()) {
                 body.classList.add('sidebar-is-active');
                 if(drawer) {
                     drawer.setAttribute('aria-hidden', 'false');
+                    // Focus management for accessibility
                     setTimeout(() => drawer.focus(), 100);
                 }
                 if(overlay) overlay.setAttribute('aria-hidden', 'false');
@@ -2420,7 +2503,7 @@ if (isLoggedIn()) {
                 if(overlay) overlay.setAttribute('aria-hidden', 'true');
                 if(btnToggle) {
                     btnToggle.setAttribute('aria-expanded', 'false');
-                    btnToggle.focus(); 
+                    btnToggle.focus(); // Return focus
                 }
             }
 
@@ -2432,18 +2515,23 @@ if (isLoggedIn()) {
             return {
                 init: function() {
                     if (!btnToggle || !drawer || !overlay) return;
+
                     btnToggle.addEventListener('click', toggle);
                     if(btnClose) btnClose.addEventListener('click', close);
                     overlay.addEventListener('click', close);
+
+                    // Global Keyboard Hook
                     document.addEventListener('keydown', (e) => {
                         if (e.key === 'Escape' && isOpen) close();
                     });
-                }
+                },
+                getState: () => isOpen
             };
         })();
 
         /**
          * MODULE 5: AJAX NOTIFICATION ENGINE
+         * Real-time polling and UI updating for notifications
          */
         <?php if(isLoggedIn()): ?>
         const NotificationEngine = (function() {
@@ -2465,7 +2553,7 @@ if (isLoggedIn()) {
                     panel.classList.add('is-open');
                     btnNotif.classList.add('is-active-state');
                     btnNotif.setAttribute('aria-expanded', 'true');
-                    fetchData(); 
+                    fetchData(); // Always refresh on open
                 } else {
                     closePanel();
                 }
@@ -2496,21 +2584,21 @@ if (isLoggedIn()) {
                     }
                 } catch (error) {
                     console.error("Notification API Failed:", error);
-                    if(isOpen && list.innerHTML.includes('fa-circle-notch')) {
-                        list.innerHTML = `<div class="panel-empty-state"><i class="fas fa-exclamation-triangle text-danger"></i><span>โหลดข้อมูลไม่สำเร็จ</span></div>`;
-                    }
+                    renderError();
                 }
             }
 
             function processData(data) {
+                // Update Badge UI & Animate if new notifications arrived
                 if (data.unread_count > 0) {
                     badge.style.display = 'flex';
                     badge.textContent = data.unread_count > 99 ? '99+' : data.unread_count;
                     
+                    // Trigger bell shake animation if count increased
                     if (data.unread_count > currentUnread) {
                         const icon = btnNotif.querySelector('i');
                         icon.classList.remove('bell-shake-anim');
-                        void icon.offsetWidth; 
+                        void icon.offsetWidth; // Trigger reflow
                         icon.classList.add('bell-shake-anim');
                         
                         badge.classList.remove('badge-pop-anim');
@@ -2523,45 +2611,74 @@ if (isLoggedIn()) {
                 
                 currentUnread = data.unread_count;
 
+                // Update List UI (Only if panel is open or empty to save DOM paint)
                 if (!isOpen && list.children.length > 0 && !list.innerHTML.includes('fa-spin')) return;
 
                 if (data.notifications && data.notifications.length > 0) {
-                    let html = '';
-                    data.notifications.forEach(n => {
-                        const statusClass = n.is_read == 0 ? 'is-unread' : '';
-                        let smartIcon = n.icon || '<i class="fas fa-bell"></i>';
-                        if(!n.icon) {
-                            if(n.message.includes('อนุมัติ')) smartIcon = '<i class="fas fa-check-circle"></i>';
-                            else if(n.message.includes('ปฏิเสธ') || n.message.includes('ลบ')) smartIcon = '<i class="fas fa-times-circle text-danger"></i>';
-                            else if(n.message.includes('สั่งซื้อ')) smartIcon = '<i class="fas fa-shopping-bag"></i>';
-                            else if(n.message.includes('ร้านค้า')) smartIcon = '<i class="fas fa-store"></i>';
-                        }
-                        
-                        // 🎯 FIX 404 for notifications: Prepend base_path to relative URLs from DB
-                        let safeLink = '#';
-                        if (n.link) {
-                            safeLink = n.link;
-                            if (!safeLink.startsWith('http') && !safeLink.startsWith('<?= $base_path ?>') && !safeLink.startsWith('/')) {
-                                safeLink = '<?= $base_path ?>' + safeLink;
-                            }
-                        }
-                        
-                        html += `
-                            <a href="${safeLink}" class="notif-list-item ${statusClass}">
-                                <div class="item-icon-wrapper">${smartIcon}</div>
-                                <div class="item-text-wrapper">
-                                    <span class="item-message">${n.message}</span>
-                                    <span class="item-time"><i class="far fa-clock"></i> ${n.time || 'ล่าสุด'}</span>
-                                </div>
-                            </a>
-                        `;
-                    });
-                    list.innerHTML = html;
+                    renderList(data.notifications);
                 } else {
+                    renderEmpty();
+                }
+            }
+
+            function renderList(notifs) {
+                let html = '';
+                const basePath = '<?= $base_path ?>';
+                
+                notifs.forEach(n => {
+                    const statusClass = n.is_read == 0 ? 'is-unread' : '';
+                    
+                    // Generate smart icon based on message content if no icon provided
+                    let smartIcon = n.icon || '<i class="fas fa-bell"></i>';
+                    if(!n.icon) {
+                        if(n.message.includes('อนุมัติ')) smartIcon = '<i class="fas fa-check-circle"></i>';
+                        else if(n.message.includes('ปฏิเสธ') || n.message.includes('ลบ')) smartIcon = '<i class="fas fa-times-circle text-danger"></i>';
+                        else if(n.message.includes('สั่งซื้อ')) smartIcon = '<i class="fas fa-shopping-bag"></i>';
+                        else if(n.message.includes('ร้านค้า')) smartIcon = '<i class="fas fa-store"></i>';
+                    }
+                    
+                    // 🎯 THE ULTIMATE 404 FIX: Ensure absolute paths for all notification links
+                    let finalLink = '#';
+                    if (n.link && n.link !== '') {
+                        // If it's already an absolute HTTP link, use it.
+                        if (n.link.startsWith('http://') || n.link.startsWith('https://')) {
+                            finalLink = n.link;
+                        } else {
+                            // Clean up leading slashes to prevent double slashes
+                            let cleanLink = n.link.replace(/^\/+/, '');
+                            finalLink = basePath + cleanLink;
+                        }
+                    }
+                    
+                    html += `
+                        <a href="${finalLink}" class="notif-list-item ${statusClass}">
+                            <div class="item-icon-wrapper">${smartIcon}</div>
+                            <div class="item-text-wrapper">
+                                <span class="item-message">${n.message}</span>
+                                <span class="item-time"><i class="far fa-clock"></i> ${n.time || 'เมื่อสักครู่'}</span>
+                            </div>
+                        </a>
+                    `;
+                });
+                list.innerHTML = html;
+            }
+
+            function renderEmpty() {
+                list.innerHTML = `
+                    <div class="panel-empty-state">
+                        <i class="fas fa-inbox box-empty"></i>
+                        <span>ไม่มีการแจ้งเตือนใหม่ในขณะนี้</span>
+                    </div>
+                `;
+            }
+
+            function renderError() {
+                if(list.innerHTML.includes('fa-spin')) {
                     list.innerHTML = `
-                        <div class="panel-empty-state">
-                            <i class="fas fa-inbox box-empty"></i>
-                            <span>ไม่มีการแจ้งเตือนใหม่ในขณะนี้</span>
+                        <div class="panel-empty-state" style="color: var(--bncc-danger-500);">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>เกิดข้อผิดพลาดในการโหลดข้อมูล</span>
+                            <button onclick="window.location.reload()" style="margin-top:10px; padding:5px 15px; border-radius:20px; border:1px solid currentColor; background:transparent; color:inherit; cursor:pointer;">รีเฟรชหน้าเว็บ</button>
                         </div>
                     `;
                 }
@@ -2569,15 +2686,18 @@ if (isLoggedIn()) {
 
             async function markAllRead() {
                 try {
+                    // Optimistic UI Update (Immediate feedback)
                     badge.style.display = 'none';
                     currentUnread = 0;
                     
                     const unreadItems = list.querySelectorAll('.is-unread');
                     unreadItems.forEach(el => el.classList.remove('is-unread'));
 
+                    // Button loading state
                     const originalText = btnMarkRead.innerHTML;
                     btnMarkRead.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
+                    // Server Request
                     const formData = new URLSearchParams();
                     formData.append('action', 'mark_read');
 
@@ -2587,17 +2707,20 @@ if (isLoggedIn()) {
                         body: formData
                     });
                     
+                    // Reset button
                     btnMarkRead.innerHTML = originalText;
                     
                 } catch (err) {
                     console.error("Failed to mark read:", err);
-                    fetchData(); 
+                    fetchData(); // Rollback UI if failed
                 }
             }
 
             return {
                 init: function() {
                     if (!btnNotif || !panel) return;
+
+                    // Bind Events
                     btnNotif.addEventListener('click', togglePanel);
                     
                     if (btnMarkRead) {
@@ -2607,12 +2730,14 @@ if (isLoggedIn()) {
                         });
                     }
 
+                    // Click outside listener
                     document.addEventListener('click', (e) => {
                         if (isOpen && !panel.contains(e.target) && !btnNotif.contains(e.target)) {
                             closePanel();
                         }
                     });
 
+                    // Initial boot and polling setup
                     fetchData();
                     pollTimer = setInterval(fetchData, CONFIG.pollInterval);
                 }
@@ -2622,6 +2747,7 @@ if (isLoggedIn()) {
 
         /**
          * SYSTEM BOOTSTRAP
+         * Initialize all modules safely
          */
         try {
             Preloader.init();
@@ -2631,6 +2757,7 @@ if (isLoggedIn()) {
             <?php if(isLoggedIn()): ?>
             NotificationEngine.init();
             <?php endif; ?>
+            console.log("%c BNCC Enterprise Engine Loaded Successfully", "color: #10b981; font-weight: bold; font-size: 14px;");
         } catch (e) {
             console.error("Critical Engine Failure during Bootstrap:", e);
         }
