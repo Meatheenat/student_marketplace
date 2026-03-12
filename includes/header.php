@@ -2408,6 +2408,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     /**
      * MODULE 1: PRELOADER MANAGEMENT
+     * Handles the initial system loading screen fade-out logic
      */
     const PreloaderController = {
         element: document.getElementById('globalPreloader'),
@@ -2434,6 +2435,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     /**
      * MODULE 2: SCROLL ENGINE & NAVBAR EFFECTS
+     * Manages sticky header states and scroll progress indicators
      */
     const ScrollController = {
         navbar: document.getElementById('masterNavbarElement'),
@@ -2475,6 +2477,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     /**
      * MODULE 3: THEME MANAGER (🎯 FIXED PERSISTENCE)
+     * Handles Dark/Light mode switching and localStorage synchronization
      */
     const ThemeController = {
         btn: document.getElementById('themeToggleMasterBtn'),
@@ -2498,6 +2501,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     /**
      * MODULE 4: SIDEBAR DRAWER MANAGER
+     * Controls off-canvas navigation menu interactions
      */
     const SidebarController = {
         toggleBtn: document.getElementById('sidebarToggleMasterBtn'),
@@ -2544,6 +2548,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     /**
      * MODULE 5: AJAX NOTIFICATION ENGINE (🎯 THE 404 & ABSOLUTE PATH FIX)
+     * Advanced real-time notification fetching with robust path resolution
      */
     <?php if(isLoggedIn()): ?>
     const NotificationController = {
@@ -2556,7 +2561,7 @@ document.addEventListener('DOMContentLoaded', function() {
         pollInterval: 30000, 
         pollTimer: null,
         
-        // 🎯 กำหนดพาร์ทหลักให้แน่นอน ป้องกัน AJAX 404
+        // 🎯 กำหนดพาร์ทหลักให้แน่นอน ป้องกัน AJAX 404 และการเบิ้ลโฟลเดอร์
         baseProject: '<?= $base_path ?>',
         apiEndpoint: '<?= $base_path ?>ajax/notifications_api.php',
 
@@ -2585,17 +2590,20 @@ document.addEventListener('DOMContentLoaded', function() {
             this.startPolling();
         },
 
-        // 🎯 ฟังก์ชันจัดการลิงก์ ป้องกันการเบิ้ลโฟลเดอร์ admin/admin หรือ pages/admin
+        /**
+         * 🎯 NEW HELPER: resolveSafeLink
+         * บังคับให้ทุกลิงก์แจ้งเตือนเป็น Absolute Path จาก Root โปรเจกต์เสมอ
+         */
         resolveSafeLink(link) {
             if (!link || link === '#' || link === '') return '#';
             
-            // ถ้าเป็นลิงก์เต็ม (http/https) ให้ใช้ตัวเดิม
+            // ถ้าเป็นลิงก์ภายนอก (http/https) ให้คืนค่าเดิม
             if (link.startsWith('http://') || link.startsWith('https://')) return link;
 
-            // ลบเครื่องหมาย / ที่อยู่ข้างหน้าลิงก์จาก DB (ถ้ามี)
+            // ล้างอักขระ / ที่อาจซ้ำซ้อนด้านหน้า
             let cleanLink = link.replace(/^\/+/, '');
             
-            // 🎯 บังคับให้เริ่มจาก Root Project เสมอ (Base + Link)
+            // 🎯 บังคับต่อพาร์ทจากฐาน Project Root ที่ถูกต้อง (ป้องกัน pages/admin/...)
             return this.baseProject + cleanLink;
         },
 
@@ -2644,6 +2652,7 @@ document.addEventListener('DOMContentLoaded', function() {
         renderUI(data) {
             if (data.status !== 'success') return;
 
+            // Handle Unread Badge UI
             if (data.unread_count > 0) {
                 this.badge.style.display = 'flex';
                 this.badge.textContent = data.unread_count > 99 ? '99+' : data.unread_count;
@@ -2653,14 +2662,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.badge.classList.remove('animate-pop');
             }
 
-            if (!this.isOpen && this.listView.innerHTML !== '') return; 
+            // Only update list if panel is open or first load
+            if (!this.isOpen && this.listView.innerHTML !== '' && !this.listView.innerHTML.includes('fa-spin')) return; 
 
             if (data.notifications && data.notifications.length > 0) {
                 const htmlBuilder = data.notifications.map(notif => {
                     const stateClass = notif.is_read == 0 ? 'state-unread' : '';
                     const iconDef = notif.icon || '<i class="fas fa-bell"></i>';
                     
-                    // 🎯 เรียกใช้ตัวจัดการลิงก์อัจฉริยะ แก้ปัญหา 404
+                    // 🎯 เรียกใช้ตัวจัดการลิงก์อัจฉริยะ แก้ปัญหา 404 Not Found
                     const safeLink = this.resolveSafeLink(notif.link);
                     
                     return `
@@ -2686,6 +2696,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         async executeMarkAllRead() {
             try {
+                // Optimistic UI Update
                 this.badge.style.display = 'none';
                 const items = this.listView.querySelectorAll('.state-unread');
                 items.forEach(item => item.classList.remove('state-unread'));
