@@ -1,9 +1,4 @@
 <?php
-/**
- * BNCC Market - Real-time Chat System
- * [SOLID HIGH-CONTRAST EDITION]
- * Project: BNCC Student Marketplace [Cite: User Summary]
- */
 require_once '../includes/functions.php';
 if (!isLoggedIn()) redirect('../auth/login.php');
 
@@ -15,340 +10,897 @@ $my_id = $_SESSION['user_id'];
 $target_id = $_GET['user'] ?? null;
 $target_user = null;
 
-// 1. ดึงรายชื่อคนที่เคยคุยด้วยล่าสุด
 $contacts_stmt = $db->prepare("
-    SELECT u.id, u.fullname, u.profile_img, u.role, MAX(m.created_at) as last_msg
+    SELECT u.id, u.fullname, u.profile_img, u.role, MAX(m.created_at) as last_msg,
+           SUM(CASE WHEN m.receiver_id = ? AND m.sender_id = u.id AND m.is_read = 0 THEN 1 ELSE 0 END) as unread_count
     FROM users u
     JOIN messages m ON (m.sender_id = u.id AND m.receiver_id = ?) OR (m.sender_id = ? AND m.receiver_id = u.id)
     WHERE u.id != ?
-    GROUP BY u.id 
+    GROUP BY u.id
     ORDER BY last_msg DESC
 ");
-$contacts_stmt->execute([$my_id, $my_id, $my_id]);
+$contacts_stmt->execute([$my_id, $my_id, $my_id, $my_id]);
 $contacts = $contacts_stmt->fetchAll();
 
-// 2. ถ้ามีการเลือกคนคุย ให้ดึงข้อมูลคนนั้นมา
 if ($target_id) {
     $t_stmt = $db->prepare("SELECT id, fullname, profile_img, role FROM users WHERE id = ?");
     $t_stmt->execute([$target_id]);
     $target_user = $t_stmt->fetch();
+
+    $db->prepare("UPDATE messages SET is_read = 1 WHERE sender_id = ? AND receiver_id = ? AND is_read = 0")
+       ->execute([$target_id, $my_id]);
 }
 ?>
-
 <style>
-    /* ============================================================
-       🛠️ SOLID DESIGN SYSTEM - CHAT INTERFACE
-       ============================================================ */
     :root {
-        --chat-bg: #f1f5f9;
-        --chat-card: #ffffff;
-        --chat-border: #cbd5e1;
-        --chat-text: #0f172a;
-        --chat-primary: #4f46e5;
-        --chat-bubble-mine: #4f46e5;
-        --chat-bubble-other: #e2e8f0;
+        --cht-bg: #f0f2f8;
+        --cht-surface: #ffffff;
+        --cht-border: #e2e8f0;
+        --cht-text: #0f172a;
+        --cht-muted: #64748b;
+        --cht-primary: #4f46e5;
+        --cht-primary-light: rgba(79,70,229,0.08);
+        --cht-green: #10b981;
+        --cht-mine-bg: #4f46e5;
+        --cht-mine-text: #ffffff;
+        --cht-other-bg: #e8ecf4;
+        --cht-other-text: #0f172a;
+        --cht-radius: 20px;
+        --cht-ease: cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .dark-theme {
-        --chat-bg: #0b0e14;
-        --chat-card: #161b26;
-        --chat-border: #2d3748;
-        --chat-text: #ffffff;
-        --chat-primary: #6366f1;
-        --chat-bubble-mine: #6366f1;
-        --chat-bubble-other: #334155;
+    html[data-theme="dark"],
+    html.dark-theme {
+        --cht-bg: #080b12;
+        --cht-surface: #111827;
+        --cht-border: #1e293b;
+        --cht-text: #f1f5f9;
+        --cht-muted: #64748b;
+        --cht-primary: #6366f1;
+        --cht-primary-light: rgba(99,102,241,0.12);
+        --cht-mine-bg: #6366f1;
+        --cht-other-bg: #1e293b;
+        --cht-other-text: #e2e8f0;
     }
 
-    body {
-        background-color: var(--chat-bg) !important;
-        color: var(--chat-text);
-        transition: background 0.3s ease;
+    .cht-page {
+        padding: 24px 0 80px;
     }
 
-    .chat-master-wrapper {
-        padding: 30px 0 60px;
+    .cht-shell {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 0 20px;
     }
 
-    .chat-container { 
-        display: flex; 
-        height: 75vh; 
-        background: var(--chat-card); 
-        border-radius: 24px; 
-        border: 2px solid var(--chat-border); 
-        overflow: hidden; 
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05); 
+    .cht-layout {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        height: calc(100vh - 160px);
+        min-height: 600px;
+        background: var(--cht-surface);
+        border: 1.5px solid var(--cht-border);
+        border-radius: 28px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(15,23,42,0.1);
     }
 
-    /* 📋 Sidebar Contacts */
-    .chat-sidebar { 
-        width: 320px; 
-        border-right: 2px solid var(--chat-border); 
-        background: var(--chat-bg); 
-        overflow-y: auto; 
+    @media (max-width: 768px) {
+        .cht-layout {
+            grid-template-columns: 1fr;
+            height: auto;
+            min-height: unset;
+        }
+
+        .cht-sidebar { display: none; }
+        .cht-sidebar.mobile-show { display: flex; height: 100vh; position: fixed; inset: 0; z-index: 9999; border-radius: 0; }
+    }
+
+    /* ===== SIDEBAR ===== */
+    .cht-sidebar {
         display: flex;
         flex-direction: column;
+        border-right: 1.5px solid var(--cht-border);
+        background: var(--cht-bg);
+        overflow: hidden;
     }
-    
-    .sidebar-header {
-        padding: 25px 20px;
+
+    .cht-sidebar-header {
+        padding: 24px 20px 18px;
+        border-bottom: 1.5px solid var(--cht-border);
+        background: var(--cht-surface);
+        flex-shrink: 0;
+    }
+
+    .cht-sidebar-title {
+        font-size: 1.1rem;
         font-weight: 900;
-        font-size: 1.2rem;
-        border-bottom: 2px solid var(--chat-border);
-        background: var(--chat-card);
-        color: var(--chat-text);
+        letter-spacing: -0.5px;
+        color: var(--cht-text);
         display: flex;
         align-items: center;
         gap: 10px;
+        margin-bottom: 14px;
     }
 
-    .contact-item { 
-        padding: 15px 20px; 
-        display: flex; 
-        gap: 15px; 
-        align-items: center; 
-        border-bottom: 1px solid var(--chat-border); 
-        cursor: pointer; 
-        text-decoration: none; 
-        color: var(--chat-text); 
-        transition: 0.2s; 
+    .cht-sidebar-title-icon {
+        width: 34px;
+        height: 34px;
+        background: var(--cht-primary);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 0.85rem;
     }
-    .contact-item:hover { background: rgba(99, 102, 241, 0.05); }
-    .contact-item.active { 
-        background: var(--chat-card); 
-        border-left: 4px solid var(--chat-primary);
+
+    .cht-search {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--cht-bg);
+        border: 1.5px solid var(--cht-border);
+        border-radius: 50px;
+        padding: 9px 16px;
+        transition: border-color 0.2s;
     }
-    
-    .contact-avatar { 
-        width: 50px; height: 50px; 
-        border-radius: 50%; 
+
+    .cht-search:focus-within {
+        border-color: var(--cht-primary);
+    }
+
+    .cht-search i { color: var(--cht-muted); font-size: 0.85rem; flex-shrink: 0; }
+
+    .cht-search-input {
+        border: none;
+        background: transparent;
+        outline: none;
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--cht-text);
+        width: 100%;
+    }
+
+    .cht-search-input::placeholder { color: var(--cht-muted); }
+
+    .cht-contacts-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px 0;
+    }
+
+    .cht-contacts-list::-webkit-scrollbar { width: 4px; }
+    .cht-contacts-list::-webkit-scrollbar-thumb { background: var(--cht-border); border-radius: 10px; }
+
+    .cht-contact {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        padding: 13px 18px;
+        text-decoration: none;
+        color: var(--cht-text);
+        transition: all 0.2s;
+        position: relative;
+        border-left: 3px solid transparent;
+    }
+
+    .cht-contact:hover {
+        background: var(--cht-primary-light);
+        border-left-color: rgba(79,70,229,0.3);
+    }
+
+    .cht-contact.active {
+        background: var(--cht-surface);
+        border-left-color: var(--cht-primary);
+    }
+
+    .cht-contact-avatar-wrap {
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    .cht-contact-avatar {
+        width: 46px;
+        height: 46px;
+        border-radius: 14px;
         object-fit: cover;
-        border: 2px solid var(--chat-border);
+        border: 2px solid var(--cht-border);
+        display: block;
+        transition: border-color 0.2s;
     }
 
-    /* 💬 Chat Main Area */
-    .chat-main { 
-        flex: 1; 
-        display: flex; 
-        flex-direction: column; 
-        background: var(--chat-card); 
+    .cht-contact.active .cht-contact-avatar { border-color: var(--cht-primary); }
+
+    .cht-contact-info { flex: 1; min-width: 0; }
+
+    .cht-contact-name {
+        font-weight: 800;
+        font-size: 0.92rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 3px;
     }
 
-    .chat-header { 
-        padding: 20px 30px; 
-        border-bottom: 2px solid var(--chat-border); 
-        display: flex; 
-        align-items: center; 
-        gap: 20px; 
-        background: var(--chat-bg); 
-    }
-    .chat-header a:hover { transform: translateX(5px); }
-
-    .chat-body { 
-        flex: 1; 
-        padding: 30px; 
-        overflow-y: auto; 
-        display: flex; 
-        flex-direction: column; 
-        gap: 20px; 
-        background: var(--chat-bg); 
-    }
-
-    /* 🎈 Chat Bubbles */
-    .msg-bubble { 
-        max-width: 65%; 
-        padding: 15px 20px; 
-        border-radius: 20px; 
-        font-size: 1rem; 
-        line-height: 1.5; 
-        position: relative; 
-        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-    }
-    
-    .msg-mine { 
-        background: var(--chat-bubble-mine); 
-        color: white; 
-        align-self: flex-end; 
-        border-bottom-right-radius: 4px; 
-    }
-    
-    .msg-other { 
-        background: var(--chat-bubble-other); 
-        color: var(--chat-text); 
-        align-self: flex-start; 
-        border-bottom-left-radius: 4px; 
-    }
-    
-    .msg-time { 
-        font-size: 0.7rem; 
-        opacity: 0.7; 
-        margin-top: 8px; 
-        text-align: right; 
+    .cht-contact-role {
+        font-size: 0.72rem;
         font-weight: 700;
+        color: var(--cht-primary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
-    /* ⌨️ Chat Footer (Input) */
-    .chat-footer { 
-        padding: 20px 30px; 
-        border-top: 2px solid var(--chat-border); 
-        background: var(--chat-card); 
-        display: flex; 
-        gap: 15px; 
+    .cht-unread-badge {
+        background: var(--cht-primary);
+        color: #fff;
+        font-size: 0.68rem;
+        font-weight: 900;
+        min-width: 20px;
+        height: 20px;
+        border-radius: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 5px;
+        flex-shrink: 0;
+        animation: badgePop 0.4s var(--cht-ease);
+    }
+
+    @keyframes badgePop {
+        0% { transform: scale(0); }
+        70% { transform: scale(1.2); }
+        100% { transform: scale(1); }
+    }
+
+    .cht-empty-contacts {
+        padding: 40px 20px;
+        text-align: center;
+        color: var(--cht-muted);
+    }
+
+    .cht-empty-contacts i { font-size: 2.5rem; opacity: 0.2; display: block; margin-bottom: 12px; }
+    .cht-empty-contacts p { font-size: 0.85rem; font-weight: 600; }
+
+    /* ===== MAIN AREA ===== */
+    .cht-main {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background: var(--cht-surface);
+    }
+
+    /* --- Header --- */
+    .cht-main-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 28px;
+        border-bottom: 1.5px solid var(--cht-border);
+        background: var(--cht-surface);
+        flex-shrink: 0;
+        gap: 16px;
+    }
+
+    .cht-header-user {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        text-decoration: none;
+        color: inherit;
+        flex: 1;
+        min-width: 0;
+        transition: opacity 0.2s;
+    }
+
+    .cht-header-user:hover { opacity: 0.8; }
+
+    .cht-header-avatar-wrap { position: relative; flex-shrink: 0; }
+
+    .cht-header-avatar {
+        width: 46px;
+        height: 46px;
+        border-radius: 14px;
+        object-fit: cover;
+        border: 2px solid var(--cht-primary);
+        display: block;
+    }
+
+    .cht-online-dot {
+        position: absolute;
+        bottom: -2px;
+        right: -2px;
+        width: 13px;
+        height: 13px;
+        background: var(--cht-green);
+        border-radius: 50%;
+        border: 2.5px solid var(--cht-surface);
+    }
+
+    .cht-online-dot::before {
+        content: '';
+        position: absolute;
+        inset: -3px;
+        background: rgba(16,185,129,0.35);
+        border-radius: 50%;
+        animation: onlinePing 2s infinite;
+    }
+
+    @keyframes onlinePing {
+        0% { transform: scale(1); opacity: 0.8; }
+        70%, 100% { transform: scale(2); opacity: 0; }
+    }
+
+    .cht-header-name {
+        font-size: 1.05rem;
+        font-weight: 900;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .cht-header-status {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--cht-green);
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-top: 3px;
+    }
+
+    .cht-header-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+    .cht-hdr-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        border: 1.5px solid var(--cht-border);
+        background: var(--cht-bg);
+        color: var(--cht-muted);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .cht-hdr-btn:hover { border-color: var(--cht-primary); color: var(--cht-primary); background: var(--cht-primary-light); }
+
+    /* --- Messages Body --- */
+    .cht-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 28px 32px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        background: var(--cht-bg);
+    }
+
+    .cht-body::-webkit-scrollbar { width: 5px; }
+    .cht-body::-webkit-scrollbar-thumb { background: var(--cht-border); border-radius: 10px; }
+
+    .cht-date-divider {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 14px 0;
+        opacity: 0.45;
+    }
+
+    .cht-date-divider::before,
+    .cht-date-divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--cht-border);
+    }
+
+    .cht-date-divider span {
+        font-size: 0.72rem;
+        font-weight: 800;
+        color: var(--cht-muted);
+        white-space: nowrap;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .cht-msg-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+        animation: msgIn 0.35s var(--cht-ease) both;
+    }
+
+    @keyframes msgIn {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .cht-msg-row.mine { flex-direction: row-reverse; }
+
+    .cht-msg-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        object-fit: cover;
+        flex-shrink: 0;
+        border: 1.5px solid var(--cht-border);
+    }
+
+    .cht-msg-avatar.ghost { opacity: 0; pointer-events: none; }
+
+    .cht-bubble-wrap { display: flex; flex-direction: column; max-width: 62%; gap: 3px; }
+    .cht-msg-row.mine .cht-bubble-wrap { align-items: flex-end; }
+
+    .cht-bubble {
+        padding: 12px 18px;
+        border-radius: 18px;
+        font-size: 0.97rem;
+        line-height: 1.6;
+        word-break: break-word;
+        position: relative;
+    }
+
+    .cht-bubble.mine {
+        background: var(--cht-mine-bg);
+        color: var(--cht-mine-text);
+        border-bottom-right-radius: 5px;
+        box-shadow: 0 4px 14px rgba(79,70,229,0.2);
+    }
+
+    .cht-bubble.other {
+        background: var(--cht-other-bg);
+        color: var(--cht-other-text);
+        border-bottom-left-radius: 5px;
+    }
+
+    .cht-bubble-time {
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: var(--cht-muted);
+        opacity: 0.7;
+        padding: 0 4px;
+    }
+
+    .cht-msg-row.mine .cht-bubble-time { text-align: right; }
+
+    /* --- Typing indicator --- */
+    .cht-typing-indicator {
+        display: none;
+        align-items: flex-end;
+        gap: 8px;
+        padding: 4px 0;
+        animation: msgIn 0.3s var(--cht-ease) both;
+    }
+
+    .cht-typing-indicator.show { display: flex; }
+
+    .cht-typing-bubble {
+        background: var(--cht-other-bg);
+        border-radius: 18px;
+        border-bottom-left-radius: 5px;
+        padding: 14px 18px;
+        display: flex;
+        gap: 5px;
         align-items: center;
     }
-    
-    .chat-input { 
-        flex: 1; 
-        padding: 18px 25px; 
-        border-radius: 30px; 
-        border: 2px solid var(--chat-border); 
-        background: var(--chat-bg); 
-        color: var(--chat-text); 
-        outline: none; 
-        font-size: 1.05rem;
-        font-weight: 600;
-        transition: 0.3s;
-    }
-    .chat-input:focus { border-color: var(--chat-primary); }
-    
-    .chat-send-btn { 
-        background: var(--chat-primary); 
-        color: white; 
-        width: 60px; height: 60px; 
-        border-radius: 50%; 
-        display: flex; justify-content: center; align-items: center; 
-        border: none; cursor: pointer; 
-        transition: 0.2s; 
-        font-size: 1.2rem;
-        box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
-    }
-    .chat-send-btn:hover { transform: scale(1.1) rotate(10deg); }
 
-    /* Custom Scrollbar สำหรับห้องแชท */
-    .chat-body::-webkit-scrollbar, .chat-sidebar::-webkit-scrollbar { width: 6px; }
-    .chat-body::-webkit-scrollbar-track, .chat-sidebar::-webkit-scrollbar-track { background: transparent; }
-    .chat-body::-webkit-scrollbar-thumb, .chat-sidebar::-webkit-scrollbar-thumb { background: var(--chat-border); border-radius: 10px; }
+    .cht-typing-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--cht-muted);
+        animation: typingBounce 1.2s infinite;
+    }
+
+    .cht-typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .cht-typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typingBounce {
+        0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+        30% { transform: translateY(-6px); opacity: 1; }
+    }
+
+    /* --- Footer Input --- */
+    .cht-footer {
+        padding: 16px 24px;
+        border-top: 1.5px solid var(--cht-border);
+        background: var(--cht-surface);
+        flex-shrink: 0;
+    }
+
+    .cht-input-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 12px;
+        background: var(--cht-bg);
+        border: 2px solid var(--cht-border);
+        border-radius: 20px;
+        padding: 10px 10px 10px 20px;
+        transition: border-color 0.25s;
+    }
+
+    .cht-input-row:focus-within { border-color: var(--cht-primary); }
+
+    .cht-textarea {
+        flex: 1;
+        border: none;
+        background: transparent;
+        outline: none;
+        font-size: 0.97rem;
+        font-weight: 600;
+        color: var(--cht-text);
+        resize: none;
+        min-height: 24px;
+        max-height: 120px;
+        line-height: 1.5;
+        font-family: inherit;
+        overflow-y: auto;
+        padding: 4px 0;
+    }
+
+    .cht-textarea::placeholder { color: var(--cht-muted); }
+
+    .cht-send-btn {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        background: var(--cht-primary);
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+        transition: all 0.3s var(--cht-ease);
+        box-shadow: 0 6px 16px rgba(79,70,229,0.3);
+        align-self: flex-end;
+    }
+
+    .cht-send-btn:hover { transform: scale(1.08) rotate(5deg); box-shadow: 0 10px 24px rgba(79,70,229,0.45); }
+    .cht-send-btn:active { transform: scale(0.95); }
+    .cht-send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .cht-footer-hint {
+        text-align: center;
+        font-size: 0.7rem;
+        color: var(--cht-muted);
+        margin-top: 8px;
+        font-weight: 600;
+        opacity: 0.6;
+    }
+
+    /* --- Empty state (no chat selected) --- */
+    .cht-empty-state {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        background: var(--cht-bg);
+        padding: 40px;
+        text-align: center;
+    }
+
+    .cht-empty-icon {
+        width: 96px;
+        height: 96px;
+        background: var(--cht-primary-light);
+        border-radius: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        color: var(--cht-primary);
+        animation: floatEmpty 3.5s ease-in-out infinite;
+    }
+
+    @keyframes floatEmpty {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+
+    .cht-empty-title {
+        font-size: 1.4rem;
+        font-weight: 900;
+        letter-spacing: -0.5px;
+        color: var(--cht-text);
+    }
+
+    .cht-empty-sub {
+        font-size: 0.9rem;
+        color: var(--cht-muted);
+        font-weight: 600;
+        max-width: 280px;
+    }
+
+    /* Loading skeleton */
+    .cht-skeleton {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding: 28px 32px;
+    }
+
+    .cht-skel-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+    }
+
+    .cht-skel-row.right { flex-direction: row-reverse; }
+
+    .cht-skel-circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        background: linear-gradient(90deg, var(--cht-border) 25%, var(--cht-bg) 50%, var(--cht-border) 75%);
+        background-size: 400% 100%;
+        animation: skelShim 1.5s infinite;
+        flex-shrink: 0;
+    }
+
+    .cht-skel-bubble {
+        height: 44px;
+        border-radius: 16px;
+        background: linear-gradient(90deg, var(--cht-border) 25%, var(--cht-bg) 50%, var(--cht-border) 75%);
+        background-size: 400% 100%;
+        animation: skelShim 1.5s infinite;
+    }
+
+    @keyframes skelShim {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
 </style>
 
-<div class="chat-master-wrapper">
-    <div class="container">
-        <div class="chat-container">
-            
-            <div class="chat-sidebar">
-                <div class="sidebar-header">
-                    <i class="fas fa-inbox text-primary"></i> ข้อความของคุณ
-                </div>
-                
-                <?php if(count($contacts) > 0): ?>
-                    <?php foreach($contacts as $c): 
-                        $c_img = !empty($c['profile_img']) ? "../assets/images/profiles/".$c['profile_img'] : "../assets/images/profiles/default_profile.png";
-                    ?>
-                        <a href="chat.php?user=<?= $c['id'] ?>" class="contact-item <?= ($target_id == $c['id']) ? 'active' : '' ?>">
-                            <img src="<?= $c_img ?>" class="contact-avatar">
-                            <div>
-                                <div style="font-weight: 800; font-size: 1.05rem; margin-bottom: 3px;"><?= e($c['fullname']) ?></div>
-                                <div style="font-size: 0.75rem; color: var(--chat-primary); font-weight: 700; text-transform: uppercase;"><i class="fas fa-user-tag"></i> <?= e($c['role']) ?></div>
-                            </div>
-                        </a>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <div style="padding: 30px 20px; text-align: center; color: var(--text-muted); font-weight: 600; font-size: 0.9rem;">
-                        ยังไม่มีประวัติการพูดคุย
-                    </div>
-                <?php endif; ?>
-            </div>
+<div class="cht-page">
+    <div class="cht-shell">
+        <div class="cht-layout">
 
-            <div class="chat-main">
-                <?php if ($target_user): 
-                    $t_img = !empty($target_user['profile_img']) ? "../assets/images/profiles/".$target_user['profile_img'] : "../assets/images/profiles/default_profile.png";
+            <!-- SIDEBAR -->
+            <aside class="cht-sidebar" id="chtSidebar">
+                <div class="cht-sidebar-header">
+                    <div class="cht-sidebar-title">
+                        <div class="cht-sidebar-title-icon"><i class="fas fa-inbox"></i></div>
+                        ข้อความของคุณ
+                    </div>
+                    <div class="cht-search">
+                        <i class="fas fa-search"></i>
+                        <input type="text" class="cht-search-input" placeholder="ค้นหาการสนทนา..." id="contactSearch">
+                    </div>
+                </div>
+
+                <div class="cht-contacts-list" id="contactsList">
+                    <?php if (count($contacts) > 0): ?>
+                        <?php foreach ($contacts as $c):
+                            $c_img = !empty($c['profile_img'])
+                                ? "../assets/images/profiles/" . $c['profile_img']
+                                : "../assets/images/profiles/default_profile.png";
+                            $role_map = ['admin' => '👑 Admin', 'teacher' => '📚 Teacher', 'seller' => '🏪 Seller', 'buyer' => '🛍 Buyer'];
+                            $role_label = $role_map[$c['role']] ?? $c['role'];
+                        ?>
+                        <a href="chat.php?user=<?= $c['id'] ?>"
+                           class="cht-contact <?= ($target_id == $c['id']) ? 'active' : '' ?>"
+                           data-name="<?= strtolower(e($c['fullname'])) ?>">
+                            <div class="cht-contact-avatar-wrap">
+                                <img src="<?= $c_img ?>" class="cht-contact-avatar" alt="<?= e($c['fullname']) ?>">
+                            </div>
+                            <div class="cht-contact-info">
+                                <div class="cht-contact-name"><?= e($c['fullname']) ?></div>
+                                <div class="cht-contact-role"><?= $role_label ?></div>
+                            </div>
+                            <?php if ($c['unread_count'] > 0): ?>
+                            <div class="cht-unread-badge"><?= $c['unread_count'] > 99 ? '99+' : $c['unread_count'] ?></div>
+                            <?php endif; ?>
+                        </a>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="cht-empty-contacts">
+                            <i class="far fa-comment-dots"></i>
+                            <p>ยังไม่มีประวัติการพูดคุย</p>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </aside>
+
+            <!-- MAIN CHAT -->
+            <div class="cht-main">
+                <?php if ($target_user):
+                    $t_img = !empty($target_user['profile_img'])
+                        ? "../assets/images/profiles/" . $target_user['profile_img']
+                        : "../assets/images/profiles/default_profile.png";
+                    $role_map2 = ['admin' => '👑 Admin', 'teacher' => '📚 Teacher', 'seller' => '🏪 Seller', 'buyer' => '🛍 Buyer'];
+                    $role_label2 = $role_map2[$target_user['role']] ?? $target_user['role'];
                 ?>
-                    <div class="chat-header">
-                        <a href="view_profile.php?id=<?= $target_user['id'] ?>" style="display: flex; align-items: center; gap: 15px; text-decoration: none; color: inherit; transition: 0.3s;">
-                            <img src="<?= $t_img ?>" class="contact-avatar" style="border: 2px solid var(--chat-primary);">
+
+                    <div class="cht-main-header">
+                        <a href="view_profile.php?id=<?= $target_user['id'] ?>" class="cht-header-user">
+                            <div class="cht-header-avatar-wrap">
+                                <img src="<?= $t_img ?>" class="cht-header-avatar" alt="<?= e($target_user['fullname']) ?>">
+                                <div class="cht-online-dot"></div>
+                            </div>
                             <div>
-                                <div style="font-weight: 900; font-size: 1.2rem; color: var(--chat-text);"><?= e($target_user['fullname']) ?></div>
-                                <div style="font-size: 0.8rem; color: #10b981; font-weight: 700; margin-top: 3px;">
-                                    <i class="fas fa-circle" style="font-size:0.5rem; vertical-align: middle;"></i> กำลังสนทนา (คลิกเพื่อดูโปรไฟล์)
+                                <div class="cht-header-name"><?= e($target_user['fullname']) ?></div>
+                                <div class="cht-header-status">
+                                    <i class="fas fa-circle" style="font-size:0.5rem;"></i>
+                                    กำลังใช้งาน · <?= $role_label2 ?>
                                 </div>
                             </div>
                         </a>
-                    </div>
-                    
-                    <div class="chat-body" id="chat-box">
+                        <div class="cht-header-actions">
+                            <a href="view_profile.php?id=<?= $target_user['id'] ?>" class="cht-hdr-btn" title="ดูโปรไฟล์">
+                                <i class="fas fa-user"></i>
+                            </a>
                         </div>
-                    
-                    <form class="chat-footer" id="chat-form" onsubmit="sendMessage(event)">
-                        <input type="text" id="msg-input" class="chat-input" placeholder="พิมพ์ข้อความถึง <?= e($target_user['fullname']) ?>..." autocomplete="off" required autofocus>
-                        <button type="submit" class="chat-send-btn"><i class="fas fa-paper-plane"></i></button>
-                    </form>
+                    </div>
+
+                    <div class="cht-body" id="chatBody">
+                        <div class="cht-skeleton" id="chatSkeleton">
+                            <div class="cht-skel-row"><div class="cht-skel-circle"></div><div class="cht-skel-bubble" style="width:42%;"></div></div>
+                            <div class="cht-skel-row right"><div class="cht-skel-circle"></div><div class="cht-skel-bubble" style="width:55%;"></div></div>
+                            <div class="cht-skel-row"><div class="cht-skel-circle"></div><div class="cht-skel-bubble" style="width:38%;"></div></div>
+                            <div class="cht-skel-row right"><div class="cht-skel-circle"></div><div class="cht-skel-bubble" style="width:30%;"></div></div>
+                        </div>
+                    </div>
+
+                    <div class="cht-typing-indicator" id="typingIndicator">
+                        <img src="<?= $t_img ?>" class="cht-msg-avatar" alt="">
+                        <div class="cht-typing-bubble">
+                            <div class="cht-typing-dot"></div>
+                            <div class="cht-typing-dot"></div>
+                            <div class="cht-typing-dot"></div>
+                        </div>
+                    </div>
+
+                    <div class="cht-footer">
+                        <div class="cht-input-row">
+                            <textarea id="msgInput"
+                                      class="cht-textarea"
+                                      placeholder="พิมพ์ข้อความถึง <?= e($target_user['fullname']) ?>..."
+                                      rows="1"
+                                      autocomplete="off"></textarea>
+                            <button id="sendBtn" class="cht-send-btn" disabled title="ส่งข้อความ">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                        <div class="cht-footer-hint">กด Enter ส่ง · Shift+Enter ขึ้นบรรทัดใหม่</div>
+                    </div>
 
                     <script>
-                        const targetUserId = <?= $target_user['id'] ?>;
-                        let lastMsgId = 0;
-                        const chatBox = document.getElementById('chat-box');
+                    (function() {
+                        const TARGET_ID = <?= (int)$target_user['id'] ?>;
+                        const MY_IMG   = '<?= !empty($_SESSION['profile_img']) ? "../assets/images/profiles/" . $_SESSION['profile_img'] : "../assets/images/profiles/default_profile.png" ?>';
+                        const TARGET_IMG = '<?= $t_img ?>';
 
-                        // ฟังก์ชันดึงข้อความใหม่ (AJAX Polling)
+                        const chatBody  = document.getElementById('chatBody');
+                        const skeleton  = document.getElementById('chatSkeleton');
+                        const msgInput  = document.getElementById('msgInput');
+                        const sendBtn   = document.getElementById('sendBtn');
+
+                        let lastMsgId   = 0;
+                        let isFirstLoad = true;
+
+                        msgInput.addEventListener('input', function() {
+                            this.style.height = 'auto';
+                            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+                            sendBtn.disabled = this.value.trim() === '';
+                        });
+
+                        msgInput.addEventListener('keydown', function(e) {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                if (!sendBtn.disabled) sendMsg();
+                            }
+                        });
+
+                        sendBtn.addEventListener('click', sendMsg);
+
+                        function buildMsgRow(msg) {
+                            const isMine = msg.is_mine;
+                            const row = document.createElement('div');
+                            row.className = 'cht-msg-row' + (isMine ? ' mine' : '');
+
+                            const avatarSrc = isMine ? MY_IMG : TARGET_IMG;
+                            const bubbleClass = isMine ? 'mine' : 'other';
+
+                            row.innerHTML = `
+                                <img src="${avatarSrc}" class="cht-msg-avatar" alt="">
+                                <div class="cht-bubble-wrap">
+                                    <div class="cht-bubble ${bubbleClass}">${msg.message.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div>
+                                    <div class="cht-bubble-time">${msg.time}</div>
+                                </div>`;
+                            return row;
+                        }
+
                         function fetchMessages() {
-                            fetch(`../ajax/chat_api.php?action=fetch&other_user_id=${targetUserId}&last_id=${lastMsgId}`)
-                            .then(res => res.json())
-                            .then(data => {
-                                if(data.status === 'success' && data.messages.length > 0) {
-                                    data.messages.forEach(msg => {
-                                        const isMine = msg.is_mine;
-                                        const bubbleClass = isMine ? 'msg-mine' : 'msg-other';
-                                        
-                                        const msgDiv = document.createElement('div');
-                                        msgDiv.className = `msg-bubble ${bubbleClass}`;
-                                        msgDiv.innerHTML = `
-                                            ${msg.message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}
-                                            <div class="msg-time">${msg.time}</div>
-                                        `;
-                                        chatBox.appendChild(msgDiv);
-                                        lastMsgId = msg.id; // อัปเดต ID ล่าสุด
-                                    });
-                                    // เลื่อนลงล่างสุดอัตโนมัติเมื่อมีข้อความใหม่
-                                    chatBox.scrollTop = chatBox.scrollHeight;
-                                }
+                            fetch(`../ajax/chat_api.php?action=fetch&other_user_id=${TARGET_ID}&last_id=${lastMsgId}`)
+                                .then(r => r.json())
+                                .then(data => {
+                                    if (isFirstLoad) {
+                                        skeleton.remove();
+                                        isFirstLoad = false;
+                                    }
+
+                                    if (data.status === 'success' && data.messages.length > 0) {
+                                        const wasAtBottom = chatBody.scrollHeight - chatBody.scrollTop - chatBody.clientHeight < 80;
+
+                                        data.messages.forEach(msg => {
+                                            chatBody.appendChild(buildMsgRow(msg));
+                                            lastMsgId = msg.id;
+                                        });
+
+                                        if (wasAtBottom || lastMsgId === data.messages[data.messages.length - 1].id) {
+                                            chatBody.scrollTop = chatBody.scrollHeight;
+                                        }
+                                    }
+                                })
+                                .catch(() => {
+                                    if (isFirstLoad) { skeleton.remove(); isFirstLoad = false; }
+                                });
+                        }
+
+                        function sendMsg() {
+                            const text = msgInput.value.trim();
+                            if (!text) return;
+
+                            sendBtn.disabled = true;
+                            sendBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
+
+                            const fd = new FormData();
+                            fd.append('action', 'send');
+                            fd.append('receiver_id', TARGET_ID);
+                            fd.append('message', text);
+
+                            msgInput.value = '';
+                            msgInput.style.height = 'auto';
+
+                            fetch('../ajax/chat_api.php', { method: 'POST', body: fd })
+                                .then(r => r.json())
+                                .then(data => {
+                                    sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+                                    if (data.status === 'success') {
+                                        fetchMessages();
+                                        msgInput.focus();
+                                    }
+                                })
+                                .catch(() => {
+                                    sendBtn.disabled = false;
+                                    sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+                                });
+                        }
+
+                        const contactSearch = document.getElementById('contactSearch');
+                        if (contactSearch) {
+                            contactSearch.addEventListener('input', function() {
+                                const q = this.value.toLowerCase();
+                                document.querySelectorAll('.cht-contact').forEach(c => {
+                                    c.style.display = c.dataset.name.includes(q) ? '' : 'none';
+                                });
                             });
                         }
 
-                        // ฟังก์ชันส่งข้อความ
-                        function sendMessage(e) {
-                            e.preventDefault();
-                            const input = document.getElementById('msg-input');
-                            const msg = input.value.trim();
-                            if(!msg) return;
-
-                            const formData = new FormData();
-                            formData.append('action', 'send');
-                            formData.append('receiver_id', targetUserId);
-                            formData.append('message', msg);
-
-                            fetch('../ajax/chat_api.php', {
-                                method: 'POST',
-                                body: formData
-                            }).then(res => res.json()).then(data => {
-                                if(data.status === 'success') {
-                                    input.value = ''; // ล้างช่องพิมพ์
-                                    fetchMessages(); // ดึงแชทมาโชว์ทันที
-                                    input.focus(); // ให้เคอร์เซอร์กลับมาที่ช่องพิมพ์
-                                }
-                            });
-                        }
-
-                        // เรียกดึงข้อความครั้งแรก
                         fetchMessages();
-                        // ตั้งเวลาดึงข้อความใหม่ทุกๆ 2 วินาที (2000 ms)
                         setInterval(fetchMessages, 2000);
+                    })();
                     </script>
 
                 <?php else: ?>
-                    <div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; color:var(--chat-border); background: var(--chat-bg);">
-                        <i class="far fa-comments" style="font-size: 6rem; margin-bottom: 25px;"></i>
-                        <h2 style="color: var(--chat-text); font-weight: 900;">เลือกแชทเพื่อเริ่มต้นสนทนา</h2>
-                        <p style="color: var(--text-muted); font-weight: 600;">เลือกลูกค้าหรือผู้ขายจากรายการด้านซ้ายมือได้เลยครับ</p>
+                    <div class="cht-empty-state">
+                        <div class="cht-empty-icon"><i class="fas fa-comments"></i></div>
+                        <div class="cht-empty-title">เลือกการสนทนา</div>
+                        <div class="cht-empty-sub">เลือกรายชื่อจากด้านซ้ายเพื่อเริ่มต้นแชท</div>
                     </div>
                 <?php endif; ?>
             </div>
+
         </div>
     </div>
 </div>
