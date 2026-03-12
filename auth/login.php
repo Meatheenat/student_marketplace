@@ -233,6 +233,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['fullname']   = $user['fullname'];
             $_SESSION['role']       = $user['role'];
             $_SESSION['student_id'] = $user['student_id'] ?? $login_input;
+            $_SESSION['profile_img'] = $user['profile_img'] ?? 'default_profile.png'; // ← เพิ่มบรรทัดนี้
             redirect('../pages/index.php');
         } else {
             $_SESSION['flash_message'] = "รหัสนักศึกษา หรือ รหัสผ่านไม่ถูกต้อง";
