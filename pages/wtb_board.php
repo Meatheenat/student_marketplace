@@ -376,6 +376,60 @@ $posts = $stmt->fetchAll();
         .wtb-grid { grid-template-columns: 1fr; }
         .wtb-card-img-wrap { height: 200px; }
     }
+
+    /* ===============================
+   FIX UX/UI CARD ACTION LAYOUT
+   =============================== */
+
+.wtb-card-footer .d-flex {
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ปุ่มคู่ (แก้ไข / ปิดประกาศ) */
+.wtb-card-footer .d-flex.gap-2 {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px !important;
+}
+
+/* ปุ่มทุกปุ่มให้ขนาดเท่ากัน */
+.btn-action {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ปรับ padding card ให้ดูโปร */
+.wtb-card-body {
+    padding: 28px 28px 24px 28px;
+}
+
+/* ระยะห่าง footer */
+.wtb-card-footer {
+    gap: 14px;
+}
+
+/* งบประมาณ */
+.wtb-budget-row {
+    padding-bottom: 10px;
+}
+
+/* ป้องกันปุ่ม admin ใหญ่เกิน */
+.btn-pro-admin {
+    margin-top: 4px;
+}
+
+/* Mobile UX */
+@media (max-width: 500px) {
+
+    .wtb-card-footer .d-flex.gap-2 {
+        grid-template-columns: 1fr;
+    }
+
+}
+
 </style>
 
 <div class="wtb-main-wrapper">
