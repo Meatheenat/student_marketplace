@@ -57,7 +57,7 @@ $hide_auth_list = [
 // 4. USER DATA NORMALIZATION
 // --------------------------------------------------------------------------------------------
 // Process User Avatar with absolute pathing to prevent broken images in deep subdirectories
-if (isset($_SESSION['profile_img']) && !empty($_SESSION['profile_img'])) {
+if (isLoggedIn() && isset($_SESSION['profile_img']) && !empty($_SESSION['profile_img'])) {
     // Check if the image is a full URL (like Google Profile)
     if (filter_var($_SESSION['profile_img'], FILTER_VALIDATE_URL)) {
         $user_avatar = $_SESSION['profile_img'];
