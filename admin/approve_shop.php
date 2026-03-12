@@ -593,7 +593,7 @@ $pending_shops = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <form action="approve_shop.php" method="POST" style="width: 100%;">
                             <input type="hidden" name="shop_id" value="<?php echo $s['id']; ?>">
                             <button type="submit" name="action" value="reject" class="btn-decision btn-reject" 
-                                    onclick="return confirm('⚠️ ยืนยันการปฏิเสธคำร้องนี้?\n\nคำร้องจะถูกลบออกจากระบบทันทีและไม่สามารถกู้คืนได้');" 
+                                    onclick="return confirm('⚠️ ยืนยันการปฏิเสธคำร้องนี้? คำร้องจะถูกลบออกจากระบบทันทีและไม่สามารถกู้คืนได้');" 
                                     aria-label="Reject Shop">
                                 <i class="fas fa-times-circle"></i> ไม่อนุมัติ
                             </button>
