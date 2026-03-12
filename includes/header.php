@@ -293,7 +293,7 @@ if (isLoggedIn()) {
             --bncc-header-height: 84px;
             --bncc-header-height-scrolled: 70px;
             --bncc-header-height-mobile: 64px;
-            --bncc-sidebar-width: 320px;
+            --bncc-sidebar-width: 340px;
             --bncc-sidebar-width-collapsed: 80px;
             --bncc-container-max: 1440px;
             --bncc-container-padding: 2rem;
@@ -836,7 +836,7 @@ if (isLoggedIn()) {
             animation: skeletonLoading 3s linear infinite;
         }
 
-        .header-container {
+        .header-layout-container {
             width: 100%;
             max-width: var(--bncc-container-max);
             margin: 0 auto;
@@ -1773,7 +1773,7 @@ if (isLoggedIn()) {
         }
 
         .drawer-menu-link:hover {
-            background-color: var(--theme-hover-bg);
+            background: var(--theme-hover-bg);
             color: var(--theme-text-primary);
             transform: translateX(5px);
             border-color: var(--theme-border);
@@ -2079,7 +2079,7 @@ if (isLoggedIn()) {
                             ?>
                             <span class="nav-profile-role"><?= $role_display ?></span>
                         </div>
-                        <img src="<?= $user_avatar ?>" alt="User Avatar" class="nav-profile-avatar" loading="lazy">
+                        <img src="<?= $user_avatar ?>" alt="Avatar" class="header-user-avatar" loading="lazy">
                     </a>
 
                 <?php else: ?>
