@@ -61,10 +61,58 @@ if (isLoggedIn()) {
         $msg_stmt = $db->prepare($msg_query);
         $msg_stmt->execute([$_SESSION['user_id']]);
         $unread_msg_count = $msg_stmt->fetchColumn();
+        
+        // Enhanced notification data fetching
+        $notif_query = "SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0 AND created_at > DATE_SUB(NOW(), INTERVAL 7 DAY)";
+        $notif_stmt = $db->prepare($notif_query);
+        $notif_stmt->execute([$_SESSION['user_id']]);
+        $unread_notif_count = $notif_stmt->fetchColumn();
+        
+        // User activity tracking
+        $activity_query = "UPDATE users SET last_activity = NOW() WHERE user_id = ?";
+        $activity_stmt = $db->prepare($activity_query);
+        $activity_stmt->execute([$_SESSION['user_id']]);
+        
     } catch (PDOException $e) {
         // Fail silently on header to prevent UI breakage, default to 0
         $unread_msg_count = 0;
+        $unread_notif_count = 0;
     }
+} else {
+    $unread_notif_count = 0;
+}
+
+// Advanced feature: User preferences
+$user_preferences = [];
+if (isLoggedIn()) {
+    try {
+        $pref_query = "SELECT theme, language, notifications_enabled, sound_enabled FROM user_preferences WHERE user_id = ?";
+        $pref_stmt = $db->prepare($pref_query);
+        $pref_stmt->execute([$_SESSION['user_id']]);
+        $user_preferences = $pref_stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    } catch (PDOException $e) {
+        $user_preferences = [];
+    }
+}
+
+// System status indicators
+$system_status = [
+    'maintenance_mode' => false,
+    'new_features' => true,
+    'urgent_notifications' => false
+];
+
+// Dynamic page title enhancement
+$page_meta = [
+    'description' => 'BNCC Market - Enterprise Student Marketplace',
+    'keywords' => 'student, marketplace, BNCC, buy, sell, trade',
+    'author' => 'BNCC Development Team'
+];
+
+if (isset($pageTitle)) {
+    $page_meta['title'] = htmlspecialchars($pageTitle) . ' | BNCC Market';
+} else {
+    $page_meta['title'] = 'BNCC Market | แหล่งรวมสินค้าคุณภาพ';
 }
 ?>
 <!DOCTYPE html>
@@ -75,19 +123,21 @@ if (isLoggedIn()) {
     <meta name="theme-color" content="#4f46e5" id="theme-color-meta">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="description" content="BNCC Market - Enterprise Student Marketplace">
+    <meta name="description" content="<?= $page_meta['description'] ?>">
+    <meta name="keywords" content="<?= $page_meta['keywords'] ?>">
+    <meta name="author" content="<?= $page_meta['author'] ?>">
+    <meta property="og:title" content="<?= $page_meta['title'] ?>">
+    <meta property="og:description" content="<?= $page_meta['description'] ?>">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="<?= $base_path ?>assets/images/og-image.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<?= $page_meta['title'] ?>">
+    <meta name="twitter:description" content="<?= $page_meta['description'] ?>">
     
-    <title>
-        <?php 
-        if (isset($pageTitle)) {
-            echo htmlspecialchars($pageTitle) . ' | BNCC Market';
-        } else {
-            echo 'BNCC Market | แหล่งรวมสินค้าคุณภาพ';
-        }
-        ?>
-    </title>
+    <title><?= $page_meta['title'] ?></title>
     
     <link rel="icon" type="image/png" href="<?= $base_path ?>assets/images/favicon.png">
+    <link rel="apple-touch-icon" href="<?= $base_path ?>assets/images/apple-touch-icon.png">
     
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1750,7 +1800,7 @@ if (isLoggedIn()) {
                     <i class="fas fa-clipboard-check nav-menu-icon"></i>
                     <span>อนุมัติรายการสินค้า</span>
                 </a>
-                <a href="<?= $base_path ?>approve_shop.php" class="nav-menu-item nav-item-admin <?= $current_page == 'approve_shop.php' ? 'is-active' : '' ?>">
+                <a href="<?= $base_path ?>admin/approve_shop.php" class="nav-menu-item nav-item-admin <?= $current_page == 'approve_shop.php' ? 'is-active' : '' ?>">
                     <i class="fas fa-store-slash nav-menu-icon"></i>
                     <span>อนุมัติคำร้องเปิดร้าน</span>
                 </a>
