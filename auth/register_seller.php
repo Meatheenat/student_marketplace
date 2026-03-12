@@ -60,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_pending) {
         try {
             $db->beginTransaction();
             // บันทึกข้อมูลร้านค้าโดยกำหนดสถานะเป็น 'pending' รอแอดมินอนุมัติ
-            $stmt = $db->prepare("INSERT INTO shops (user_id, shop_name, shop_description, status, created_at) VALUES (?, ?, ?, 'pending', NOW())");
+            $stmt = $db->prepare("INSERT INTO shops (user_id, shop_name, description, status, created_at) VALUES (?, ?, ?, 'pending', NOW())");
             $stmt->execute([$user_id, $shop_name, $shop_desc]);
             $db->commit();
             
