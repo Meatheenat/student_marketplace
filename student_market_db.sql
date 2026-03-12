@@ -264,6 +264,8 @@ ADD COLUMN image_url VARCHAR(255) DEFAULT NULL AFTER description,
 ADD COLUMN expected_condition VARCHAR(50) DEFAULT 'any' AFTER image_url;
 ALTER TABLE wtb_posts MODIFY COLUMN status ENUM('pending', 'active', 'closed', 'rejected') DEFAULT 'pending';
 ALTER TABLE wtb_posts ADD COLUMN is_deleted TINYINT(1) DEFAULT 0, ADD COLUMN deleted_at DATETIME NULL;
-
+UPDATE notifications 
+SET link = REPLACE(link, '../', '') 
+WHERE link LIKE '../%';
 
 

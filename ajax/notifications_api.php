@@ -1,12 +1,12 @@
 <?php
 /**
- * BNCC Market - Notifications API
- * รวมฟังก์ชัน Fetch, Mark Read และ Real-time Check
+ * BNCC Market - Notifications API (V 3.0.4 - THE PATH RECONSTRUCTOR)
+ * รวมฟังก์ชัน Fetch, Mark Read และแก้ไขปัญหา 404/Double Path
  */
 require_once '../includes/functions.php';
 header('Content-Type: application/json');
 
-// ตรวจสอบการเข้าสู่ระบบ
+// 1. ตรวจสอบการเข้าสู่ระบบ
 if (!isLoggedIn()) { 
     echo json_encode(['status' => 'error', 'message' => 'Unauthorized']); 
     exit; 
@@ -16,7 +16,7 @@ $db = getDB();
 $user_id = $_SESSION['user_id'];
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
-// --- 1. ดึงแจ้งเตือน 10 รายการล่าสุด (สำหรับหน้าต่างแจ้งเตือนหลัก) ---
+// --- 2. Action: FETCH (ดึงแจ้งเตือน 10 รายการล่าสุด) ---
 if ($action === 'fetch') {
     $stmt = $db->prepare("SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 10");
     $stmt->execute([$user_id]);
@@ -25,21 +25,37 @@ if ($action === 'fetch') {
     // นับจำนวนแจ้งเตือนที่ยังไม่ได้อ่าน
     $unread_stmt = $db->prepare("SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0");
     $unread_stmt->execute([$user_id]);
-    $unread_count = $unread_stmt->fetchColumn();
+    $unread_count = (int)$unread_stmt->fetchColumn();
 
-    // ปรับแต่งข้อมูลก่อนส่งกลับ (แปลงเวลาและใส่ไอคอน)
-   foreach($notifs as &$n) {
+    // ปรับแต่งข้อมูลก่อนส่งกลับ
+    foreach($notifs as &$n) {
         $n['time'] = date('d/m H:i', strtotime($n['created_at']));
 
-        // 🎯 FIXED 404: ตรวจสอบและซ่อมแซมลิงก์ให้เป็น Absolute Path
+        // 🎯 [CRITICAL FIX] แก้ไขปัญหาลิงก์ผิดพาร์ท / พาร์ทเบิ้ล
         if (!empty($n['link']) && $n['link'] !== '#') {
-            // ถ้าลิงก์ไม่ได้เริ่มด้วย http และไม่มีชื่อโปรเจกต์ student_marketplace ให้เติมเข้าไป
-            if (strpos($n['link'], 'http') === false && strpos($n['link'], 'student_marketplace') === false) {
-                // ลบ / ข้างหน้าออก (ถ้ามี) แล้วแปะ BASE_URL เข้าไป
-                $n['link'] = BASE_URL . ltrim($n['link'], '/');
+            // ถ้าเป็นลิงก์ภายนอก (http) ให้ใช้ได้เลย
+            if (strpos($n['link'], 'http') === false) {
+                
+                // เริ่มกระบวนการทำความสะอาดลิงก์ (Clean Path)
+                $link_path = ltrim($n['link'], '/'); // ลบ / ข้างหน้าออก
+                
+                // ลบคำที่ไม่ต้องการออกทั้งหมด (เพื่อป้องกันการเบิ้ลพาร์ท)
+                $remove_list = [
+                    '../', 
+                    's673190104/student_marketplace/', 
+                    's673190104/'
+                ];
+                $clean_link = str_replace($remove_list, '', $link_path);
+
+                // ตรวจสอบ BASE_URL (ต้องมั่นใจว่าใน functions.php คือ /s673190104/student_marketplace/)
+                // ถ้า BASE_URL ไม่มี / ปิดท้าย ให้เติมเข้าไป
+                $base = rtrim(BASE_URL, '/') . '/';
+                
+                $n['link'] = $base . $clean_link;
             }
         }
-        // กำหนดไอคอนตามประเภท (Type) ในฐานข้อมูล
+
+        // กำหนดไอคอนตามประเภท (Type)
         if($n['type'] == 'order') {
             $n['icon'] = '<i class="fas fa-shopping-bag" style="color: #10b981;"></i>';
         } elseif($n['type'] == 'review') {
@@ -60,15 +76,14 @@ if ($action === 'fetch') {
     ]);
 } 
 
-// --- 2. เช็กแจ้งเตือนใหม่ (สำหรับระบบ Real-time Toast) ---
+// --- 3. Action: CHECK_NEW (สำหรับ Real-time Toast) ---
 elseif ($action === 'check_new') {
-    // ดึงเฉพาะแจ้งเตือนที่ยังไม่ได้อ่าน (is_read = 0)
     $stmt = $db->prepare("SELECT * FROM notifications WHERE user_id = ? AND is_read = 0 ORDER BY created_at DESC");
     $stmt->execute([$user_id]);
     $new_notifs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // มาร์กเป็นอ่านแล้วทันทีเพื่อไม่ให้เด้งซ้ำ
     if (count($new_notifs) > 0) {
-        // เมื่อดึงไปแสดงผลแล้ว ให้มาร์กเป็นอ่านแล้วทันที เพื่อไม่ให้เด้งซ้ำในการเช็กครั้งหน้า
         $db->prepare("UPDATE notifications SET is_read = 1 WHERE user_id = ? AND is_read = 0")
            ->execute([$user_id]);
     }
@@ -79,14 +94,14 @@ elseif ($action === 'check_new') {
     ]);
 }
 
-// --- 3. อัปเดตเป็นอ่านแล้วทั้งหมด (เมื่อคนกดเปิดหน้าต่างแจ้งเตือน) ---
+// --- 4. Action: MARK_READ (อ่านทั้งหมด) ---
 elseif ($action === 'mark_read') {
     $db->prepare("UPDATE notifications SET is_read = 1 WHERE user_id = ?")
        ->execute([$user_id]);
     echo json_encode(['status' => 'success']);
 }
 
-// กรณีระบุ Action ไม่ถูกต้อง
+// กรณีอื่นๆ
 else {
     echo json_encode(['status' => 'error', 'message' => 'Invalid action']);
 }
