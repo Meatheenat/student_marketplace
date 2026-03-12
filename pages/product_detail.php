@@ -866,6 +866,78 @@ require_once '../includes/header.php';
         gap: 8px;
     }
 
+    .pd-contact-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 18px;
+        background: var(--pd-card);
+        border: 1.5px solid var(--pd-border);
+        border-radius: var(--pd-radius-lg);
+        margin-bottom: 18px;
+    }
+
+    .pd-contact-label {
+        font-size: 0.78rem;
+        font-weight: 800;
+        color: var(--pd-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .pd-contact-btns {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .pd-contact-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 16px;
+        border-radius: 50px;
+        font-size: 0.82rem;
+        font-weight: 800;
+        text-decoration: none;
+        transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: 1.5px solid transparent;
+    }
+
+    .pd-contact-line {
+        background: rgba(6,199,85,0.1);
+        color: #06c755;
+        border-color: rgba(6,199,85,0.25);
+    }
+
+    .pd-contact-line:hover {
+        background: #06c755;
+        color: #fff;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(6,199,85,0.35);
+    }
+
+    .pd-contact-ig {
+        background: rgba(225,48,108,0.08);
+        color: #e1306c;
+        border-color: rgba(225,48,108,0.2);
+    }
+
+    .pd-contact-ig:hover {
+        background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+        color: #fff;
+        border-color: transparent;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(225,48,108,0.35);
+    }
+
     .pd-report-btn {
         background: none;
         border: none;
@@ -1815,7 +1887,7 @@ require_once '../includes/header.php';
                     </div>
                     <div class="pd-shop-info">
                         <div class="pd-shop-verified">
-                            <i class="fas fa-badge-check"></i>
+                            <i class="fas fa-circle-check"></i>
                             VERIFIED SELLER
                             <?= getUserBadge($product['owner_role']) ?>
                         </div>
@@ -1825,19 +1897,30 @@ require_once '../includes/header.php';
                         </div>
                     </div>
                 </div>
-                <div class="pd-shop-socials" onclick="event.stopPropagation();">
+                <div style="flex-shrink:0; color:var(--pd-muted); font-size:0.8rem; font-weight:700; display:flex; align-items:center; gap:4px;">
+                    ดูร้าน <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i>
+                </div>
+            </a>
+
+            <?php if (!empty($product['contact_line']) || !empty($product['contact_ig'])): ?>
+            <div class="pd-contact-row">
+                <span class="pd-contact-label"><i class="fas fa-address-card"></i> ติดต่อผู้ขาย</span>
+                <div class="pd-contact-btns">
                     <?php if (!empty($product['contact_line'])): ?>
-                    <a href="https://line.me/ti/p/~<?= e($product['contact_line']) ?>" target="_blank" class="pd-social-link line">
+                    <a href="https://line.me/ti/p/~<?= e($product['contact_line']) ?>" target="_blank" class="pd-contact-btn pd-contact-line">
                         <i class="fab fa-line"></i>
+                        <span>LINE</span>
                     </a>
                     <?php endif; ?>
                     <?php if (!empty($product['contact_ig'])): ?>
-                    <a href="https://www.instagram.com/<?= e($product['contact_ig']) ?>/" target="_blank" class="pd-social-link ig">
+                    <a href="https://www.instagram.com/<?= e($product['contact_ig']) ?>/" target="_blank" class="pd-contact-btn pd-contact-ig">
                         <i class="fab fa-instagram"></i>
+                        <span>Instagram</span>
                     </a>
                     <?php endif; ?>
                 </div>
-            </a>
+            </div>
+            <?php endif; ?>
 
             <?php if (isset($_SESSION['role']) && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'teacher')): ?>
             <div class="pd-admin-panel">
