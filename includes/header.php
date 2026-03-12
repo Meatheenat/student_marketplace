@@ -10,20 +10,13 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$current_dir = dirname($_SERVER['PHP_SELF']);
-$dir_depth = substr_count(ltrim($current_dir, '/'), '/');
-
-// สร้าง Path ย้อนกลับ (../) ตามความลึก หรือใช้ BASE_URL ถ้าระบุไว้
-if (defined('BASE_URL')) {
-    $base_path_assets = BASE_URL;
+// 🎯 FIX 1: แก้ปัญหา 404 โดยการหา BASE_URL ที่แท้จริงแบบ Dynamic เพื่อให้ลิงก์ไม่เบิ้ล
+// ถ้าระบบไม่ได้ตั้ง BASE_URL ไว้ ให้คำนวณจาก root ชั่วคราว
+if (!defined('BASE_URL')) {
+    // ปรับพาร์ทตรงนี้ให้ตรงกับโฟลเดอร์โปรเจกต์ของพี่
+    $base_path = '/s673190104/student_marketplace/'; 
 } else {
-    // ตัวอย่าง: ถ้าอยู่ /s673190104/student_marketplace/admin (depth=3) ให้ถอยไปที่ root ของโปรเจกต์
-    // เนื่องจากเราไม่รู้โครงสร้าง Server เป๊ะๆ การใช้ absolute path จาก HTTP_HOST ปลอดภัยที่สุด
-    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
-    $host = $_SERVER['HTTP_HOST'];
-    // สันนิษฐานว่า student_marketplace คือ Root ของโปรเจกต์
-    $project_folder = '/s673190104/student_marketplace/'; 
-    $base_path_assets = $protocol . $host . $project_folder;
+    $base_path = BASE_URL;
 }
 
 // Define visibility arrays for specific pages
