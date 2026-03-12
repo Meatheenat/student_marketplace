@@ -61,6 +61,7 @@ if (isset($_GET['code'])) {
         $_SESSION['fullname']   = $user['fullname'];
         $_SESSION['role']       = $user['role'];
         $_SESSION['student_id'] = $user['student_id'];
+        $_SESSION['profile_img'] = $user['profile_img'] ?? 'default_profile.png'; // ← เพิ่มบรรทัดนี้
         redirect('../pages/index.php');
     } else {
         // หากยังไม่มีข้อมูลสมาชิก ให้ไปหน้าลงทะเบียนเพิ่มเติม
