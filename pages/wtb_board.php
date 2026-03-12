@@ -66,371 +66,359 @@ $posts = $stmt->fetchAll();
 ?>
 
 <style>
-    /* ============================================================
-       SECTION 3: PREMIUM DESIGN SYSTEM (CSS)
-       ============================================================ */
-    
-    :root {
-        --wtb-primary: #4f46e5;
-        --wtb-primary-light: #818cf8;
-        --wtb-bg-page: #f1f5f9;
-        --wtb-card-bg: #ffffff;
-        --wtb-border-color: #e2e8f0;
-        --wtb-text-dark: #1e293b;
-        --wtb-text-muted: #64748b;
-        --wtb-danger: #ef4444;
-        --wtb-success: #10b981;
-        --wtb-warning: #f59e0b;
-        --wtb-shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        --wtb-shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-        --wtb-radius: 28px;
-    }
+/* ============================================================
+   SECTION 3: PREMIUM DESIGN SYSTEM (CSS)
+   ============================================================ */
 
-    /* สไตล์สำหรับ Dark Mode ที่รองรับโครงสร้างเดิมของพี่ */
-    .dark-theme {
-        --wtb-bg-page: #0f172a;
-        --wtb-card-bg: #1e293b;
-        --wtb-text-dark: #f8fafc;
-        --wtb-text-muted: #94a3b8;
-        --wtb-border-color: #334155;
-    }
-
-    body { 
-        background-color: var(--wtb-bg-page) !important; 
-        color: var(--wtb-text-dark); 
-        transition: background-color 0.4s ease;
-    }
-
-    .wtb-main-wrapper {
-        max-width: 1300px;
-        margin: 50px auto;
-        padding: 0 25px;
-    }
-
-    /* --- 🏰 Header Section Design --- */
-    .wtb-header {
-        margin-bottom: 50px;
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        border-bottom: 3px solid var(--wtb-border-color);
-        padding-bottom: 30px;
-        position: relative;
-    }
-
-    .wtb-header-title h1 {
-        font-size: 2.8rem;
-        font-weight: 900;
-        letter-spacing: -1.5px;
-        margin: 0;
-        background: linear-gradient(135deg, var(--wtb-primary) 0%, #a855f7 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-
-    .btn-create {
-        background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
-        color: #ffffff !important;
-        padding: 16px 35px;
-        border-radius: 20px;
-        font-weight: 800;
-        text-decoration: none;
-        box-shadow: 0 10px 20px rgba(67, 56, 202, 0.3);
-        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .btn-create:hover {
-        transform: translateY(-5px) scale(1.05);
-        box-shadow: 0 15px 30px rgba(67, 56, 202, 0.4);
-    }
-
-    /* --- 📦 Grid & Card Layout (ป้องกันปัญหา Overlap) --- */
-    .wtb-grid {
-        display: grid;
-        /* ใช้ minmax 320px เพื่อให้การ์ดไม่แคบเกินไป และ auto-fill เพื่อความยืดหยุ่น */
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); 
-        gap: 35px;
-        margin-bottom: 80px;
-    }
-
-    .wtb-pro-card {
-        background: var(--wtb-card-bg);
-        border: 2px solid var(--wtb-border-color);
-        border-radius: var(--wtb-radius);
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-        box-shadow: var(--wtb-shadow-sm);
-        position: relative;
-    }
-
-    .wtb-pro-card:hover {
-        transform: translateY(-12px);
-        border-color: var(--wtb-primary);
-        box-shadow: var(--wtb-shadow-lg);
-    }
-
-    /* --- 🖼️ 🎯 Image Ratio Control: แก้ปัญหารูปกางแนวนอนล้นบอร์ด --- */
-    .wtb-card-img-wrap {
-        width: 100%;
-        height: 250px; /* บังคับความสูงคงที่เพื่อให้ Layout เท่ากันทุกใบ */
-        background-color: var(--wtb-bg-page);
-        overflow: hidden;
-        position: relative;
-        border-bottom: 1px solid var(--wtb-border-color);
-    }
-
-    .wtb-card-img-wrap img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover; /* ตัดส่วนรูปภาพให้เข้ากึ่งกลางกรอบ ไม่เบี้ยวไม่ยืด */
-        object-position: center;
-        transition: transform 0.8s ease;
-    }
-
-    .wtb-pro-card:hover .wtb-card-img-wrap img {
-        transform: scale(1.12); /* เอฟเฟกต์ซูมเบาๆ ตอน Hover */
-    }
-
-    .wtb-placeholder {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        color: var(--wtb-text-muted);
-        opacity: 0.35;
-    }
-
-    /* --- 📝 Content Section --- */
-    .wtb-card-body {
-        padding: 30px;
-        flex-grow: 1;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .wtb-user-info {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        margin-bottom: 25px;
-    }
-
-    .wtb-user-avatar {
-        width: 45px;
-        height: 45px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 2px solid var(--wtb-primary);
-        padding: 2px;
-        background: var(--wtb-card-bg);
-    }
-
-    .wtb-user-name {
-        font-size: 1.05rem;
-        font-weight: 800;
-        margin: 0;
-    }
-
-    .wtb-date {
-        font-size: 0.8rem;
-        color: var(--wtb-text-muted);
-        font-weight: 600;
-    }
-
-    .wtb-post-title {
-        font-size: 1.5rem;
-        font-weight: 900;
-        color: var(--wtb-text-dark);
-        margin-bottom: 12px;
-        line-height: 1.25;
-    }
-
-    .wtb-description {
-        font-size: 0.95rem;
-        color: var(--wtb-text-muted);
-        line-height: 1.65;
-        margin-bottom: 25px;
-        display: -webkit-box;
-        -webkit-line-clamp: 2; /* ตัดบรรทัดเพื่อให้ UI เสมอกัน */
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-
-    /* --- 🏷️ Tags Section --- */
-    .wtb-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-bottom: 25px;
-    }
-
-    .wtb-tag-pill {
-        padding: 8px 16px;
-        border-radius: 12px;
-        font-size: 0.75rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        background: var(--wtb-bg-page);
-        border: 1px solid var(--wtb-border-color);
-    }
-
-    .pill-category { background: rgba(79, 70, 229, 0.1); color: var(--wtb-primary); border: none; }
-    .pill-condition { background: #fef3c7; color: #d97706; border: none; }
-
-    /* --- 🛠️ 🎯 Footer & Action Buttons: แก้ปัญหาปุ่มและการจัดการสิทธิ์ --- */
-    .wtb-card-footer {
-        margin-top: auto;
-        padding-top: 25px;
-        border-top: 2px solid var(--wtb-border-color);
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-    }
-
-    .wtb-budget-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 5px;
-    }
-
-    .budget-amount {
-        font-size: 1.6rem;
-        font-weight: 900;
-        color: var(--wtb-success);
-    }
-
-    .btn-action {
-        width: 100%;
-        padding: 15px;
-        border-radius: 18px;
-        font-weight: 800;
-        text-align: center;
-        text-decoration: none;
-        display: block;
-        transition: all 0.3s ease;
-        border: none;
-        cursor: pointer;
-    }
-
-    /* ปุ่มพรีเมียมสีม่วงหลัก */
-    .btn-pro-primary {
-        background: var(--wtb-primary);
-        color: #ffffff !important;
-        box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
-    }
-
-    .btn-pro-primary:hover {
-        filter: brightness(1.1);
-        transform: translateY(-2px);
-    }
-
-    /* ปุ่มแก้ไข (Edit) */
-    .btn-pro-edit {
-        background: rgba(79, 70, 229, 0.08);
-        color: var(--wtb-primary) !important;
-        border: 2px solid var(--wtb-primary);
-    }
-
-    .btn-pro-edit:hover { background: rgba(79, 70, 229, 0.15); }
-
-    /* ปุ่มปิดประกาศ/ลบ (Danger) */
-    .btn-pro-danger {
-        background: #fee2e2;
-        color: var(--wtb-danger) !important;
-    }
-
-    .btn-pro-danger:hover { background: #fecaca; }
-
-    /* ปุ่มแอดมินลบถาวร (Admin/Teacher) */
-    .btn-pro-admin {
-        background: var(--wtb-danger);
-        color: #ffffff !important;
-        margin-top: 8px;
-        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
-    }
-
-    .btn-pro-admin:hover { filter: brightness(1.15); }
-
-    /* --- Animations --- */
-    @keyframes fadeInBoard {
-        0% { opacity: 0; transform: translateY(30px); }
-        100% { opacity: 1; transform: translateY(0); }
-    }
-
-    /* --- Responsive Breakpoints --- */
-    @media (max-width: 992px) {
-        .wtb-header-title h1 { font-size: 2.3rem; }
-    }
-
-    @media (max-width: 768px) {
-        .wtb-header { flex-direction: column; align-items: flex-start; gap: 25px; }
-        .wtb-grid { grid-template-columns: 1fr; }
-        .wtb-card-img-wrap { height: 200px; }
-    }
-
-    /* ===============================
-   FIX UX/UI CARD ACTION LAYOUT
-   =============================== */
-
-.wtb-card-footer .d-flex {
-    flex-direction: column;
-    gap: 12px;
+:root {
+    --wtb-primary: #4f46e5;
+    --wtb-primary-light: #818cf8;
+    --wtb-bg-page: #f1f5f9;
+    --wtb-card-bg: #ffffff;
+    --wtb-border-color: #e2e8f0;
+    --wtb-text-dark: #1e293b;
+    --wtb-text-muted: #64748b;
+    --wtb-danger: #ef4444;
+    --wtb-success: #10b981;
+    --wtb-warning: #f59e0b;
+    --wtb-shadow-sm: 0 4px 6px -1px rgba(0,0,0,0.1);
+    --wtb-shadow-lg: 0 20px 25px -5px rgba(0,0,0,0.1);
+    --wtb-radius: 28px;
 }
 
-/* ปุ่มคู่ (แก้ไข / ปิดประกาศ) */
-.wtb-card-footer .d-flex.gap-2 {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px !important;
+/* Dark Mode */
+.dark-theme{
+    --wtb-bg-page:#0f172a;
+    --wtb-card-bg:#1e293b;
+    --wtb-text-dark:#f8fafc;
+    --wtb-text-muted:#94a3b8;
+    --wtb-border-color:#334155;
 }
 
-/* ปุ่มทุกปุ่มให้ขนาดเท่ากัน */
-.btn-action {
-    min-height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+body{
+    background-color:var(--wtb-bg-page)!important;
+    color:var(--wtb-text-dark);
+    transition:background-color .4s ease;
 }
 
-/* ปรับ padding card ให้ดูโปร */
-.wtb-card-body {
-    padding: 28px 28px 24px 28px;
+.wtb-main-wrapper{
+    max-width:1300px;
+    margin:50px auto;
+    padding:0 25px;
 }
 
-/* ระยะห่าง footer */
-.wtb-card-footer {
-    gap: 14px;
+/* Header */
+.wtb-header{
+    margin-bottom:50px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    border-bottom:3px solid var(--wtb-border-color);
+    padding-bottom:30px;
 }
 
-/* งบประมาณ */
-.wtb-budget-row {
-    padding-bottom: 10px;
+.wtb-header-title h1{
+    font-size:2.8rem;
+    font-weight:900;
+    letter-spacing:-1.5px;
+    margin:0;
+    background:linear-gradient(135deg,var(--wtb-primary) 0%,#a855f7 100%);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
 }
 
-/* ป้องกันปุ่ม admin ใหญ่เกิน */
-.btn-pro-admin {
-    margin-top: 4px;
+.btn-create{
+    background:linear-gradient(135deg,#6366f1 0%,#4338ca 100%);
+    color:#fff!important;
+    padding:16px 35px;
+    border-radius:20px;
+    font-weight:800;
+    text-decoration:none;
+    box-shadow:0 10px 20px rgba(67,56,202,.3);
+    transition:.3s;
+    display:flex;
+    align-items:center;
+    gap:12px;
 }
 
-/* Mobile UX */
-@media (max-width: 500px) {
+.btn-create:hover{
+    transform:translateY(-4px);
+    box-shadow:0 15px 30px rgba(67,56,202,.4);
+}
 
-    .wtb-card-footer .d-flex.gap-2 {
-        grid-template-columns: 1fr;
+/* Grid */
+.wtb-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+    gap:35px;
+    margin-bottom:80px;
+}
+
+/* Card */
+.wtb-pro-card{
+    background:var(--wtb-card-bg);
+    border:2px solid var(--wtb-border-color);
+    border-radius:var(--wtb-radius);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    height:100%;
+    transition:.35s;
+    box-shadow:var(--wtb-shadow-sm);
+}
+
+.wtb-pro-card:hover{
+    transform:translateY(-10px);
+    border-color:var(--wtb-primary);
+    box-shadow:var(--wtb-shadow-lg);
+}
+
+/* Image */
+.wtb-card-img-wrap{
+    width:100%;
+    height:250px;
+    background:var(--wtb-bg-page);
+    overflow:hidden;
+    border-bottom:1px solid var(--wtb-border-color);
+}
+
+.wtb-card-img-wrap img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    object-position:center;
+    transition:.7s;
+}
+
+.wtb-pro-card:hover .wtb-card-img-wrap img{
+    transform:scale(1.1);
+}
+
+.wtb-placeholder{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    height:100%;
+    color:var(--wtb-text-muted);
+    opacity:.35;
+}
+
+/* Body */
+.wtb-card-body{
+    padding:28px;
+    flex-grow:1;
+    display:flex;
+    flex-direction:column;
+}
+
+/* User */
+.wtb-user-info{
+    display:flex;
+    align-items:center;
+    gap:15px;
+    margin-bottom:20px;
+}
+
+.wtb-user-avatar{
+    width:45px;
+    height:45px;
+    border-radius:50%;
+    object-fit:cover;
+    border:2px solid var(--wtb-primary);
+    padding:2px;
+}
+
+.wtb-user-name{
+    font-size:1.05rem;
+    font-weight:800;
+    margin:0;
+}
+
+.wtb-date{
+    font-size:.8rem;
+    color:var(--wtb-text-muted);
+}
+
+/* Title */
+.wtb-post-title{
+    font-size:1.45rem;
+    font-weight:900;
+    margin-bottom:10px;
+}
+
+/* Description */
+.wtb-description{
+    font-size:.95rem;
+    color:var(--wtb-text-muted);
+    line-height:1.65;
+    margin-bottom:22px;
+
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+}
+
+/* Tags */
+.wtb-tags{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:22px;
+}
+
+.wtb-tag-pill{
+    padding:7px 14px;
+    border-radius:10px;
+    font-size:.72rem;
+    font-weight:800;
+    background:var(--wtb-bg-page);
+}
+
+.pill-category{
+    background:rgba(79,70,229,.1);
+    color:var(--wtb-primary);
+}
+
+.pill-condition{
+    background:#fef3c7;
+    color:#d97706;
+}
+
+/* Footer */
+.wtb-card-footer{
+    margin-top:auto;
+    padding-top:22px;
+    border-top:2px solid var(--wtb-border-color);
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+}
+
+/* Budget */
+.wtb-budget-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.budget-amount{
+    font-size:1.5rem;
+    font-weight:900;
+    color:var(--wtb-success);
+}
+
+/* Buttons */
+.btn-action{
+    width:100%;
+    height:48px;
+    padding:0 16px;
+    border-radius:16px;
+    font-weight:800;
+    text-decoration:none;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    transition:.25s;
+    border:none;
+    cursor:pointer;
+}
+
+/* Button layout fix */
+.wtb-card-footer .d-flex{
+    flex-direction:column;
+    gap:12px;
+}
+
+.wtb-card-footer .d-flex.gap-2{
+    display:grid!important;
+    grid-template-columns:1fr 1fr;
+    gap:10px!important;
+}
+
+/* Primary */
+.btn-pro-primary{
+    background:var(--wtb-primary);
+    color:#fff!important;
+}
+
+.btn-pro-primary:hover{
+    filter:brightness(1.1);
+}
+
+/* Edit */
+.btn-pro-edit{
+    background:rgba(79,70,229,.08);
+    color:var(--wtb-primary)!important;
+    border:2px solid var(--wtb-primary);
+}
+
+.btn-pro-edit:hover{
+    background:rgba(79,70,229,.15);
+}
+
+/* Danger */
+.btn-pro-danger{
+    background:#fee2e2;
+    color:var(--wtb-danger)!important;
+}
+
+.btn-pro-danger:hover{
+    background:#fecaca;
+}
+
+/* Admin */
+.btn-pro-admin{
+    background:var(--wtb-danger);
+    color:#fff!important;
+    margin-top:4px;
+}
+
+.btn-pro-admin:hover{
+    filter:brightness(1.1);
+}
+
+/* Animation */
+@keyframes fadeInBoard{
+    0%{opacity:0;transform:translateY(30px)}
+    100%{opacity:1;transform:translateY(0)}
+}
+
+/* Responsive */
+@media (max-width:992px){
+    .wtb-header-title h1{
+        font-size:2.3rem;
+    }
+}
+
+@media (max-width:768px){
+
+    .wtb-header{
+        flex-direction:column;
+        align-items:flex-start;
+        gap:25px;
+    }
+
+    .wtb-grid{
+        grid-template-columns:1fr;
+    }
+
+    .wtb-card-img-wrap{
+        height:200px;
+    }
+}
+
+@media (max-width:500px){
+
+    .wtb-card-footer .d-flex.gap-2{
+        grid-template-columns:1fr;
     }
 
 }
-
 </style>
+
 
 <div class="wtb-main-wrapper">
     
