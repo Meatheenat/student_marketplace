@@ -664,7 +664,7 @@ require_once '../includes/header.php';
                         <form action="approve_shop.php" method="POST" style="width: 100%;">
                             <input type="hidden" name="shop_id" value="<?php echo $s['id']; ?>">
                             <button type="submit" name="action" value="reject" class="btn-decision btn-reject" 
-                                    onclick="return confirm('🚨 คำเตือน: ยืนยันการปฏิเสธคำร้องนี้?\nข้อมูลคำร้องจะถูกลบออกจากระบบและไม่สามารถกู้คืนได้');" >
+                                    onclick="return confirm('🚨 คำเตือน: ยืนยันการปฏิเสธคำร้องนี้ ข้อมูลคำร้องจะถูกลบออกจากระบบและไม่สามารถกู้คืนได้');" >
                                 <i class="fas fa-times-circle"></i> ไม่อนุมัติ (ลบทิ้ง)
                             </button>
                         </form>

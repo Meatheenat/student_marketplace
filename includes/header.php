@@ -1,7 +1,7 @@
 <?php
 /**
  * ============================================================================================
- * BNCC MARKETPLACE - ENTERPRISE MASTER HEADER SYSTEM (V 3.0.0)
+ * BNCC MARKETPLACE - ENTERPRISE MASTER HEADER SYSTEM (V 3.0.3 - THE ULTIMATE PATH FIX)
  * ============================================================================================
  * Architecture: Model-View-Controller (Frontend Bound)
  * Engine: PHP 8.x + Native Vanilla JS + CSS3 Advanced Variables (Mini-Tailwind Core)
@@ -23,15 +23,12 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // --------------------------------------------------------------------------------------------
-// 2. PATH RESOLUTION ENGINE (THE 404 FIXER)
+// 2. PATH RESOLUTION ENGINE (🎯 THE 404 FIXER)
 // --------------------------------------------------------------------------------------------
-// 🎯 FIX 1: กำหนด Base Path ที่แน่นอน 100% เพื่อป้องกันปัญหาลิงก์เบิ้ล (404 Not Found)
-// หากบน Server ไม่ได้ประกาศ BASE_URL ไว้ ระบบจะใช้ Fallback Path นี้เสมอ
-if (!defined('BASE_URL')) {
-    $base_path = '/s673190104/student_marketplace/'; 
-} else {
-    $base_path = BASE_URL;
-}
+// ปัญหาคือใน functions.php พี่ตั้ง BASE_URL ไว้ผิด (ตกโฟลเดอร์ student_marketplace)
+// ถ้าเราใช้ if(!defined) มันจะไปดึงตัวที่ผิดมาใช้ ทำให้พังหมด
+// วิธีแก้: เราทำการ Hardcode (บังคับ) ค่าที่ถูกต้อง 100% ลงไปเลย ไม่ต้องสน BASE_URL เดิม
+$base_path = '/s673190104/student_marketplace/';
 
 // --------------------------------------------------------------------------------------------
 // 3. ROUTING VISIBILITY CONTROLLERS (Access Control Lists)
@@ -198,7 +195,7 @@ if (isLoggedIn()) {
             /* Light Theme Contextual Mapping */
             --bncc-surface-light: #ffffff;
             --bncc-surface-light-alt: #f8fafc;
-            --bncc-background-light: #f8fafc;
+            --bncc-background-light: #f8fafc; /* Changed to match previous UX */
             
             --bncc-text-primary-light: #0f172a;
             --bncc-text-secondary-light: #475569;
@@ -533,206 +530,583 @@ if (isLoggedIn()) {
 
         [hidden] { display: none !important; }
 
-        /* -------------------------------------------------------------------------------------
-           PART 4: CUSTOM SCROLLBAR ARCHITECTURE
-           ------------------------------------------------------------------------------------- */
+        /* ======================================================================================
+        ADVANCED UI COMPONENT LIBRARY (BNCC ENTERPRISE UX)
+        Provides reusable components for the entire application to ensure consistency
+        ======================================================================================
+        */
+        
+        /* Flexbox Utility Classes */
+        .ui-flex { display: flex; }
+        .ui-flex-col { flex-direction: column; }
+        .ui-flex-row { flex-direction: row; }
+        .ui-flex-wrap { flex-wrap: wrap; }
+        .ui-items-start { align-items: flex-start; }
+        .ui-items-center { align-items: center; }
+        .ui-items-end { align-items: flex-end; }
+        .ui-items-stretch { align-items: stretch; }
+        .ui-justify-start { justify-content: flex-start; }
+        .ui-justify-center { justify-content: center; }
+        .ui-justify-end { justify-content: flex-end; }
+        .ui-justify-between { justify-content: space-between; }
+        .ui-justify-around { justify-content: space-around; }
+
+        /* Sizing Utility Classes */
+        .ui-w-full { width: 100%; }
+        .ui-h-full { height: 100%; }
+        .ui-w-screen { width: 100vw; }
+        .ui-h-screen { height: 100vh; }
+        .ui-w-auto { width: auto; }
+        .ui-h-auto { height: auto; }
+        .ui-max-w-full { max-width: 100%; }
+        
+        /* Positioning Utilities */
+        .ui-relative { position: relative; }
+        .ui-absolute { position: absolute; }
+        .ui-fixed { position: fixed; }
+        .ui-sticky { position: sticky; top: 0; }
+        
+        /* Display Utilities */
+        .ui-hidden { display: none !important; }
+        .ui-block { display: block; }
+        .ui-inline-block { display: inline-block; }
+        
+        /* Text Alignment & Formatting */
+        .ui-text-center { text-align: center; }
+        .ui-text-left { text-align: left; }
+        .ui-text-right { text-align: right; }
+        .ui-text-justify { text-align: justify; }
+        .ui-uppercase { text-transform: uppercase; }
+        .ui-lowercase { text-transform: lowercase; }
+        .ui-capitalize { text-transform: capitalize; }
+        .ui-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        
+        /* Typography System */
+        .ui-font-light { font-weight: 300; }
+        .ui-font-normal { font-weight: 400; }
+        .ui-font-medium { font-weight: 500; }
+        .ui-font-semibold { font-weight: 600; }
+        .ui-font-bold { font-weight: 700; }
+        .ui-font-extrabold { font-weight: 800; }
+        .ui-font-black { font-weight: 900; }
+        
+        .ui-text-xs { font-size: var(--bncc-font-xs); }
+        .ui-text-sm { font-size: var(--bncc-font-sm); }
+        .ui-text-base { font-size: var(--bncc-font-base); }
+        .ui-text-lg { font-size: var(--bncc-font-lg); }
+        .ui-text-xl { font-size: var(--bncc-font-xl); }
+        .ui-text-2xl { font-size: var(--bncc-font-2xl); }
+        .ui-text-3xl { font-size: var(--bncc-font-3xl); }
+        .ui-text-4xl { font-size: var(--bncc-font-4xl); }
+        
+        /* Comprehensive Spacing System (Margin & Padding) */
+        .ui-m-0 { margin: 0px; }
+        .ui-m-1 { margin: 0.25rem; }
+        .ui-m-2 { margin: 0.5rem; }
+        .ui-m-3 { margin: 0.75rem; }
+        .ui-m-4 { margin: 1rem; }
+        .ui-m-5 { margin: 1.25rem; }
+        .ui-m-6 { margin: 1.5rem; }
+        .ui-m-8 { margin: 2rem; }
+        .ui-m-10 { margin: 2.5rem; }
+        .ui-m-12 { margin: 3rem; }
+        .ui-m-16 { margin: 4rem; }
+        .ui-m-20 { margin: 5rem; }
+        
+        .ui-mt-0 { margin-top: 0px; }
+        .ui-mt-1 { margin-top: 0.25rem; }
+        .ui-mt-2 { margin-top: 0.5rem; }
+        .ui-mt-3 { margin-top: 0.75rem; }
+        .ui-mt-4 { margin-top: 1rem; }
+        .ui-mt-5 { margin-top: 1.25rem; }
+        .ui-mt-6 { margin-top: 1.5rem; }
+        .ui-mt-8 { margin-top: 2rem; }
+        .ui-mt-10 { margin-top: 2.5rem; }
+        .ui-mt-12 { margin-top: 3rem; }
+        
+        .ui-mb-0 { margin-bottom: 0px; }
+        .ui-mb-1 { margin-bottom: 0.25rem; }
+        .ui-mb-2 { margin-bottom: 0.5rem; }
+        .ui-mb-3 { margin-bottom: 0.75rem; }
+        .ui-mb-4 { margin-bottom: 1rem; }
+        .ui-mb-5 { margin-bottom: 1.25rem; }
+        .ui-mb-6 { margin-bottom: 1.5rem; }
+        .ui-mb-8 { margin-bottom: 2rem; }
+        .ui-mb-10 { margin-bottom: 2.5rem; }
+        .ui-mb-12 { margin-bottom: 3rem; }
+        
+        .ui-ml-0 { margin-left: 0px; }
+        .ui-ml-1 { margin-left: 0.25rem; }
+        .ui-ml-2 { margin-left: 0.5rem; }
+        .ui-ml-3 { margin-left: 0.75rem; }
+        .ui-ml-4 { margin-left: 1rem; }
+        .ui-ml-6 { margin-left: 1.5rem; }
+        .ui-ml-8 { margin-left: 2rem; }
+        
+        .ui-mr-0 { margin-right: 0px; }
+        .ui-mr-1 { margin-right: 0.25rem; }
+        .ui-mr-2 { margin-right: 0.5rem; }
+        .ui-mr-3 { margin-right: 0.75rem; }
+        .ui-mr-4 { margin-right: 1rem; }
+        .ui-mr-6 { margin-right: 1.5rem; }
+        .ui-mr-8 { margin-right: 2rem; }
+        
+        .ui-p-0 { padding: 0px; }
+        .ui-p-1 { padding: 0.25rem; }
+        .ui-p-2 { padding: 0.5rem; }
+        .ui-p-3 { padding: 0.75rem; }
+        .ui-p-4 { padding: 1rem; }
+        .ui-p-5 { padding: 1.25rem; }
+        .ui-p-6 { padding: 1.5rem; }
+        .ui-p-8 { padding: 2rem; }
+        .ui-p-10 { padding: 2.5rem; }
+        .ui-p-12 { padding: 3rem; }
+        
+        .ui-pt-0 { padding-top: 0px; }
+        .ui-pt-1 { padding-top: 0.25rem; }
+        .ui-pt-2 { padding-top: 0.5rem; }
+        .ui-pt-3 { padding-top: 0.75rem; }
+        .ui-pt-4 { padding-top: 1rem; }
+        .ui-pt-5 { padding-top: 1.25rem; }
+        .ui-pt-6 { padding-top: 1.5rem; }
+        .ui-pt-8 { padding-top: 2rem; }
+        .ui-pt-10 { padding-top: 2.5rem; }
+        .ui-pt-12 { padding-top: 3rem; }
+        
+        .ui-pb-0 { padding-bottom: 0px; }
+        .ui-pb-1 { padding-bottom: 0.25rem; }
+        .ui-pb-2 { padding-bottom: 0.5rem; }
+        .ui-pb-3 { padding-bottom: 0.75rem; }
+        .ui-pb-4 { padding-bottom: 1rem; }
+        .ui-pb-5 { padding-bottom: 1.25rem; }
+        .ui-pb-6 { padding-bottom: 1.5rem; }
+        .ui-pb-8 { padding-bottom: 2rem; }
+        .ui-pb-10 { padding-bottom: 2.5rem; }
+        .ui-pb-12 { padding-bottom: 3rem; }
+        
+        .ui-pl-0 { padding-left: 0px; }
+        .ui-pl-1 { padding-left: 0.25rem; }
+        .ui-pl-2 { padding-left: 0.5rem; }
+        .ui-pl-3 { padding-left: 0.75rem; }
+        .ui-pl-4 { padding-left: 1rem; }
+        .ui-pl-6 { padding-left: 1.5rem; }
+        .ui-pl-8 { padding-left: 2rem; }
+        
+        .ui-pr-0 { padding-right: 0px; }
+        .ui-pr-1 { padding-right: 0.25rem; }
+        .ui-pr-2 { padding-right: 0.5rem; }
+        .ui-pr-3 { padding-right: 0.75rem; }
+        .ui-pr-4 { padding-right: 1rem; }
+        .ui-pr-6 { padding-right: 1.5rem; }
+        .ui-pr-8 { padding-right: 2rem; }
+        
+        .ui-px-0 { padding-left: 0px; padding-right: 0px; }
+        .ui-px-1 { padding-left: 0.25rem; padding-right: 0.25rem; }
+        .ui-px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+        .ui-px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+        .ui-px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .ui-px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+        .ui-px-8 { padding-left: 2rem; padding-right: 2rem; }
+        
+        .ui-py-0 { padding-top: 0px; padding-bottom: 0px; }
+        .ui-py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+        .ui-py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+        .ui-py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+        .ui-py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+        .ui-py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+        .ui-py-8 { padding-top: 2rem; padding-bottom: 2rem; }
+
+        /* Border Radius Utilities */
+        .ui-rounded-none { border-radius: var(--bncc-radius-none); }
+        .ui-rounded-sm { border-radius: var(--bncc-radius-sm); }
+        .ui-rounded-md { border-radius: var(--bncc-radius-md); }
+        .ui-rounded-lg { border-radius: var(--bncc-radius-lg); }
+        .ui-rounded-xl { border-radius: var(--bncc-radius-xl); }
+        .ui-rounded-2xl { border-radius: var(--bncc-radius-2xl); }
+        .ui-rounded-full { border-radius: var(--bncc-radius-full); }
+        
+        /* Shadow Utilities */
+        .ui-shadow-sm { box-shadow: var(--bncc-shadow-sm); }
+        .ui-shadow-md { box-shadow: var(--bncc-shadow-md); }
+        .ui-shadow-lg { box-shadow: var(--bncc-shadow-lg); }
+        .ui-shadow-xl { box-shadow: var(--bncc-shadow-xl); }
+        .ui-shadow-none { box-shadow: none; }
+
+        /* Basic Grid System */
+        .ui-grid { display: grid; }
+        .ui-grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+        .ui-grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .ui-grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .ui-grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        .ui-grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+        .ui-grid-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+        .ui-grid-cols-12 { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+        
+        .ui-gap-1 { gap: 0.25rem; }
+        .ui-gap-2 { gap: 0.5rem; }
+        .ui-gap-3 { gap: 0.75rem; }
+        .ui-gap-4 { gap: 1rem; }
+        .ui-gap-6 { gap: 1.5rem; }
+        .ui-gap-8 { gap: 2rem; }
+
+        /* UI Colors: Text */
+        .ui-text-primary { color: var(--bncc-primary-500); }
+        .ui-text-success { color: var(--bncc-success-500); }
+        .ui-text-danger { color: var(--bncc-danger-500); }
+        .ui-text-warning { color: var(--bncc-warning-500); }
+        .ui-text-info { color: var(--bncc-info-500); }
+        .ui-text-white { color: #ffffff; }
+        .ui-text-black { color: #000000; }
+        .ui-text-main { color: var(--theme-text-primary); }
+        .ui-text-sub { color: var(--theme-text-secondary); }
+        .ui-text-muted { color: var(--theme-text-tertiary); }
+        
+        /* UI Colors: Backgrounds */
+        .ui-bg-primary { background-color: var(--bncc-primary-500); }
+        .ui-bg-success { background-color: var(--bncc-success-500); }
+        .ui-bg-danger { background-color: var(--bncc-danger-500); }
+        .ui-bg-warning { background-color: var(--bncc-warning-500); }
+        .ui-bg-info { background-color: var(--bncc-info-500); }
+        .ui-bg-white { background-color: #ffffff; }
+        .ui-bg-transparent { background-color: transparent; }
+        .ui-bg-surface { background-color: var(--theme-surface); }
+        .ui-bg-surface-alt { background-color: var(--theme-surface-alt); }
+        .ui-bg-base { background-color: var(--theme-bg); }
+
+        /* Enterprise Components: Buttons */
+        .ui-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: var(--bncc-radius-md);
+            font-weight: 600;
+            font-size: var(--bncc-font-sm);
+            line-height: 1.5;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: middle;
+            user-select: none;
+            border: 1px solid transparent;
+            transition: all var(--bncc-duration-fast) var(--bncc-ease-in-out);
+            cursor: pointer;
+        }
+
+        .ui-btn:disabled, .ui-btn.is-disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .ui-btn-primary {
+            color: #ffffff;
+            background-color: var(--bncc-primary-500);
+            box-shadow: var(--bncc-shadow-sm);
+        }
+        
+        .ui-btn-primary:hover {
+            background-color: var(--bncc-primary-600);
+            box-shadow: var(--bncc-shadow-md);
+            transform: translateY(-1px);
+        }
+
+        .ui-btn-secondary {
+            color: var(--theme-text-primary);
+            background-color: var(--theme-surface-alt);
+            border-color: var(--theme-border);
+        }
+
+        .ui-btn-secondary:hover {
+            background-color: var(--theme-hover-bg);
+            border-color: var(--theme-border-focus);
+        }
+        
+        .ui-btn-danger {
+            color: #ffffff;
+            background-color: var(--bncc-danger-500);
+        }
+        
+        .ui-btn-danger:hover {
+            background-color: var(--bncc-danger-600);
+            box-shadow: var(--bncc-shadow-md), 0 0 10px rgba(239, 68, 68, 0.4);
+        }
+
+        .ui-btn-ghost {
+            color: var(--theme-text-secondary);
+            background-color: transparent;
+        }
+        
+        .ui-btn-ghost:hover {
+            color: var(--theme-text-primary);
+            background-color: var(--theme-hover-bg);
+        }
+
+        /* Enterprise Components: Cards */
+        .ui-card {
+            background-color: var(--theme-surface);
+            border: 1px solid var(--theme-border);
+            border-radius: var(--bncc-radius-lg);
+            box-shadow: var(--theme-shadow-base);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform var(--bncc-duration-normal), box-shadow var(--bncc-duration-normal);
+        }
+        
+        .ui-card:hover {
+            box-shadow: var(--theme-shadow-hover);
+        }
+        
+        .ui-card-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--theme-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .ui-card-body {
+            padding: 1.5rem;
+            flex-grow: 1;
+        }
+        
+        .ui-card-footer {
+            padding: 1.25rem 1.5rem;
+            border-top: 1px solid var(--theme-border);
+            background-color: var(--theme-surface-alt);
+        }
+
+        /* Enterprise Components: Badges */
+        .ui-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.125rem 0.625rem;
+            border-radius: var(--bncc-radius-full);
+            font-size: var(--bncc-font-xs);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+        }
+        
+        .ui-badge-primary { background-color: var(--bncc-primary-100); color: var(--bncc-primary-700); }
+        .ui-badge-success { background-color: var(--bncc-success-100); color: var(--bncc-success-700); }
+        .ui-badge-danger { background-color: var(--bncc-danger-100); color: var(--bncc-danger-700); }
+        .ui-badge-warning { background-color: var(--bncc-warning-100); color: var(--bncc-warning-700); }
+        
+        .dark-theme .ui-badge-primary { background-color: rgba(99, 102, 241, 0.2); color: var(--bncc-primary-300); }
+        .dark-theme .ui-badge-success { background-color: rgba(16, 185, 129, 0.2); color: var(--bncc-success-300); }
+        .dark-theme .ui-badge-danger { background-color: rgba(239, 68, 68, 0.2); color: var(--bncc-danger-300); }
+        .dark-theme .ui-badge-warning { background-color: rgba(245, 158, 11, 0.2); color: var(--bncc-warning-300); }
+
+        /* Enterprise Components: Form Inputs */
+        .ui-input {
+            display: block;
+            width: 100%;
+            padding: 0.625rem 1rem;
+            font-size: var(--bncc-font-sm);
+            font-weight: 400;
+            line-height: 1.5;
+            color: var(--theme-text-primary);
+            background-color: var(--theme-input-bg);
+            background-clip: padding-box;
+            border: 1px solid var(--theme-border);
+            border-radius: var(--bncc-radius-md);
+            transition: border-color var(--bncc-duration-fast), box-shadow var(--bncc-duration-fast);
+        }
+        
+        .ui-input:focus {
+            border-color: var(--bncc-primary-400);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+            outline: 0;
+        }
+
+        /* Enterprise Components: Tooltips */
+        .ui-tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .ui-tooltip .ui-tooltip-text {
+            visibility: hidden;
+            width: max-content;
+            max-width: 250px;
+            background-color: var(--bncc-surface-dark);
+            color: #ffffff;
+            text-align: center;
+            border-radius: var(--bncc-radius-md);
+            padding: 0.5rem 0.75rem;
+            font-size: var(--bncc-font-xs);
+            font-weight: 500;
+            position: absolute;
+            z-index: var(--bncc-z-tooltip);
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            box-shadow: var(--bncc-shadow-lg);
+            pointer-events: none;
+        }
+        
+        .dark-theme .ui-tooltip .ui-tooltip-text {
+            background-color: var(--bncc-surface-light);
+            color: var(--bncc-text-primary-light);
+        }
+        
+        .ui-tooltip .ui-tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: var(--bncc-surface-dark) transparent transparent transparent;
+        }
+        
+        .dark-theme .ui-tooltip .ui-tooltip-text::after {
+            border-color: var(--bncc-surface-light) transparent transparent transparent;
+        }
+        
+        .ui-tooltip:hover .ui-tooltip-text {
+            visibility: visible;
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Custom Scrollbar Architecture */
         ::-webkit-scrollbar {
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
         }
 
         ::-webkit-scrollbar-track {
             background-color: var(--theme-bg);
-            border-radius: 0;
+            border-radius: var(--bncc-radius-full);
         }
 
         ::-webkit-scrollbar-thumb {
-            background-color: var(--theme-border-focus);
+            background-color: var(--theme-border);
             border-radius: var(--bncc-radius-full);
-            border: 3px solid var(--theme-bg);
-            background-clip: content-box;
-            transition: background-color var(--bncc-duration-normal);
+            border-top-width: 2px;
+            border-right-width: 2px;
+            border-bottom-width: 2px;
+            border-left-width: 2px;
+            border-style: solid;
+            border-color: var(--theme-bg);
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background-color: var(--bncc-brand-500);
-        }
-        
-        /* Firefox Scrollbar Mapping */
-        * {
-            scrollbar-width: thin;
-            scrollbar-color: var(--theme-border-focus) var(--theme-bg);
+            background-color: var(--bncc-primary-400);
         }
 
-        /* -------------------------------------------------------------------------------------
-           PART 5: KEYFRAME ANIMATION ENGINE
-           ------------------------------------------------------------------------------------- */
-        @keyframes fadeIn {
+        /* Keyframe Animations Engine */
+        @keyframes fade-in {
             0% { opacity: 0; }
             100% { opacity: 1; }
         }
 
-        @keyframes fadeOut {
+        @keyframes fade-out {
             0% { opacity: 1; }
             100% { opacity: 0; }
         }
 
-        @keyframes slideDown {
+        @keyframes slide-down {
             0% { transform: translateY(-100%); opacity: 0; }
             100% { transform: translateY(0); opacity: 1; }
         }
 
-        @keyframes slideUp {
+        @keyframes slide-up {
             0% { transform: translateY(20px); opacity: 0; }
             100% { transform: translateY(0); opacity: 1; }
         }
 
-        @keyframes slideInRight {
-            0% { transform: translateX(-100%); opacity: 0; }
-            100% { transform: translateX(0); opacity: 1; }
+        @keyframes slide-right {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(0); }
         }
 
-        @keyframes slideInLeft {
-            0% { transform: translateX(100%); opacity: 0; }
-            100% { transform: translateX(0); opacity: 1; }
-        }
-
-        @keyframes scaleIn {
+        @keyframes scale-in {
             0% { transform: scale(0.95); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
         }
 
-        @keyframes scaleOut {
-            0% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(0.95); opacity: 0; }
-        }
-
-        @keyframes pulseRing {
+        @keyframes pulse-ring {
             0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
             70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
             100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
-        
-        @keyframes pulseRingSuccess {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
-        
-        @keyframes pulseRingPrimary {
-            0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
-        }
 
-        @keyframes spinSlow {
+        @keyframes spin-slow {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
 
-        @keyframes floatY {
+        @keyframes float-y {
             0% { transform: translateY(0px); }
             50% { transform: translateY(-10px); }
             100% { transform: translateY(0px); }
         }
 
-        @keyframes skeletonLoading {
+        @keyframes skeleton-loading {
             0% { background-position: 200% 0; }
             100% { background-position: -200% 0; }
         }
-        
-        @keyframes shimmerEffect {
-            0% { transform: translateX(-100%) skewX(-15deg); }
-            100% { transform: translateX(200%) skewX(-15deg); }
-        }
-        
-        @keyframes bellShake {
-            0% { transform: rotate(0); }
-            10% { transform: rotate(15deg); }
-            20% { transform: rotate(-10deg); }
-            30% { transform: rotate(10deg); }
-            40% { transform: rotate(-10deg); }
-            50% { transform: rotate(5deg); }
-            60% { transform: rotate(-5deg); }
-            70% { transform: rotate(0); }
-            100% { transform: rotate(0); }
-        }
 
-        /* -------------------------------------------------------------------------------------
-           PART 6: GLOBAL PRELOADER COMPONENT
-           ------------------------------------------------------------------------------------- */
-        .bncc-sys-preloader {
+        /* Global Preloader Component */
+        .bncc-preloader {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
             background-color: var(--theme-bg);
-            z-index: var(--bncc-z-preloader);
+            z-index: 99999;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            transition: opacity var(--bncc-duration-slow) var(--bncc-ease-in-out), 
-                        visibility var(--bncc-duration-slow) var(--bncc-ease-in-out),
-                        transform var(--bncc-duration-slow) var(--bncc-ease-in-out);
+            transition: opacity var(--bncc-duration-slow) var(--bncc-ease-in-out), visibility var(--bncc-duration-slow);
         }
 
-        .bncc-sys-preloader.is-hidden {
+        .bncc-preloader.is-hidden {
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
-            transform: scale(1.05);
         }
 
-        .sys-preloader-spinner {
-            position: relative;
-            width: 80px;
-            height: 80px;
-            margin-bottom: 24px;
-        }
-
-        .sys-preloader-circle {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: 4px solid var(--theme-border);
+        .preloader-spinner {
+            width: 60px;
+            height: 60px;
+            border-top-width: 4px;
+            border-right-width: 4px;
+            border-bottom-width: 4px;
+            border-left-width: 4px;
+            border-style: solid;
+            border-color: var(--theme-border);
+            border-top-color: var(--bncc-primary-500);
             border-radius: 50%;
+            animation: spin-slow 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+            margin-bottom: 20px;
         }
 
-        .sys-preloader-spin {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: 4px solid transparent;
-            border-top-color: var(--bncc-brand-500);
-            border-right-color: var(--bncc-brand-400);
-            border-radius: 50%;
-            animation: spinSlow 1s var(--bncc-ease-bounce-md) infinite;
-        }
-
-        .sys-preloader-brand {
-            font-size: var(--bncc-font-xl);
-            font-weight: 900;
+        .preloader-text {
+            font-size: var(--bncc-font-lg);
+            font-weight: 800;
             color: var(--theme-text-primary);
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            animation: fadeIn 1s infinite alternate;
-            position: relative;
-        }
-        
-        .sys-preloader-brand span {
-            color: var(--bncc-brand-500);
+            letter-spacing: 2px;
+            animation: pulse-opacity 1.5s infinite;
         }
 
-        /* -------------------------------------------------------------------------------------
-           PART 7: BACKGROUND PARTICLE EFFECT SYSTEM
-           ------------------------------------------------------------------------------------- */
-        .bg-aesthetic-container {
+        @keyframes pulse-opacity {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Background Particle Effect System */
+        .bg-particles-container {
             position: fixed;
             top: 0;
             left: 0;
@@ -743,130 +1117,87 @@ if (isLoggedIn()) {
             pointer-events: none;
         }
 
-        .bg-orb {
+        .bg-particle {
             position: absolute;
+            background-color: var(--bncc-primary-500);
             border-radius: 50%;
-            filter: blur(80px);
-            opacity: 0.4;
-            animation: floatY 15s infinite ease-in-out;
-            will-change: transform;
+            opacity: 0.05;
+            animation: float-y 10s infinite ease-in-out;
         }
 
-        .dark-theme .bg-orb {
-            opacity: 0.15;
-            filter: blur(100px);
+        .dark-theme .bg-particle {
+            opacity: 0.1;
         }
 
-        .bg-orb-1 { 
-            width: 40vw; 
-            height: 40vw; 
-            top: -10vw; 
-            left: -10vw; 
-            background: radial-gradient(circle, var(--bncc-brand-300), transparent 70%);
-            animation-duration: 20s; 
-        }
-        
-        .bg-orb-2 { 
-            width: 35vw; 
-            height: 35vw; 
-            bottom: -5vw; 
-            right: -10vw; 
-            background: radial-gradient(circle, var(--bncc-info-300), transparent 70%);
-            animation-duration: 25s; 
-            animation-delay: -5s; 
-        }
-        
-        .bg-orb-3 { 
-            width: 25vw; 
-            height: 25vw; 
-            top: 40%; 
-            left: 60%; 
-            background: radial-gradient(circle, var(--bncc-success-200), transparent 70%);
-            animation-duration: 18s; 
-            animation-delay: -2s; 
-        }
-        
-        /* Add CSS Grid pattern overlay */
-        .bg-grid-pattern {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-image: 
-                linear-gradient(to right, var(--theme-border) 1px, transparent 1px),
-                linear-gradient(to bottom, var(--theme-border) 1px, transparent 1px);
-            background-size: 60px 60px;
-            opacity: 0.3;
-            mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
-            -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
-        }
+        .bg-particle:nth-child(1) { width: 300px; height: 300px; top: -100px; left: -100px; animation-duration: 15s; }
+        .bg-particle:nth-child(2) { width: 500px; height: 500px; bottom: -200px; right: -150px; animation-duration: 20s; animation-delay: -5s; }
+        .bg-particle:nth-child(3) { width: 200px; height: 200px; top: 40%; left: 60%; animation-duration: 12s; animation-delay: -2s; }
 
-        /* -------------------------------------------------------------------------------------
-           PART 8: MASTER HEADER (NAVIGATION BAR) ARCHITECTURE
-           ------------------------------------------------------------------------------------- */
-        .header-master-wrapper {
+        /* Master Header & Navigation Architecture */
+        .master-header {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: var(--bncc-header-height);
             background-color: var(--theme-glass-bg);
-            -webkit-backdrop-filter: var(--bncc-glass-blur-md);
-            backdrop-filter: var(--bncc-glass-blur-md);
-            border-bottom: 1px solid var(--theme-glass-border);
+            -webkit-backdrop-filter: var(--bncc-glass-blur);
+            backdrop-filter: var(--bncc-glass-blur);
+            border-bottom-width: 1px;
+            border-bottom-style: solid;
+            border-bottom-color: var(--theme-glass-border);
             z-index: var(--bncc-z-fixed);
-            transition: height var(--bncc-duration-normal) var(--bncc-ease-bounce-md),
-                        background-color var(--bncc-duration-normal) var(--bncc-ease-linear),
-                        box-shadow var(--bncc-duration-normal) var(--bncc-ease-linear),
-                        border-color var(--bncc-duration-normal) var(--bncc-ease-linear);
+            transition-property: height, background-color, box-shadow;
+            transition-duration: var(--bncc-duration-normal);
+            transition-timing-function: var(--bncc-ease-in-out);
             display: flex;
-            flex-direction: column;
-            justify-content: center;
+            align-items: center;
         }
 
-        .header-master-wrapper.is-scrolled {
+        .master-header.header-is-scrolled {
             height: var(--bncc-header-height-scrolled);
-            box-shadow: var(--theme-shadow-base);
+            box-shadow: var(--theme-shadow);
             background-color: var(--theme-surface);
             -webkit-backdrop-filter: none;
             backdrop-filter: none;
-            border-bottom-color: var(--theme-border);
         }
 
-        /* Reading Progress Indicator */
-        .nav-progress-indicator {
+        .header-progress-bar {
             position: absolute;
             bottom: -1px;
             left: 0;
             height: 2px;
-            background: linear-gradient(90deg, var(--bncc-info-400), var(--bncc-brand-500), var(--bncc-brand-400));
-            background-size: 200% 100%;
+            background: linear-gradient(90deg, var(--bncc-primary-400), var(--bncc-primary-600));
             width: 0%;
             z-index: calc(var(--bncc-z-fixed) + 1);
-            transition: width 0.1s var(--bncc-ease-linear);
-            animation: skeletonLoading 3s linear infinite;
+            transition: width 0.1s linear;
         }
 
         .header-layout-container {
             width: 100%;
             max-width: var(--bncc-container-max);
-            margin: 0 auto;
-            padding: 0 var(--bncc-container-padding);
+            margin-top: 0;
+            margin-right: auto;
+            margin-bottom: 0;
+            margin-left: auto;
+            padding-top: 0;
+            padding-right: 2rem;
+            padding-bottom: 0;
+            padding-left: 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
             height: 100%;
         }
 
-        /* -------------------------------------------------------------------------------------
-           PART 8.1: HEADER LEFT ZONE (BRANDING & TOGGLE)
-           ------------------------------------------------------------------------------------- */
-        .nav-zone-left {
+        /* Header Left Section: Toggle & Branding */
+        .header-left-zone {
             display: flex;
             align-items: center;
             gap: 1.5rem;
         }
 
-        /* Animated Hamburger Menu Button */
-        .btn-sidebar-toggle {
+        .sidebar-trigger-btn {
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -874,1005 +1205,632 @@ if (isLoggedIn()) {
             width: 48px;
             height: 48px;
             border-radius: var(--bncc-radius-lg);
-            background-color: var(--theme-surface);
-            border: 1px solid var(--theme-border);
-            box-shadow: var(--bncc-shadow-xs);
+            background-color: var(--theme-hover-bg);
+            border-top-width: 1px;
+            border-right-width: 1px;
+            border-bottom-width: 1px;
+            border-left-width: 1px;
+            border-style: solid;
+            border-color: transparent;
             cursor: pointer;
-            transition: all var(--bncc-duration-normal) var(--bncc-ease-bounce-lg);
+            transition: all var(--bncc-duration-normal) var(--bncc-ease-elastic);
             position: relative;
             z-index: calc(var(--bncc-z-sidebar) + 10);
-            overflow: hidden;
         }
 
-        .btn-sidebar-toggle::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: var(--bncc-brand-500);
-            opacity: 0;
-            transition: opacity var(--bncc-duration-normal);
-            z-index: 0;
-        }
-
-        .btn-sidebar-toggle:hover, .btn-sidebar-toggle:focus-visible {
+        .sidebar-trigger-btn:hover {
+            background-color: var(--bncc-primary-100);
+            border-color: var(--bncc-primary-200);
             transform: scale(1.05);
-            border-color: var(--bncc-brand-400);
-            box-shadow: var(--bncc-shadow-md);
-        }
-        
-        .btn-sidebar-toggle:hover::before {
-            opacity: 0.1;
-        }
-        
-        .dark-theme .btn-sidebar-toggle:hover::before {
-            opacity: 0.2;
         }
 
-        .btn-sidebar-toggle:active {
-            transform: scale(0.95);
+        .dark-theme .sidebar-trigger-btn:hover {
+            background-color: rgba(99, 102, 241, 0.2);
+            border-color: rgba(99, 102, 241, 0.4);
         }
 
-        .burger-line {
+        .trigger-line {
             display: block;
-            width: 20px;
-            height: 2px;
+            width: 22px;
+            height: 2.5px;
             background-color: var(--theme-text-primary);
             border-radius: var(--bncc-radius-full);
-            transition: all var(--bncc-duration-normal) var(--bncc-ease-bounce-md);
+            transition: all var(--bncc-duration-normal) var(--bncc-ease-bounce);
             transform-origin: center;
-            position: relative;
-            z-index: 1;
         }
 
-        .burger-line:nth-child(1) { transform: translateY(-5px); }
-        .burger-line:nth-child(3) { transform: translateY(5px); }
+        .trigger-line:nth-child(1) { transform: translateY(-6px); }
+        .trigger-line:nth-child(3) { transform: translateY(6px); }
 
-        /* Transform lines into X when sidebar is open */
-        body.sidebar-is-active .burger-line:nth-child(1) {
+        body.sidebar-open .trigger-line:nth-child(1) {
             transform: translateY(0) rotate(45deg);
             background-color: var(--bncc-danger-500);
-            width: 24px;
         }
 
-        body.sidebar-is-active .burger-line:nth-child(2) {
+        body.sidebar-open .trigger-line:nth-child(2) {
             opacity: 0;
             transform: scaleX(0);
         }
 
-        body.sidebar-is-active .burger-line:nth-child(3) {
+        body.sidebar-open .trigger-line:nth-child(3) {
             transform: translateY(0) rotate(-45deg);
             background-color: var(--bncc-danger-500);
-            width: 24px;
-        }
-        
-        body.sidebar-is-active .btn-sidebar-toggle {
-            border-color: var(--bncc-danger-300);
-            box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
         }
 
-        /* Brand Logo Container */
-        .brand-identifier {
+        .brand-link-wrapper {
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: 0.75rem;
             text-decoration: none;
-            transition: transform var(--bncc-duration-normal) var(--bncc-ease-bounce-sm);
-            outline: none;
+            transition: transform var(--bncc-duration-normal) var(--bncc-ease-elastic);
         }
 
-        .brand-identifier:hover, .brand-identifier:focus-visible {
-            transform: translateY(-2px);
+        .brand-link-wrapper:hover {
+            transform: scale(1.02) rotate(-1deg);
         }
 
-        .brand-icon-box {
-            width: 44px;
-            height: 44px;
-            background: linear-gradient(135deg, var(--bncc-brand-500), var(--bncc-info-500));
-            border-radius: var(--bncc-radius-xl);
+        .brand-logo-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, var(--bncc-primary-500), var(--bncc-primary-700));
+            border-radius: var(--bncc-radius-lg);
             display: flex;
             justify-content: center;
             align-items: center;
             color: #ffffff;
-            font-size: 1.3rem;
-            box-shadow: var(--bncc-shadow-md), var(--bncc-glow-primary-sm);
+            font-size: 1.25rem;
+            box-shadow: var(--bncc-shadow-md);
             position: relative;
             overflow: hidden;
-            transition: all var(--bncc-duration-normal) var(--bncc-ease-bounce-md);
         }
 
-        .brand-identifier:hover .brand-icon-box {
-            transform: rotate(-10deg) scale(1.05);
-            box-shadow: var(--bncc-shadow-lg), var(--bncc-glow-primary-md);
-            border-radius: var(--bncc-radius-lg);
-        }
-
-        /* Glint effect on hover */
-        .brand-icon-box::after {
+        .brand-logo-icon::after {
             content: '';
             position: absolute;
             top: 0;
-            left: -150%;
+            left: -100%;
             width: 50%;
             height: 100%;
-            background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.6), rgba(255,255,255,0));
-            transform: skewX(-25deg);
-            transition: all 0.7s ease;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.4), transparent);
+            transform: skewX(-20deg);
+            animation: shine-effect 4s infinite;
         }
 
-        .brand-identifier:hover .brand-icon-box::after {
-            animation: shimmerEffect 1.5s infinite;
+        @keyframes shine-effect {
+            0% { left: -100%; }
+            20% { left: 200%; }
+            100% { left: 200%; }
         }
 
-        .brand-name-text {
-            font-size: 1.6rem;
+        .brand-typography {
+            font-size: 1.5rem;
             font-weight: 900;
             color: var(--theme-text-primary);
-            letter-spacing: -0.03em;
-            margin: 0;
+            letter-spacing: -0.05em;
+            margin-top: 0;
+            margin-bottom: 0;
             display: flex;
             align-items: baseline;
         }
 
-        .brand-name-accent {
-            color: var(--bncc-brand-500);
+        .brand-highlight {
+            color: var(--bncc-primary-500);
             font-weight: 800;
-            position: relative;
-        }
-        
-        .brand-name-accent::after {
-            content: '';
-            position: absolute;
-            bottom: 2px;
-            left: 0;
-            width: 100%;
-            height: 4px;
-            background-color: var(--bncc-brand-500);
-            opacity: 0.2;
-            border-radius: 2px;
-            transform: scaleX(0);
-            transform-origin: right;
-            transition: transform var(--bncc-duration-normal) var(--bncc-ease-out);
-        }
-        
-        .brand-identifier:hover .brand-name-accent::after {
-            transform: scaleX(1);
-            transform-origin: left;
         }
 
-        /* -------------------------------------------------------------------------------------
-           PART 8.2: HEADER RIGHT ZONE (ACTIONS & PROFILE)
-           ------------------------------------------------------------------------------------- */
-        .nav-zone-right {
+        /* Header Right Section: Controls & User Profile */
+        .header-right-zone {
             display: flex;
             align-items: center;
-            gap: 1.25rem;
+            gap: 1rem;
         }
 
-        /* Standard Icon Action Button */
-        .nav-action-btn {
+        .header-icon-btn {
             position: relative;
             display: flex;
             justify-content: center;
             align-items: center;
             width: 44px;
             height: 44px;
-            border-radius: var(--bncc-radius-full);
-            background-color: var(--theme-surface);
-            border: 1px solid var(--theme-border);
+            border-radius: 50%;
+            background-color: transparent;
             color: var(--theme-text-secondary);
-            font-size: 1.2rem;
+            font-size: 1.25rem;
+            border-width: 0;
             cursor: pointer;
-            transition: all var(--bncc-duration-normal) var(--bncc-ease-bounce-md);
+            transition: all var(--bncc-duration-fast) var(--bncc-ease-out);
             text-decoration: none;
-            box-shadow: var(--bncc-shadow-xs);
         }
 
-        .nav-action-btn:hover, .nav-action-btn:focus-visible {
+        .header-icon-btn:hover, .header-icon-btn.is-active {
             background-color: var(--theme-hover-bg);
-            color: var(--bncc-brand-500);
-            border-color: var(--bncc-brand-300);
-            transform: translateY(-3px);
-            box-shadow: var(--bncc-shadow-md);
-        }
-
-        .dark-theme .nav-action-btn:hover {
-            border-color: var(--bncc-brand-700);
-        }
-
-        .nav-action-btn:active {
-            transform: translateY(0) scale(0.95);
-        }
-        
-        .nav-action-btn.is-active-state {
-            background-color: var(--bncc-brand-50);
-            color: var(--bncc-brand-600);
-            border-color: var(--bncc-brand-300);
-        }
-        
-        .dark-theme .nav-action-btn.is-active-state {
-            background-color: rgba(99, 102, 241, 0.2);
-            border-color: var(--bncc-brand-600);
-        }
-
-        /* Dynamic Theme Switcher Specifics */
-        .theme-switcher-ui {
-            overflow: hidden;
-        }
-
-        .icon-sun, .icon-moon {
-            position: absolute;
-            transition: all var(--bncc-duration-slow) var(--bncc-ease-bounce-lg);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            height: 100%;
-        }
-
-        /* Light Mode Default State */
-        .icon-sun {
-            opacity: 0;
-            transform: translateY(30px) rotate(90deg) scale(0.5);
-            color: var(--bncc-warning-500);
-        }
-
-        .icon-moon {
-            opacity: 1;
-            transform: translateY(0) rotate(0deg) scale(1);
-        }
-
-        /* Dark Mode Active State */
-        .dark-theme .icon-sun {
-            opacity: 1;
-            transform: translateY(0) rotate(0deg) scale(1);
-        }
-
-        .dark-theme .icon-moon {
-            opacity: 0;
-            transform: translateY(-30px) rotate(-90deg) scale(0.5);
-        }
-        
-        /* Action Button Badges (Unread counts) */
-        .status-badge {
-            position: absolute;
-            top: -2px;
-            right: -2px;
-            background: linear-gradient(135deg, var(--bncc-danger-400), var(--bncc-danger-600));
-            color: #ffffff;
-            font-size: 0.65rem;
-            font-weight: 800;
-            min-width: 22px;
-            height: 22px;
-            border-radius: var(--bncc-radius-full);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border: 2px solid var(--theme-surface);
-            padding: 0 4px;
-            box-shadow: var(--bncc-shadow-sm);
-            z-index: 2;
-            transition: transform var(--bncc-duration-fast);
-        }
-        
-        /* Animation class to be added via JS when new notif arrives */
-        .bell-shake-anim {
-            animation: bellShake 1s cubic-bezier(.36,.07,.19,.97) both;
-        }
-        .badge-pop-anim {
-            animation: scaleIn 0.5s var(--bncc-ease-bounce-lg) forwards, pulseRing 2s infinite;
-        }
-
-        /* Authenticated User Micro-Profile (Pill) */
-        .nav-profile-pill {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.35rem 0.5rem 0.35rem 1rem;
-            border-radius: var(--bncc-radius-full);
-            background-color: var(--theme-surface);
-            border: 1px solid var(--theme-border);
-            transition: all var(--bncc-duration-normal) var(--bncc-ease-bounce-sm);
-            cursor: pointer;
-            text-decoration: none;
-            box-shadow: var(--bncc-shadow-xs);
-        }
-
-        .nav-profile-pill:hover, .nav-profile-pill:focus-visible {
-            background-color: var(--theme-hover-bg);
-            border-color: var(--bncc-brand-400);
-            box-shadow: var(--bncc-shadow-md);
+            color: var(--bncc-primary-500);
             transform: translateY(-2px);
         }
 
-        .dark-theme .nav-profile-pill:hover {
-            border-color: var(--bncc-brand-600);
-        }
-        
-        .nav-profile-pill:active {
-            transform: translateY(0);
+        .header-icon-btn:active {
+            transform: translateY(0) scale(0.95);
         }
 
-        .nav-profile-meta {
+        /* Dynamic Theme Toggle Specifics */
+        .theme-toggle-wrapper {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .theme-icon-sun, .theme-icon-moon {
+            position: absolute;
+            transition: all var(--bncc-duration-normal) var(--bncc-ease-bounce);
+        }
+
+        .theme-icon-sun {
+            opacity: 0;
+            transform: translateY(20px) rotate(90deg);
+            color: var(--bncc-warning-500);
+        }
+
+        .theme-icon-moon {
+            opacity: 1;
+            transform: translateY(0) rotate(0deg);
+        }
+
+        .dark-theme .theme-icon-sun {
+            opacity: 1;
+            transform: translateY(0) rotate(0deg);
+        }
+
+        .dark-theme .theme-icon-moon {
+            opacity: 0;
+            transform: translateY(-20px) rotate(-90deg);
+        }
+
+        /* Notification Badge Component */
+        .notification-badge {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background-color: var(--bncc-danger-500);
+            color: #ffffff;
+            font-size: 0.65rem;
+            font-weight: 800;
+            min-width: 20px;
+            height: 20px;
+            border-radius: var(--bncc-radius-full);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-top-width: 2px;
+            border-right-width: 2px;
+            border-bottom-width: 2px;
+            border-left-width: 2px;
+            border-style: solid;
+            border-color: var(--theme-surface);
+            padding-top: 0;
+            padding-right: 4px;
+            padding-bottom: 0;
+            padding-left: 4px;
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            animation: pulse-ring 2s infinite;
+            z-index: 2;
+        }
+
+        /* Authenticated User Micro-Profile */
+        .header-user-card {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding-top: 0.375rem;
+            padding-right: 0.5rem;
+            padding-bottom: 0.375rem;
+            padding-left: 0.5rem;
+            border-radius: var(--bncc-radius-full);
+            background-color: var(--theme-hover-bg);
+            border-top-width: 1px;
+            border-right-width: 1px;
+            border-bottom-width: 1px;
+            border-left-width: 1px;
+            border-style: solid;
+            border-color: transparent;
+            transition: all var(--bncc-duration-normal) var(--bncc-ease-out);
+            cursor: pointer;
+            text-decoration: none;
+            margin-left: 0.5rem;
+        }
+
+        .header-user-card:hover {
+            background-color: var(--theme-surface);
+            border-color: var(--bncc-primary-300);
+            box-shadow: var(--bncc-shadow-sm);
+            transform: translateY(-1px);
+        }
+
+        .dark-theme .header-user-card:hover {
+            border-color: var(--bncc-primary-700);
+        }
+
+        .header-user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--bncc-radius-full);
+            object-fit: cover;
+            border-top-width: 2px;
+            border-right-width: 2px;
+            border-bottom-width: 2px;
+            border-left-width: 2px;
+            border-style: solid;
+            border-color: var(--bncc-primary-500);
+            background-color: var(--theme-surface);
+        }
+
+        .header-user-details {
             display: flex;
             flex-direction: column;
-            text-align: right;
+            padding-right: 0.5rem;
         }
 
-        .nav-profile-name {
+        .header-user-name {
             font-size: var(--bncc-font-sm);
             font-weight: 700;
             color: var(--theme-text-primary);
             line-height: 1.2;
-            max-width: 130px;
+            max-width: 120px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        .nav-profile-role {
+        .header-user-role {
             font-size: 0.65rem;
-            font-weight: 800;
-            color: var(--bncc-brand-500);
+            font-weight: 600;
+            color: var(--bncc-primary-500);
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
-        .nav-profile-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: var(--bncc-radius-full);
-            object-fit: cover;
-            border: 2px solid var(--bncc-brand-500);
-            background-color: var(--theme-surface);
-            padding: 2px;
-            transition: border-color var(--bncc-duration-normal);
-        }
-        
-        .nav-profile-pill:hover .nav-profile-avatar {
-            border-color: var(--bncc-info-500);
-        }
-
-        /* Guest Authentication Button Group */
-        .guest-auth-group {
+        /* Guest Authentication Buttons */
+        .auth-action-group {
             display: flex;
             align-items: center;
             gap: 0.75rem;
             margin-left: 0.5rem;
         }
 
-        .btn-ghost-primary {
-            padding: 0.6rem 1.25rem;
+        .btn-auth-login {
+            padding-top: 0.6rem;
+            padding-right: 1.2rem;
+            padding-bottom: 0.6rem;
+            padding-left: 1.2rem;
             border-radius: var(--bncc-radius-lg);
             font-weight: 700;
             font-size: var(--bncc-font-sm);
             color: var(--theme-text-primary);
             background-color: transparent;
-            border: 1px solid var(--theme-border);
+            border-top-width: 1px;
+            border-right-width: 1px;
+            border-bottom-width: 1px;
+            border-left-width: 1px;
+            border-style: solid;
+            border-color: var(--theme-border);
             transition: all var(--bncc-duration-fast) var(--bncc-ease-out);
             text-decoration: none;
-            box-shadow: var(--bncc-shadow-sm);
         }
 
-        .btn-ghost-primary:hover {
+        .btn-auth-login:hover {
             background-color: var(--theme-hover-bg);
-            border-color: var(--bncc-brand-500);
-            color: var(--bncc-brand-600);
-            transform: translateY(-2px);
-            box-shadow: var(--bncc-shadow-md);
-        }
-        
-        .dark-theme .btn-ghost-primary:hover {
-            color: var(--bncc-brand-400);
+            border-color: var(--bncc-primary-400);
+            color: var(--bncc-primary-500);
         }
 
-        .btn-solid-primary {
-            padding: 0.6rem 1.5rem;
+        .btn-auth-register {
+            padding-top: 0.6rem;
+            padding-right: 1.5rem;
+            padding-bottom: 0.6rem;
+            padding-left: 1.5rem;
             border-radius: var(--bncc-radius-lg);
             font-weight: 700;
             font-size: var(--bncc-font-sm);
             color: #ffffff;
-            background: linear-gradient(135deg, var(--bncc-brand-500), var(--bncc-brand-700));
+            background: linear-gradient(135deg, var(--bncc-primary-400), var(--bncc-primary-600));
             box-shadow: var(--bncc-shadow-md);
-            transition: all var(--bncc-duration-normal) var(--bncc-ease-bounce-sm);
+            transition: all var(--bncc-duration-fast) var(--bncc-ease-bounce);
             text-decoration: none;
-            border: none;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .btn-solid-primary::before {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%;
-            width: 100%; height: 100%;
-            background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent);
-            transition: left 0.5s ease;
+            border-width: 0;
         }
 
-        .btn-solid-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--bncc-shadow-lg), var(--bncc-glow-primary-md);
-            background: linear-gradient(135deg, var(--bncc-brand-400), var(--bncc-brand-600));
-        }
-        
-        .btn-solid-primary:hover::before {
-            left: 100%;
+        .btn-auth-register:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--bncc-shadow-lg), var(--bncc-shadow-glow);
+            background: linear-gradient(135deg, var(--bncc-primary-500), var(--bncc-primary-700));
         }
 
-        /* -------------------------------------------------------------------------------------
-           PART 9: ADVANCED NOTIFICATION SYSTEM (DROPDOWN)
-           ------------------------------------------------------------------------------------- */
-        .notif-wrapper-relative {
-            position: relative;
-        }
-
-        .notif-dropdown-panel {
-            position: absolute;
-            top: calc(100% + 15px);
-            right: -10px;
-            width: 420px;
-            max-width: calc(100vw - 20px);
-            background-color: var(--theme-surface);
-            border-radius: var(--bncc-radius-xl);
-            box-shadow: var(--bncc-shadow-2xl), 0 0 0 1px var(--theme-border);
-            display: flex;
-            flex-direction: column;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(15px) scale(0.97);
-            transform-origin: top right;
-            transition: all var(--bncc-duration-normal) var(--bncc-ease-bounce-md);
-            z-index: var(--bncc-z-dropdown);
-            overflow: hidden;
-        }
-
-        .notif-dropdown-panel.is-open {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0) scale(1);
-        }
-
-        /* Tail pointer for dropdown */
-        .notif-dropdown-panel::before {
-            content: '';
-            position: absolute;
-            top: -6px;
-            right: 25px;
-            width: 12px;
-            height: 12px;
-            background-color: var(--bncc-brand-600);
-            transform: rotate(45deg);
-            z-index: 0;
-        }
-
-        .panel-header {
-            padding: 1.25rem 1.5rem;
-            background: linear-gradient(135deg, var(--bncc-brand-500), var(--bncc-brand-700));
-            color: #ffffff;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: relative;
-            z-index: 1;
-        }
-
-        .panel-title {
-            font-size: var(--bncc-font-lg);
-            font-weight: 800;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .btn-mark-read {
-            background-color: rgba(255, 255, 255, 0.2);
-            color: #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 0.4rem 0.8rem;
-            border-radius: var(--bncc-radius-full);
-            font-size: var(--bncc-font-xs);
-            font-weight: 700;
-            cursor: pointer;
-            transition: all var(--bncc-duration-fast);
-            backdrop-filter: blur(4px);
-        }
-
-        .btn-mark-read:hover {
-            background-color: rgba(255, 255, 255, 0.3);
-            transform: translateY(-1px);
-            box-shadow: var(--bncc-shadow-sm);
-        }
-
-        .panel-body-scroll {
-            max-height: 400px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            background-color: var(--theme-surface);
-            position: relative;
-            z-index: 1;
-        }
-
-        /* Custom Scrollbar for Notification Body */
-        .panel-body-scroll::-webkit-scrollbar { width: 6px; }
-        .panel-body-scroll::-webkit-scrollbar-track { background: transparent; }
-        .panel-body-scroll::-webkit-scrollbar-thumb { background: var(--theme-border); border-radius: 10px; border: none; }
-        .panel-body-scroll::-webkit-scrollbar-thumb:hover { background: var(--bncc-brand-400); }
-
-        .notif-list-item {
-            display: flex;
-            gap: 1rem;
-            padding: 1.25rem 1.5rem;
-            border-bottom: 1px solid var(--theme-border);
-            text-decoration: none;
-            transition: background-color var(--bncc-duration-fast);
-            position: relative;
-        }
-
-        .notif-list-item:hover {
-            background-color: var(--theme-hover-bg);
-        }
-
-        /* Unread State Design */
-        .notif-list-item.is-unread {
-            background-color: var(--bncc-brand-50);
-        }
-
-        .dark-theme .notif-list-item.is-unread {
-            background-color: rgba(99, 102, 241, 0.1);
-        }
-
-        .notif-list-item.is-unread::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 0;
-            transform: translateY(-50%);
-            width: 4px;
-            height: 0;
-            background-color: var(--bncc-brand-500);
-            border-radius: 0 4px 4px 0;
-            transition: height 0.3s ease;
-            animation: growLine 0.5s forwards 0.2s;
-        }
-        
-        @keyframes growLine { to { height: 60%; } }
-
-        .item-icon-wrapper {
-            width: 48px;
-            height: 48px;
-            border-radius: var(--bncc-radius-full);
-            background-color: var(--theme-surface);
-            border: 1px solid var(--theme-border);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.25rem;
-            color: var(--bncc-brand-500);
-            flex-shrink: 0;
-            box-shadow: var(--bncc-shadow-sm);
-            transition: all var(--bncc-duration-normal);
-        }
-
-        .is-unread .item-icon-wrapper {
-            background: linear-gradient(135deg, var(--bncc-brand-400), var(--bncc-brand-600));
-            color: #ffffff;
-            border-color: transparent;
-            box-shadow: var(--bncc-glow-primary-sm);
-        }
-
-        .item-text-wrapper {
-            display: flex;
-            flex-direction: column;
-            gap: 0.35rem;
-            flex-grow: 1;
-        }
-
-        .item-message {
-            font-size: var(--bncc-font-sm);
-            color: var(--theme-text-primary);
-            line-height: 1.5;
-        }
-
-        .is-unread .item-message {
-            font-weight: 700;
-        }
-
-        .item-time {
-            font-size: var(--bncc-font-xs);
-            color: var(--theme-text-tertiary);
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-        
-        .is-unread .item-time {
-            color: var(--bncc-brand-500);
-        }
-
-        /* Empty State inside Notification */
-        .panel-empty-state {
-            padding: 4rem 2rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: var(--theme-text-tertiary);
-            text-align: center;
-        }
-
-        .panel-empty-state i {
-            font-size: 4rem;
-            margin-bottom: 1.5rem;
-            opacity: 0.4;
-            background: linear-gradient(to bottom, var(--theme-text-tertiary), transparent);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        
-        .panel-empty-state span {
-            font-weight: 600;
-            font-size: var(--bncc-font-base);
-        }
-
-        .panel-footer {
-            padding: 1rem;
-            text-align: center;
-            background-color: var(--theme-surface-alt);
-            border-top: 1px solid var(--theme-border);
-            position: relative;
-            z-index: 1;
-        }
-
-        .btn-view-all {
-            font-size: var(--bncc-font-sm);
-            font-weight: 800;
-            color: var(--bncc-brand-600);
-            text-decoration: none;
-            display: inline-block;
-            transition: all var(--bncc-duration-fast);
-        }
-        
-        .dark-theme .btn-view-all { color: var(--bncc-brand-400); }
-
-        .btn-view-all:hover {
-            color: var(--bncc-brand-700);
-            transform: scale(1.05);
-        }
-
-        /* -------------------------------------------------------------------------------------
-           PART 10: OFF-CANVAS SIDEBAR DRAWER (MAIN MENU)
-           ------------------------------------------------------------------------------------- */
-        
-        /* Backdrop Overlay */
-        .drawer-overlay {
+        /* SIDEBAR DRAWER ARCHITECTURE */
+        .global-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background-color: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            z-index: var(--bncc-z-sidebar-overlay);
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: var(--bncc-z-modal-backdrop);
             opacity: 0;
             visibility: hidden;
-            transition: opacity var(--bncc-duration-normal) var(--bncc-ease-linear), 
-                        visibility var(--bncc-duration-normal) var(--bncc-ease-linear);
+            transition: opacity var(--bncc-duration-normal) var(--bncc-ease-out), visibility var(--bncc-duration-normal);
         }
 
-        body.sidebar-is-active .drawer-overlay {
+        body.sidebar-open .global-overlay {
             opacity: 1;
             visibility: visible;
         }
 
-        /* The Drawer Panel */
-        .master-drawer-panel {
+        .sidebar-master-drawer {
             position: fixed;
             top: 0;
             left: calc(-1 * var(--bncc-sidebar-width));
             width: var(--bncc-sidebar-width);
-            max-width: 85vw; /* Responsive constraint */
+            max-width: 85vw;
             height: 100vh;
-            height: 100dvh; /* Support for iOS Safari dynamic viewport */
             background-color: var(--theme-surface);
             z-index: var(--bncc-z-sidebar);
             display: flex;
             flex-direction: column;
-            box-shadow: var(--bncc-shadow-2xl);
-            transition: left var(--bncc-duration-slow) var(--bncc-ease-bounce-md);
+            box-shadow: var(--bncc-shadow-xl);
+            transition: left var(--bncc-duration-slow) var(--bncc-ease-bounce);
             overflow: hidden;
         }
 
-        .dark-theme .master-drawer-panel {
-            border-right: 1px solid var(--theme-border);
-            box-shadow: 10px 0 30px rgba(0,0,0,0.8);
+        .dark-theme .sidebar-master-drawer {
+            border-right-width: 1px;
+            border-right-style: solid;
+            border-right-color: var(--theme-border);
         }
 
-        body.sidebar-is-active .master-drawer-panel {
+        body.sidebar-open .sidebar-master-drawer {
             left: 0;
         }
 
-        /* Drawer Top Section (Profile Hero) */
-        .drawer-hero-section {
-            padding: 2.5rem 2rem 2rem 2rem;
-            border-bottom: 1px solid var(--theme-border);
+        /* Sidebar Internal Layout */
+        .sidebar-top-section {
+            padding-top: 2rem;
+            padding-right: 1.5rem;
+            padding-bottom: 1.5rem;
+            padding-left: 1.5rem;
+            border-bottom-width: 1px;
+            border-bottom-style: solid;
+            border-bottom-color: var(--theme-border);
             position: relative;
-            background: linear-gradient(180deg, var(--theme-hover-bg) 0%, var(--theme-surface) 100%);
-            overflow: hidden;
-        }
-        
-        /* Decorative Pattern in Hero */
-        .drawer-hero-section::before {
-            content: '';
-            position: absolute;
-            top: 0; right: 0;
-            width: 150px; height: 150px;
-            background: radial-gradient(circle, var(--bncc-brand-500) 0%, transparent 70%);
-            opacity: 0.1;
-            transform: translate(30%, -30%);
-            border-radius: 50%;
+            background: linear-gradient(to bottom, var(--theme-hover-bg), transparent);
         }
 
-        .btn-drawer-close {
+        .sidebar-close-action {
             position: absolute;
             top: 1.5rem;
             right: 1.5rem;
-            width: 36px;
-            height: 36px;
+            width: 32px;
+            height: 32px;
             border-radius: var(--bncc-radius-full);
-            background-color: var(--theme-surface);
-            border: 1px solid var(--theme-border);
+            background-color: var(--theme-bg);
+            border-top-width: 1px;
+            border-right-width: 1px;
+            border-bottom-width: 1px;
+            border-left-width: 1px;
+            border-style: solid;
+            border-color: var(--theme-border);
             color: var(--theme-text-secondary);
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 1.1rem;
             cursor: pointer;
-            transition: all var(--bncc-duration-fast) var(--bncc-ease-bounce-sm);
-            box-shadow: var(--bncc-shadow-sm);
-            z-index: 2;
+            transition: all var(--bncc-duration-fast) var(--bncc-ease-in-out);
         }
 
-        .btn-drawer-close:hover {
+        .sidebar-close-action:hover {
             background-color: var(--bncc-danger-100);
             color: var(--bncc-danger-600);
             border-color: var(--bncc-danger-200);
-            transform: rotate(90deg) scale(1.1);
+            transform: rotate(90deg);
         }
 
-        .dark-theme .btn-drawer-close:hover {
+        .dark-theme .sidebar-close-action:hover {
             background-color: rgba(239, 68, 68, 0.2);
-            border-color: rgba(239, 68, 68, 0.4);
         }
 
-        .drawer-user-identity {
+        .sidebar-user-identity {
             display: flex;
             flex-direction: column;
             align-items: flex-start;
-            gap: 1.25rem;
-            position: relative;
-            z-index: 1;
+            gap: 1rem;
+            margin-top: 1rem;
         }
 
-        .drawer-avatar-hero {
-            width: 80px;
-            height: 80px;
+        .sidebar-huge-avatar {
+            width: 72px;
+            height: 72px;
             border-radius: var(--bncc-radius-2xl);
             object-fit: cover;
-            border: 3px solid var(--bncc-brand-500);
+            border-top-width: 3px;
+            border-right-width: 3px;
+            border-bottom-width: 3px;
+            border-left-width: 3px;
+            border-style: solid;
+            border-color: var(--bncc-primary-500);
             padding: 3px;
             background-color: var(--theme-surface);
             box-shadow: var(--bncc-shadow-md);
-            transition: transform var(--bncc-duration-normal) var(--bncc-ease-bounce-sm);
-        }
-        
-        .drawer-user-identity:hover .drawer-avatar-hero {
-            transform: scale(1.05) rotate(5deg);
-            border-color: var(--bncc-info-500);
         }
 
-        .drawer-identity-text {
+        .sidebar-identity-text {
             display: flex;
             flex-direction: column;
-            gap: 0.4rem;
+            gap: 0.25rem;
         }
 
-        .drawer-name {
+        .sidebar-identity-name {
             font-size: var(--bncc-font-xl);
-            font-weight: 900;
+            font-weight: 800;
             color: var(--theme-text-primary);
             line-height: 1.2;
             margin: 0;
-            letter-spacing: -0.5px;
         }
 
-        .drawer-role-badge {
+        .sidebar-identity-role-tag {
             display: inline-flex;
             align-items: center;
-            gap: 0.4rem;
-            padding: 0.3rem 0.8rem;
+            gap: 0.25rem;
+            padding-top: 0.25rem;
+            padding-right: 0.75rem;
+            padding-bottom: 0.25rem;
+            padding-left: 0.75rem;
             border-radius: var(--bncc-radius-md);
             font-size: var(--bncc-font-xs);
             font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 1px;
             width: fit-content;
-            box-shadow: var(--bncc-shadow-xs);
         }
 
-        /* Comprehensive Role Coloring System */
-        .role-pill-admin { background: linear-gradient(135deg, var(--bncc-warning-100), #fef08a); color: var(--bncc-warning-700); border: 1px solid var(--bncc-warning-300); }
-        .role-pill-teacher { background: linear-gradient(135deg, var(--bncc-danger-100), #fecaca); color: var(--bncc-danger-700); border: 1px solid var(--bncc-danger-300); }
-        .role-pill-seller { background: linear-gradient(135deg, var(--bncc-success-100), #a7f3d0); color: var(--bncc-success-700); border: 1px solid var(--bncc-success-300); }
-        .role-pill-buyer { background: linear-gradient(135deg, var(--bncc-brand-100), #c7d2fe); color: var(--bncc-brand-700); border: 1px solid var(--bncc-brand-300); }
-        .role-pill-guest { background: var(--theme-surface-alt); color: var(--theme-text-secondary); border: 1px solid var(--theme-border-focus); }
+        /* Role Tag Variations */
+        .role-tag-admin { background-color: var(--bncc-warning-100); color: var(--bncc-warning-600); border: 1px solid var(--bncc-warning-400); }
+        .role-tag-teacher { background-color: var(--bncc-danger-100); color: var(--bncc-danger-600); border: 1px solid var(--bncc-danger-400); }
+        .role-tag-seller { background-color: var(--bncc-success-100); color: var(--bncc-success-600); border: 1px solid var(--bncc-success-400); }
+        .role-tag-buyer { background-color: var(--bncc-primary-100); color: var(--bncc-primary-600); border: 1px solid var(--bncc-primary-400); }
+        .role-tag-guest { background-color: var(--theme-border); color: var(--theme-text-secondary); border: 1px solid var(--theme-text-tertiary); }
 
-        .dark-theme .role-pill-admin { background: rgba(245, 158, 11, 0.15); color: var(--bncc-warning-400); border-color: rgba(245, 158, 11, 0.3); }
-        .dark-theme .role-pill-teacher { background: rgba(239, 68, 68, 0.15); color: var(--bncc-danger-400); border-color: rgba(239, 68, 68, 0.3); }
-        .dark-theme .role-pill-seller { background: rgba(16, 185, 129, 0.15); color: var(--bncc-success-400); border-color: rgba(16, 185, 129, 0.3); }
-        .dark-theme .role-pill-buyer { background: rgba(99, 102, 241, 0.15); color: var(--bncc-brand-400); border-color: rgba(99, 102, 241, 0.3); }
-        .dark-theme .role-pill-guest { background: rgba(255, 255, 255, 0.05); color: var(--theme-text-tertiary); border-color: var(--theme-border); }
+        .dark-theme .role-tag-admin { background-color: rgba(245, 158, 11, 0.2); }
+        .dark-theme .role-tag-teacher { background-color: rgba(239, 68, 68, 0.2); }
+        .dark-theme .role-tag-seller { background-color: rgba(16, 185, 129, 0.2); }
+        .dark-theme .role-tag-buyer { background-color: rgba(99, 102, 241, 0.2); }
+        .dark-theme .role-tag-guest { background-color: rgba(255, 255, 255, 0.1); }
 
-        /* Drawer Middle Section: Navigation Scroll Area */
-        .drawer-nav-viewport {
+        /* Sidebar Navigation Menu */
+        .sidebar-scroll-area {
             flex-grow: 1;
             overflow-y: auto;
-            overflow-x: hidden;
-            padding: 1.5rem 1.25rem 2.5rem 1.25rem;
+            padding-top: 1rem;
+            padding-right: 1rem;
+            padding-bottom: 2rem;
+            padding-left: 1rem;
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
         }
-        
-        .drawer-nav-viewport::-webkit-scrollbar { width: 6px; }
-        .drawer-nav-viewport::-webkit-scrollbar-track { background: transparent; }
-        .drawer-nav-viewport::-webkit-scrollbar-thumb { background: var(--theme-border); border-radius: 10px; border: none; }
 
-        .drawer-section-label {
+        .nav-group-label {
             font-size: 0.7rem;
             font-weight: 800;
             color: var(--theme-text-tertiary);
             text-transform: uppercase;
-            letter-spacing: 0.15em;
-            padding: 1rem 1rem 0.5rem 1rem;
+            letter-spacing: 0.1em;
+            padding-top: 1rem;
+            padding-right: 1rem;
+            padding-bottom: 0.5rem;
+            padding-left: 1rem;
             margin-top: 0.5rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .drawer-section-label::after {
-            content: '';
-            flex-grow: 1;
-            height: 1px;
-            background: linear-gradient(to right, var(--theme-border), transparent);
         }
 
-        .drawer-menu-link {
+        .nav-menu-item {
             display: flex;
             align-items: center;
             gap: 1rem;
-            padding: 0.9rem 1.2rem;
+            padding-top: 0.875rem;
+            padding-right: 1rem;
+            padding-bottom: 0.875rem;
+            padding-left: 1rem;
             border-radius: var(--bncc-radius-lg);
             text-decoration: none;
             color: var(--theme-text-secondary);
             font-weight: 600;
             font-size: var(--bncc-font-sm);
-            transition: all var(--bncc-duration-fast) var(--bncc-ease-out);
+            transition: all var(--bncc-duration-normal) var(--bncc-ease-out);
             position: relative;
             overflow: hidden;
-            border: 1px solid transparent;
         }
 
-        /* Active Indicator Line */
-        .drawer-menu-link::before {
+        .nav-menu-item::before {
             content: '';
             position: absolute;
-            top: 50%;
+            top: 0;
             left: 0;
             width: 4px;
-            height: 0%;
-            background-color: var(--bncc-brand-500);
-            transform: translateY(-50%);
-            transition: height var(--bncc-duration-normal) var(--bncc-ease-bounce-sm);
+            height: 100%;
+            background-color: var(--bncc-primary-500);
+            transform: scaleY(0);
+            transition: transform var(--bncc-duration-normal) var(--bncc-ease-out);
+            transform-origin: center;
             border-radius: 0 4px 4px 0;
         }
 
-        .drawer-menu-link:hover {
+        .nav-menu-item:hover {
             background-color: var(--theme-hover-bg);
             color: var(--theme-text-primary);
-            transform: translateX(5px);
-            border-color: var(--theme-border);
+            transform: translateX(4px);
         }
 
-        /* The Active State (Current Page) */
-        .drawer-menu-link.is-current-page {
-            background-color: var(--bncc-brand-50);
-            color: var(--bncc-brand-700);
-            border-color: var(--bncc-brand-200);
-            box-shadow: var(--bncc-shadow-sm);
+        .nav-menu-item.is-active {
+            background-color: var(--bncc-primary-50);
+            color: var(--bncc-primary-700);
         }
 
-        .dark-theme .drawer-menu-link.is-current-page {
+        .dark-theme .nav-menu-item.is-active {
             background-color: rgba(99, 102, 241, 0.15);
-            color: var(--bncc-brand-300);
-            border-color: rgba(99, 102, 241, 0.3);
+            color: var(--bncc-primary-300);
         }
 
-        .drawer-menu-link.is-current-page::before {
-            height: 60%;
+        .nav-menu-item.is-active::before {
+            transform: scaleY(0.6);
         }
 
-        .drawer-link-icon {
+        .nav-menu-icon {
             width: 24px;
             font-size: 1.25rem;
             text-align: center;
-            transition: transform var(--bncc-duration-normal) var(--bncc-ease-bounce-sm), color var(--bncc-duration-normal);
+            transition: transform var(--bncc-duration-normal) var(--bncc-ease-bounce);
         }
 
-        .drawer-menu-link:hover .drawer-link-icon {
-            transform: scale(1.15) rotate(5deg);
-            color: var(--bncc-brand-500);
+        .nav-menu-item:hover .nav-menu-icon {
+            transform: scale(1.15);
+            color: var(--bncc-primary-500);
         }
 
-        .drawer-menu-link.is-current-page .drawer-link-icon {
-            color: var(--bncc-brand-500);
+        .nav-menu-item.is-active .nav-menu-icon {
+            color: var(--bncc-primary-500);
         }
 
-        /* Specific Contextual Color Formatting for Links */
-        .link-danger:hover .drawer-link-icon, .link-danger.is-current-page .drawer-link-icon { color: var(--bncc-danger-500); }
-        .link-success:hover .drawer-link-icon, .link-success.is-current-page .drawer-link-icon { color: var(--bncc-success-500); }
-        .link-warning:hover .drawer-link-icon, .link-warning.is-current-page .drawer-link-icon { color: var(--bncc-warning-500); }
-        .link-info:hover .drawer-link-icon, .link-info.is-current-page .drawer-link-icon { color: var(--bncc-info-500); }
+        /* Specific Menu Item Coloring */
+        .nav-item-danger:hover .nav-menu-icon { color: var(--bncc-danger-500); }
+        .nav-item-success:hover .nav-menu-icon { color: var(--bncc-success-500); }
+        .nav-item-warning:hover .nav-menu-icon { color: var(--bncc-warning-500); }
 
-        /* Admin Special Area Styling */
-        .link-admin-zone {
-            background-color: rgba(239, 68, 68, 0.03);
-            border: 1px dashed rgba(239, 68, 68, 0.15);
-            margin-bottom: 0.25rem;
+        .nav-item-admin {
+            background-color: rgba(239, 68, 68, 0.05);
+            border: 1px dashed rgba(239, 68, 68, 0.2);
         }
         
-        .link-admin-zone:hover {
-            background-color: rgba(239, 68, 68, 0.08);
-            border-style: solid;
-            border-color: rgba(239, 68, 68, 0.3);
+        .nav-item-admin:hover {
+            background-color: rgba(239, 68, 68, 0.1);
             color: var(--bncc-danger-600);
         }
-        
-        .dark-theme .link-admin-zone:hover { color: var(--bncc-danger-400); }
 
-        .inline-status-badge {
-            margin-left: auto;
-            background: linear-gradient(135deg, var(--bncc-danger-500), var(--bncc-danger-700));
-            color: white;
-            padding: 2px 8px;
-            border-radius: var(--bncc-radius-pill);
-            font-size: 0.7rem;
-            font-weight: 800;
-            box-shadow: var(--bncc-shadow-sm);
-            animation: pulseRing 2s infinite;
+        /* Sidebar Footer (Logout) */
+        .sidebar-bottom-section {
+            padding-top: 1.5rem;
+            padding-right: 1.5rem;
+            padding-bottom: 2rem;
+            padding-left: 1.5rem;
+            border-top-width: 1px;
+            border-top-style: solid;
+            border-top-color: var(--theme-border);
+            background-color: var(--theme-surface);
         }
 
-        /* Drawer Bottom Section (Logout) */
-        .drawer-footer-section {
-            padding: 1.5rem;
-            border-top: 1px solid var(--theme-border);
-            background-color: var(--theme-surface-alt);
-            position: relative;
-            z-index: 1;
-        }
-
-        .btn-action-logout {
+        .btn-logout-massive {
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 0.75rem;
             width: 100%;
-            padding: 1.1rem;
+            padding: 1rem;
             border-radius: var(--bncc-radius-lg);
             background-color: var(--bncc-danger-50);
             color: var(--bncc-danger-600);
@@ -1882,142 +1840,280 @@ if (isLoggedIn()) {
             border-width: 1px;
             border-style: solid;
             border-color: var(--bncc-danger-100);
-            transition: all var(--bncc-duration-normal) var(--bncc-ease-bounce-sm);
-            box-shadow: var(--bncc-shadow-xs);
-            overflow: hidden;
-            position: relative;
+            transition: all var(--bncc-duration-normal) var(--bncc-ease-bounce);
         }
 
-        .dark-theme .btn-action-logout {
-            background-color: rgba(239, 68, 68, 0.08);
+        .dark-theme .btn-logout-massive {
+            background-color: rgba(239, 68, 68, 0.1);
             border-color: rgba(239, 68, 68, 0.2);
             color: var(--bncc-danger-400);
         }
 
-        .btn-action-logout::before {
+        .btn-logout-massive:hover {
+            background-color: var(--bncc-danger-500);
+            color: #ffffff;
+            border-color: var(--bncc-danger-600);
+            box-shadow: 0 10px 20px -5px rgba(239, 68, 68, 0.4);
+            transform: translateY(-2px);
+        }
+
+        /* ADVANCED NOTIFICATION DROPDOWN SYSTEM */
+        
+        .notification-dropdown-container {
+            position: absolute;
+            top: calc(100% + 15px);
+            right: -10px;
+            width: 400px;
+            max-width: calc(100vw - 20px);
+            background-color: var(--theme-surface);
+            border-radius: var(--bncc-radius-xl);
+            box-shadow: var(--bncc-shadow-xl);
+            border-top-width: 1px;
+            border-right-width: 1px;
+            border-bottom-width: 1px;
+            border-left-width: 1px;
+            border-style: solid;
+            border-color: var(--theme-border);
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px) scale(0.98);
+            transform-origin: top right;
+            transition: all var(--bncc-duration-normal) var(--bncc-ease-bounce);
+            z-index: var(--bncc-z-dropdown);
+            overflow: hidden;
+        }
+
+        .notification-dropdown-container.is-active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+        }
+
+        .notif-dropdown-header {
+            padding-top: 1.25rem;
+            padding-right: 1.5rem;
+            padding-bottom: 1.25rem;
+            padding-left: 1.5rem;
+            background: linear-gradient(135deg, var(--bncc-primary-500), var(--bncc-primary-700));
+            color: #ffffff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notif-dropdown-title {
+            font-size: var(--bncc-font-lg);
+            font-weight: 800;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .notif-action-markread {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            border: none;
+            padding-top: 0.25rem;
+            padding-right: 0.75rem;
+            padding-bottom: 0.25rem;
+            padding-left: 0.75rem;
+            border-radius: var(--bncc-radius-full);
+            font-size: var(--bncc-font-xs);
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color var(--bncc-duration-fast);
+        }
+
+        .notif-action-markread:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .notif-scroll-viewport {
+            max-height: 450px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .notif-entity-card {
+            display: flex;
+            gap: 1rem;
+            padding-top: 1.25rem;
+            padding-right: 1.5rem;
+            padding-bottom: 1.25rem;
+            padding-left: 1.5rem;
+            border-bottom-width: 1px;
+            border-bottom-style: solid;
+            border-bottom-color: var(--theme-border);
+            text-decoration: none;
+            transition: background-color var(--bncc-duration-fast);
+            position: relative;
+        }
+
+        .notif-entity-card:hover {
+            background-color: var(--theme-hover-bg);
+        }
+
+        .notif-entity-card.state-unread {
+            background-color: var(--bncc-primary-50);
+        }
+
+        .dark-theme .notif-entity-card.state-unread {
+            background-color: rgba(99, 102, 241, 0.1);
+        }
+
+        .notif-entity-card.state-unread::before {
             content: '';
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, var(--bncc-danger-500), var(--bncc-danger-700));
-            opacity: 0;
-            transition: opacity var(--bncc-duration-normal);
-            z-index: 0;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 60%;
+            background-color: var(--bncc-primary-500);
+            border-radius: 0 4px 4px 0;
         }
 
-        .btn-action-logout span, .btn-action-logout i {
-            position: relative;
-            z-index: 1;
-            transition: color var(--bncc-duration-normal);
+        .notif-visual-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--bncc-radius-full);
+            background-color: var(--theme-surface);
+            border-top-width: 1px;
+            border-right-width: 1px;
+            border-bottom-width: 1px;
+            border-left-width: 1px;
+            border-style: solid;
+            border-color: var(--theme-border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.25rem;
+            color: var(--bncc-primary-500);
+            flex-shrink: 0;
         }
 
-        .btn-action-logout:hover {
-            border-color: var(--bncc-danger-600);
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px -5px rgba(239, 68, 68, 0.4);
-        }
-        
-        .btn-action-logout:hover::before {
-            opacity: 1;
-        }
-        
-        .btn-action-logout:hover span, .btn-action-logout:hover i {
+        .state-unread .notif-visual-icon {
+            background-color: var(--bncc-primary-500);
             color: #ffffff;
+            border-color: var(--bncc-primary-600);
         }
 
-        /* -------------------------------------------------------------------------------------
-           PART 11: RESPONSIVE MEDIA QUERIES
-           ------------------------------------------------------------------------------------- */
-        
-        /* Tablet & Small Laptops (Max 1024px) */
+        .notif-text-content {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .notif-message-string {
+            font-size: var(--bncc-font-sm);
+            color: var(--theme-text-primary);
+            line-height: 1.4;
+        }
+
+        .state-unread .notif-message-string {
+            font-weight: 700;
+        }
+
+        .notif-timestamp-string {
+            font-size: var(--bncc-font-xs);
+            color: var(--theme-text-tertiary);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .notif-empty-state {
+            padding-top: 4rem;
+            padding-right: 2rem;
+            padding-bottom: 4rem;
+            padding-left: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--theme-text-tertiary);
+            text-align: center;
+        }
+
+        .notif-empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+
+        .notif-dropdown-footer {
+            padding-top: 1rem;
+            padding-right: 1rem;
+            padding-bottom: 1rem;
+            padding-left: 1rem;
+            text-align: center;
+            border-top-width: 1px;
+            border-top-style: solid;
+            border-top-color: var(--theme-border);
+            background-color: var(--theme-bg);
+        }
+
+        .notif-view-all-link {
+            font-size: var(--bncc-font-sm);
+            font-weight: 700;
+            color: var(--bncc-primary-500);
+            text-decoration: none;
+        }
+
+        .notif-view-all-link:hover {
+            text-decoration: underline;
+        }
+
+        /* RESPONSIVE MEDIA QUERIES */
         @media screen and (max-width: 1024px) {
-            .header-layout-container { padding: 0 1.5rem; }
-            .brand-name-text { font-size: 1.4rem; }
+            .header-layout-container { padding-right: 1.5rem; padding-left: 1.5rem; }
+            .brand-typography { font-size: 1.25rem; }
         }
 
-        /* Tablets & Large Phones (Max 768px) */
         @media screen and (max-width: 768px) {
-            :root {
-                --bncc-header-height: 70px;
-                --bncc-header-height-scrolled: 64px;
-            }
+            .header-user-name { display: none; }
+            .header-user-role { display: none; }
+            .header-user-card { padding: 0; background: transparent; border: none; margin-left: 0; }
+            .header-user-card:hover { background: transparent; box-shadow: none; transform: none; }
             
-            /* Hide user name and role to save space */
-            .nav-profile-name, .nav-profile-role { display: none; }
-            
-            .nav-profile-pill { 
-                padding: 0; 
-                background: transparent; 
-                border: none; 
-                box-shadow: none; 
-            }
-            
-            .nav-profile-pill:hover { 
-                background: transparent; 
-                box-shadow: none; 
-                transform: scale(1.05); 
-            }
-            
-            /* Responsive Notification Dropdown (Full width on mobile) */
-            .notif-dropdown-panel {
+            .notification-dropdown-container {
                 position: fixed;
                 top: var(--bncc-header-height);
-                right: 15px;
-                left: 15px;
+                right: 10px;
+                left: 10px;
                 width: auto;
                 max-width: none;
                 transform-origin: top center;
             }
             
-            .notif-dropdown-panel::before { display: none; } /* Hide arrow tail on mobile */
-            
-            /* Adjust Auth Buttons */
-            .guest-auth-group { gap: 0.5rem; }
-            .btn-ghost-primary { padding: 0.5rem 0.75rem; font-size: var(--bncc-font-xs); }
-            .btn-solid-primary { padding: 0.5rem 1rem; font-size: var(--bncc-font-xs); }
+            .auth-action-group { gap: 0.5rem; }
+            .btn-auth-login { padding: 0.5rem 0.75rem; font-size: 0.75rem; }
+            .btn-auth-register { padding: 0.5rem 1rem; font-size: 0.75rem; }
         }
 
-        /* Small Phones (Max 480px) */
         @media screen and (max-width: 480px) {
-            .brand-name-text { display: none; } /* Show only icon */
-            .nav-zone-left { gap: 0.75rem; }
-            .nav-zone-right { gap: 0.5rem; }
-            .header-icon-btn { width: 40px; height: 40px; font-size: 1.1rem; }
-            .master-drawer-panel { width: 88vw; }
-            .drawer-hero-section { padding: 2rem 1.5rem 1.5rem 1.5rem; }
-            .drawer-avatar-hero { width: 65px; height: 65px; }
-            .drawer-name { font-size: var(--bncc-font-lg); }
+            .brand-typography { display: none; }
+            .header-left-zone { gap: 0.75rem; }
+            .header-icon-btn { width: 38px; height: 38px; font-size: 1.1rem; }
+            .sidebar-master-drawer { width: 85vw; }
         }
-        
-        /* Utilites generated dynamically */
-        .visually-hidden {
-            position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-            overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
-        }
-
     </style>
 
     <script>
         // Enterprise JS Utilities Namespace
         window.BNCCUtils = {
             storage: {
-                set: function(key, value, ttlDays = 30) {
-                    const now = new Date();
-                    const item = {
-                        value: value,
-                        expiry: now.getTime() + (ttlDays * 24 * 60 * 60 * 1000),
-                    };
-                    localStorage.setItem(key, JSON.stringify(item));
+                set: function(key, value) {
+                    // Save pure string to avoid JSON parse failures later
+                    localStorage.setItem(key, value);
                 },
                 get: function(key) {
-                    const itemStr = localStorage.getItem(key);
-                    if (!itemStr) return null;
-                    const item = JSON.parse(itemStr);
-                    const now = new Date();
-                    if (now.getTime() > item.expiry) {
-                        localStorage.removeItem(key);
-                        return null;
-                    }
-                    return item.value;
+                    return localStorage.getItem(key);
                 }
             }
         };
@@ -2028,19 +2124,13 @@ if (isLoggedIn()) {
          */
         (function() {
             try {
+                // 🎯 THEME BUG FIX: Handle raw string from localStorage safely
                 var sysTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                // Fetch from specific BNCCUtils wrapper or fallback to raw localStorage
-                var savedThemeStr = localStorage.getItem('bncc_enterprise_theme');
-                var savedTheme = null;
+                var savedTheme = localStorage.getItem('bncc_enterprise_theme');
                 
-                // Handle both JSON stringified (from Utils) and raw strings
-                if (savedThemeStr) {
-                    try {
-                        let parsed = JSON.parse(savedThemeStr);
-                        savedTheme = parsed.value ? parsed.value : parsed;
-                    } catch(e) {
-                        savedTheme = savedThemeStr;
-                    }
+                // Fallback to light if local storage contains invalid data
+                if (savedTheme !== 'dark' && savedTheme !== 'light') {
+                    savedTheme = null;
                 }
                 
                 var activeTheme = savedTheme || sysTheme;
@@ -2060,709 +2150,564 @@ if (isLoggedIn()) {
 </head>
 <body id="bnccBodyElement">
 
-    <div id="sysPreloader" class="bncc-sys-preloader" aria-hidden="true">
-        <div class="sys-preloader-spinner">
-            <div class="sys-preloader-circle"></div>
-            <div class="sys-preloader-spin"></div>
-        </div>
-        <div class="sys-preloader-brand">BNCC <span>MARKET</span></div>
-    </div>
+<div id="globalPreloader" class="bncc-preloader">
+    <div class="preloader-spinner"></div>
+    <div class="preloader-text">BNCC MARKET</div>
+</div>
 
-    <div class="bg-aesthetic-container" aria-hidden="true">
-        <div class="bg-grid-pattern"></div>
-        <div class="bg-orb bg-orb-1"></div>
-        <div class="bg-orb bg-orb-2"></div>
-        <div class="bg-orb bg-orb-3"></div>
-    </div>
+<div class="bg-particles-container" aria-hidden="true">
+    <div class="bg-particle"></div>
+    <div class="bg-particle"></div>
+    <div class="bg-particle"></div>
+</div>
 
-    <header id="sysNavbar" class="header-master-wrapper" role="banner">
+<nav id="masterNavbarElement" class="master-header">
+    
+    <div id="scrollProgressBar" class="header-progress-bar"></div>
+
+    <div class="header-layout-container">
         
-        <div id="sysProgressBar" class="nav-progress-indicator" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+        <div class="header-left-zone">
+            <button id="sidebarToggleMasterBtn" class="sidebar-trigger-btn" aria-label="Open Navigation Menu" aria-expanded="false" aria-controls="sidebarMasterDrawer">
+                <span class="trigger-line"></span>
+                <span class="trigger-line"></span>
+                <span class="trigger-line"></span>
+            </button>
 
-        <div class="header-layout-container">
-            
-            <div class="nav-zone-left">
-                
-                <button id="sysBtnSidebar" class="btn-sidebar-toggle" aria-label="Open Navigation Menu" aria-expanded="false" aria-controls="sysSidebarDrawer">
-                    <span class="burger-line"></span>
-                    <span class="burger-line"></span>
-                    <span class="burger-line"></span>
-                </button>
-
-                <a href="<?= $base_path ?>pages/index.php" class="brand-identifier" aria-label="Go to Homepage">
-                    <div class="brand-icon-box">
-                        <i class="fas fa-shopping-bag"></i>
-                    </div>
-                    <h1 class="brand-name-text">BNCC<span class="brand-name-accent">Market</span></h1>
-                </a>
-                
-            </div>
-
-            <div class="nav-zone-right">
-                
-                <button id="sysBtnTheme" class="nav-action-btn theme-switcher-ui" aria-label="Toggle Color Theme" title="สลับโหมดมืด/สว่าง">
-                    <i class="fas fa-sun icon-sun" aria-hidden="true"></i>
-                    <i class="fas fa-moon icon-moon" aria-hidden="true"></i>
-                </button>
-
-                <?php if (isLoggedIn()): ?>
-                    
-                    <div class="notif-wrapper-relative">
-                        
-                        <button id="sysBtnNotif" class="nav-action-btn" aria-label="Open Notifications" aria-haspopup="true" aria-expanded="false" title="การแจ้งเตือน">
-                            <i class="fas fa-bell"></i>
-                            <span id="sysBadgeNotif" class="status-badge" style="display: none;">0</span>
-                        </button>
-
-                        <div id="sysPanelNotif" class="notif-dropdown-panel" role="menu" aria-label="Notifications Menu">
-                            
-                            <div class="panel-header">
-                                <h3 class="panel-title"><i class="fas fa-bolt"></i> อัปเดตล่าสุด</h3>
-                                <button id="sysBtnMarkRead" class="btn-mark-read" aria-label="Mark all as read">อ่านทั้งหมด</button>
-                            </div>
-                            
-                            <div id="sysListNotif" class="panel-body-scroll" role="list">
-                                <div class="panel-empty-state">
-                                    <i class="fas fa-circle-notch fa-spin"></i>
-                                    <span>กำลังเชื่อมต่อเซิร์ฟเวอร์...</span>
-                                </div>
-                            </div>
-
-                            <div class="panel-footer">
-                                <a href="#" class="btn-view-all">ดูประวัติการแจ้งเตือนทั้งหมด <i class="fas fa-arrow-right ms-1"></i></a>
-                            </div>
-                            
-                        </div>
-                    </div>
-
-                    <a href="<?= $base_path ?>pages/chat.php" class="nav-action-btn" aria-label="Open Messages" title="ข้อความแชท">
-                        <i class="fas fa-comment-dots"></i>
-                        <?php if($unread_msg_count > 0): ?>
-                            <span class="status-badge"><?= $unread_msg_count > 99 ? '99+' : $unread_msg_count ?></span>
-                        <?php endif; ?>
-                    </a>
-
-                    <a href="<?= $base_path ?>pages/profile.php" class="nav-profile-pill" aria-label="Go to your Profile" title="บัญชีของฉัน">
-                        <div class="nav-profile-meta">
-                            <span class="nav-profile-name"><?= htmlspecialchars($_SESSION['fullname']) ?></span>
-                            <?php
-                                $role_display = 'ผู้ใช้ทั่วไป';
-                                if($_SESSION['role'] == 'admin') $role_display = 'ผู้ดูแลระบบ';
-                                if($_SESSION['role'] == 'teacher') $role_display = 'อาจารย์';
-                                if($_SESSION['role'] == 'seller') $role_display = 'ร้านค้า';
-                            ?>
-                            <span class="nav-profile-role"><?= $role_display ?></span>
-                        </div>
-                        <img src="<?= $user_avatar ?>" alt="User Avatar" class="nav-profile-avatar" loading="lazy">
-                    </a>
-
-                <?php else: ?>
-                    
-                    <?php if (!in_array($current_page, $hide_auth_list)): ?>
-                        <div class="guest-auth-group">
-                            <a href="<?= $base_path ?>auth/login.php" class="btn-ghost-primary">เข้าสู่ระบบ</a>
-                            <a href="<?= $base_path ?>auth/register.php" class="btn-solid-primary">สมัครสมาชิก</a>
-                        </div>
-                    <?php endif; ?>
-
-                <?php endif; ?>
-
-            </div>
+            <a href="<?= $base_path ?>pages/index.php" class="brand-link-wrapper" aria-label="BNCC Market Home">
+                <div class="brand-logo-icon">
+                    <i class="fas fa-shopping-bag"></i>
+                </div>
+                <h1 class="brand-typography">BNCC<span class="brand-highlight">Market</span></h1>
+            </a>
         </div>
-    </header>
 
-    <div id="sysSidebarOverlay" class="drawer-overlay" aria-hidden="true" tabindex="-1"></div>
-
-    <aside id="sysSidebarDrawer" class="master-drawer-panel" aria-hidden="true" aria-label="Main Sidebar Navigation" tabindex="-1">
-        
-        <div class="drawer-hero-section">
+        <div class="header-right-zone">
             
-            <button id="sysBtnCloseSidebar" class="btn-drawer-close" aria-label="Close Navigation Menu">
-                <i class="fas fa-times"></i>
+            <button id="themeToggleMasterBtn" class="header-icon-btn theme-toggle-wrapper" aria-label="Toggle Dark Mode">
+                <i class="fas fa-sun theme-icon-sun"></i>
+                <i class="fas fa-moon theme-icon-moon"></i>
             </button>
 
             <?php if (isLoggedIn()): ?>
-                <div class="drawer-user-identity">
-                    <img src="<?= $user_avatar ?>" alt="Large Profile Avatar" class="drawer-avatar-hero" loading="lazy">
-                    <div class="drawer-identity-text">
-                        <h2 class="drawer-name"><?= htmlspecialchars($_SESSION['fullname']) ?></h2>
+                
+                <div style="position: relative;">
+                    <button id="notifToggleMasterBtn" class="header-icon-btn" aria-label="Open Notifications" aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-bell"></i>
+                        <span id="notifBadgeDynamic" class="notification-badge" style="display: none;">0</span>
+                    </button>
+
+                    <div id="notifDropdownPanel" class="notification-dropdown-container" role="menu">
+                        <div class="notif-dropdown-header">
+                            <h3 class="notif-dropdown-title"><i class="fas fa-bell"></i> การแจ้งเตือน</h3>
+                            <button id="markAllReadAction" class="notif-action-markread">ทำเครื่องหมายอ่านแล้ว</button>
+                        </div>
                         
-                        <?php 
-                            // Role Badge Contextual Setup
-                            $drawer_role_class = 'role-pill-guest';
-                            $drawer_role_text = 'ผู้ใช้ระบบ';
-                            $drawer_role_icon = 'fa-user';
-                            
-                            switch($_SESSION['role']) {
-                                case 'admin':
-                                    $drawer_role_class = 'role-pill-admin';
-                                    $drawer_role_text = 'ผู้ดูแลระบบ (Admin)';
-                                    $drawer_role_icon = 'fa-crown';
-                                    break;
-                                case 'teacher':
-                                    $drawer_role_class = 'role-pill-teacher';
-                                    $drawer_role_text = 'อาจารย์ (Master)';
-                                    $drawer_role_icon = 'fa-chalkboard-teacher';
-                                    break;
-                                case 'seller':
-                                    $drawer_role_class = 'role-pill-seller';
-                                    $drawer_role_text = 'ผู้ขาย (Seller)';
-                                    $drawer_role_icon = 'fa-store';
-                                    break;
-                                case 'buyer':
-                                    $drawer_role_class = 'role-pill-buyer';
-                                    $drawer_role_text = 'สมาชิกผู้ซื้อ';
-                                    $drawer_role_icon = 'fa-shopping-bag';
-                                    break;
-                            }
-                        ?>
-                        <span class="drawer-role-badge <?= $drawer_role_class ?>">
-                            <i class="fas <?= $drawer_role_icon ?>"></i> <?= $drawer_role_text ?>
-                        </span>
+                        <div id="notifListViewport" class="notif-scroll-viewport">
+                            <div class="notif-empty-state">
+                                <i class="fas fa-circle-notch fa-spin"></i>
+                                <span>กำลังโหลดข้อมูล...</span>
+                            </div>
+                        </div>
+
+                        <div class="notif-dropdown-footer">
+                            <a href="<?= $base_path ?>pages/notifications.php" class="notif-view-all-link">ดูการแจ้งเตือนทั้งหมด</a>
+                        </div>
                     </div>
                 </div>
+
+                <a href="<?= $base_path ?>pages/chat.php" class="header-icon-btn" aria-label="Open Messages">
+                    <i class="fas fa-comment-dots"></i>
+                    <?php if($unread_msg_count > 0): ?>
+                        <span class="notification-badge"><?= $unread_msg_count > 99 ? '99+' : $unread_msg_count ?></span>
+                    <?php endif; ?>
+                </a>
+
+                <a href="<?= $base_path ?>pages/profile.php" class="header-user-card" aria-label="View Profile">
+                    <div class="header-user-details">
+                        <span class="header-user-name"><?= htmlspecialchars($_SESSION['fullname']) ?></span>
+                        <span class="header-user-role"><?= htmlspecialchars($_SESSION['role']) ?></span>
+                    </div>
+                    <img src="<?= $user_avatar ?>" alt="Avatar" class="header-user-avatar">
+                </a>
+
             <?php else: ?>
-                <div class="drawer-user-identity">
-                    <div class="drawer-avatar-hero" style="display:flex; justify-content:center; align-items:center; border-color:var(--theme-border-focus); background:var(--theme-surface-alt);">
-                        <i class="fas fa-user-secret fa-3x" style="color:var(--theme-text-tertiary);"></i>
+                
+                <?php if (!in_array($current_page, $hide_auth_list)): ?>
+                    <div class="auth-action-group">
+                        <a href="<?= $base_path ?>auth/login.php" class="btn-auth-login">เข้าสู่ระบบ</a>
+                        <a href="<?= $base_path ?>auth/register.php" class="btn-auth-register">สมัครสมาชิก</a>
                     </div>
-                    <div class="drawer-identity-text">
-                        <h2 class="drawer-name">บุคคลทั่วไป</h2>
-                        <span class="drawer-role-badge role-pill-guest">
-                            <i class="fas fa-eye"></i> โหมดผู้เยี่ยมชม
-                        </span>
-                    </div>
-                </div>
+                <?php endif; ?>
+
             <?php endif; ?>
+
         </div>
+    </div>
+</nav>
 
-        <nav class="drawer-nav-viewport" aria-label="Sidebar Menu Categories">
-            
-            <div class="drawer-section-label"><i class="fas fa-compass"></i> สำรวจตลาดกลาง</div>
-            
-            <a href="<?= $base_path ?>pages/index.php" class="drawer-menu-link link-info <?= $current_page == 'index.php' ? 'is-current-page' : '' ?>">
-                <i class="fas fa-store drawer-link-icon"></i>
-                <span>หน้าหลัก Marketplace</span>
-            </a>
-            
-            <a href="<?= $base_path ?>pages/wtb_board.php" class="drawer-menu-link link-warning <?= $current_page == 'wtb_board.php' ? 'is-current-page' : '' ?>">
-                <i class="fas fa-bullhorn drawer-link-icon"></i>
-                <span>บอร์ดตามหาของ (WTB)</span>
-            </a>
+<div id="globalSidebarOverlay" class="global-overlay" aria-hidden="true"></div>
 
-            <?php if (isLoggedIn()): ?>
-                
-                <div class="drawer-section-label"><i class="fas fa-user-circle"></i> พื้นที่ส่วนตัว</div>
-                
-                <a href="<?= $base_path ?>pages/profile.php" class="drawer-menu-link <?= $current_page == 'profile.php' ? 'is-current-page' : '' ?>">
-                    <i class="fas fa-id-card drawer-link-icon"></i>
-                    <span>จัดการบัญชีผู้ใช้</span>
-                </a>
-                
-                <a href="<?= $base_path ?>pages/wishlist.php" class="drawer-menu-link link-danger <?= $current_page == 'wishlist.php' ? 'is-current-page' : '' ?>">
-                    <i class="fas fa-heart drawer-link-icon"></i>
-                    <span>รายการที่ถูกใจ (Wishlist)</span>
-                </a>
-                
-                <a href="<?= $base_path ?>pages/my_orders.php" class="drawer-menu-link link-success <?= $current_page == 'my_orders.php' ? 'is-current-page' : '' ?>">
-                    <i class="fas fa-shopping-basket drawer-link-icon"></i>
-                    <span>ประวัติการสั่งซื้อ</span>
-                </a>
-
-                <?php if ($_SESSION['role'] === 'seller'): ?>
-                    <div class="drawer-section-label"><i class="fas fa-briefcase"></i> เครื่องมือผู้ขาย</div>
-                    <a href="<?= $base_path ?>seller/dashboard.php" class="drawer-menu-link link-success">
-                        <i class="fas fa-chart-line drawer-link-icon"></i>
-                        <span>แดชบอร์ดร้านค้า</span>
-                    </a>
-                <?php else: ?>
-                    <div class="drawer-section-label"><i class="fas fa-rocket"></i> เริ่มต้นธุรกิจ</div>
-                    <a href="<?= $base_path ?>auth/register_seller.php" class="drawer-menu-link">
-                        <i class="fas fa-store-alt drawer-link-icon"></i>
-                        <span>ลงทะเบียนเปิดร้านค้า</span>
-                    </a>
-                <?php endif; ?>
-
-                <?php if (in_array($_SESSION['role'], ['admin', 'teacher'])): ?>
-                    <div class="drawer-section-label"><i class="fas fa-shield-alt"></i> การจัดการระบบ</div>
-                    <a href="<?= $base_path ?>admin/admin_dashboard.php" class="drawer-menu-link link-admin-zone <?= $current_page == 'admin_dashboard.php' ? 'is-current-page' : '' ?>">
-                        <i class="fas fa-server drawer-link-icon"></i>
-                        <span>แผงควบคุมระบบ (Admin)</span>
-                    </a>
-                    <a href="<?= $base_path ?>admin/approve_product.php" class="drawer-menu-link link-admin-zone <?= $current_page == 'approve_product.php' ? 'is-current-page' : '' ?>">
-                        <i class="fas fa-box-check drawer-link-icon"></i>
-                        <span>อนุมัติสินค้าใหม่</span>
-                    </a>
-                    
-                    <a href="<?= $base_path ?>admin/approve_shop.php" class="drawer-menu-link link-admin-zone <?= $current_page == 'approve_shop.php' ? 'is-current-page' : '' ?>">
-                        <i class="fas fa-store-slash drawer-link-icon"></i>
-                        <span>อนุมัติคำร้องเปิดร้าน</span>
-                        <?php 
-                            // Query to get pending shops count safely
-                            try {
-                                $shop_query = "SELECT COUNT(id) FROM shops WHERE status = 'pending'";
-                                $pending_shop_count = $db->query($shop_query)->fetchColumn();
-                                if ($pending_shop_count > 0) {
-                                    echo '<span class="inline-status-badge">' . $pending_shop_count . '</span>';
-                                }
-                            } catch (Exception $e) {}
-                        ?>
-                    </a>
-                <?php endif; ?>
-
-            <?php else: ?>
-                
-                <div class="drawer-section-label"><i class="fas fa-key"></i> เข้าถึงระบบ</div>
-                
-                <a href="<?= $base_path ?>auth/login.php" class="drawer-menu-link">
-                    <i class="fas fa-sign-in-alt drawer-link-icon"></i>
-                    <span>ลงชื่อเข้าใช้งาน</span>
-                </a>
-                
-                <a href="<?= $base_path ?>auth/register.php" class="drawer-menu-link link-info">
-                    <i class="fas fa-user-plus drawer-link-icon"></i>
-                    <span>สมัครสมาชิกใหม่</span>
-                </a>
-                
-            <?php endif; ?>
-            
-        </nav>
+<aside id="sidebarMasterDrawer" class="sidebar-master-drawer" aria-hidden="true" tabindex="-1">
+    
+    <div class="sidebar-top-section">
+        <button id="sidebarCloseMasterBtn" class="sidebar-close-action" aria-label="Close Navigation Menu">
+            <i class="fas fa-times"></i>
+        </button>
 
         <?php if (isLoggedIn()): ?>
-        <div class="drawer-footer-section">
-            <a href="<?= $base_path ?>auth/logout.php" class="btn-action-logout">
-                <i class="fas fa-power-off"></i>
-                <span>ออกจากระบบอย่างปลอดภัย</span>
-            </a>
-        </div>
-        <?php endif; ?>
-
-    </aside>
-
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        'use strict';
-
-        /**
-         * GLOBAL CONFIGURATION
-         */
-        const CONFIG = {
-            scrollThreshold: 30,
-            ajaxBasePath: '<?= $base_path ?>ajax/',
-            pollInterval: 45000, // Reduced server load (45s)
-            themeStorageKey: 'bncc_enterprise_theme'
-        };
-
-        /**
-         * MODULE 1: PRELOADER MANAGER
-         * Controls the initial loading screen fade out
-         */
-        const Preloader = (function() {
-            const el = document.getElementById('sysPreloader');
-            const body = document.getElementById('bnccBodyElement');
-            
-            function hide() {
-                if(!el) return;
-                // Add minor delay for aesthetic purposes
-                setTimeout(() => {
-                    el.classList.add('is-hidden');
-                    body.classList.remove('noscroll');
-                    // Remove from DOM to save memory after transition completes
-                    setTimeout(() => { if(el.parentNode) el.parentNode.removeChild(el); }, 1000);
-                }, 400);
-            }
-
-            return {
-                init: function() {
-                    if(!el) return;
-                    body.classList.add('noscroll');
-                    // Primary trigger
-                    window.addEventListener('load', hide);
-                    // Failsafe trigger (3 seconds max)
-                    setTimeout(hide, 3000);
-                }
-            };
-        })();
-
-        /**
-         * MODULE 2: SCROLL ENGINE
-         * Handles Navbar Glassmorphism State and Progress Bar
-         */
-        const ScrollEngine = (function() {
-            const nav = document.getElementById('sysNavbar');
-            const prog = document.getElementById('sysProgressBar');
-            let isTicking = false;
-
-            function onScroll() {
-                const y = window.scrollY || window.pageYOffset;
-                
-                // Navbar State
-                if(nav) {
-                    if (y > CONFIG.scrollThreshold) {
-                        nav.classList.add('is-scrolled');
-                    } else {
-                        nav.classList.remove('is-scrolled');
-                    }
-                }
-
-                // Progress Bar
-                if(prog) {
-                    const docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-                    if(docHeight > 0) {
-                        const scrolled = (y / docHeight) * 100;
-                        prog.style.width = scrolled + '%';
-                    }
-                }
-                
-                isTicking = false;
-            }
-
-            return {
-                init: function() {
-                    window.addEventListener('scroll', () => {
-                        if (!isTicking) {
-                            window.requestAnimationFrame(onScroll);
-                            isTicking = true;
-                        }
-                    }, { passive: true });
-                    // Initial run
-                    onScroll();
-                }
-            };
-        })();
-
-        /**
-         * MODULE 3: THEME CONTROLLER
-         * Manages Dark/Light mode switching and persistence
-         */
-        const ThemeManager = (function() {
-            const btn = document.getElementById('sysBtnTheme');
-            const html = document.documentElement;
-            const metaTheme = document.getElementById('meta-theme-color');
-
-            function updateMetaColor(isDark) {
-                if(!metaTheme) return;
-                metaTheme.setAttribute('content', isDark ? '#111827' : '#ffffff');
-            }
-
-            function toggleTheme() {
-                const isDark = html.classList.toggle('dark-theme');
-                const newTheme = isDark ? 'dark' : 'light';
-                
-                html.setAttribute('data-theme', newTheme);
-                // Save string directly to avoid JSON parse errors
-                localStorage.setItem(CONFIG.themeStorageKey, newTheme);
-                updateMetaColor(isDark);
-                
-                // Visual feedback on button
-                if(btn) {
-                    btn.style.transform = 'scale(0.9)';
-                    setTimeout(() => btn.style.transform = 'scale(1)', 150);
-                }
-            }
-
-            return {
-                init: function() {
-                    if(!btn) return;
-                    btn.addEventListener('click', toggleTheme);
+            <div class="sidebar-user-identity">
+                <img src="<?= $user_avatar ?>" alt="Large Avatar" class="sidebar-huge-avatar">
+                <div class="sidebar-identity-text">
+                    <h2 class="sidebar-identity-name"><?= htmlspecialchars($_SESSION['fullname']) ?></h2>
                     
-                    // Sync Meta Color on init
-                    updateMetaColor(html.classList.contains('dark-theme'));
-                }
-            };
-        })();
-
-        /**
-         * MODULE 4: DRAWER (SIDEBAR) CONTROLLER
-         * Off-canvas menu mechanics and accessibility
-         */
-        const DrawerController = (function() {
-            const btnToggle = document.getElementById('sysBtnSidebar');
-            const btnClose = document.getElementById('sysBtnCloseSidebar');
-            const drawer = document.getElementById('sysSidebarDrawer');
-            const overlay = document.getElementById('sysSidebarOverlay');
-            const body = document.getElementById('bnccBodyElement');
-            let isOpen = false;
-
-            function open() {
-                isOpen = true;
-                body.classList.add('sidebar-is-active');
-                if(drawer) {
-                    drawer.setAttribute('aria-hidden', 'false');
-                    // Focus management for accessibility
-                    setTimeout(() => drawer.focus(), 100);
-                }
-                if(overlay) overlay.setAttribute('aria-hidden', 'false');
-                if(btnToggle) btnToggle.setAttribute('aria-expanded', 'true');
-            }
-
-            function close() {
-                isOpen = false;
-                body.classList.remove('sidebar-is-active');
-                if(drawer) drawer.setAttribute('aria-hidden', 'true');
-                if(overlay) overlay.setAttribute('aria-hidden', 'true');
-                if(btnToggle) {
-                    btnToggle.setAttribute('aria-expanded', 'false');
-                    btnToggle.focus(); // Return focus
-                }
-            }
-
-            function toggle(e) {
-                if(e) e.stopPropagation();
-                isOpen ? close() : open();
-            }
-
-            return {
-                init: function() {
-                    if (!btnToggle || !drawer || !overlay) return;
-
-                    btnToggle.addEventListener('click', toggle);
-                    if(btnClose) btnClose.addEventListener('click', close);
-                    overlay.addEventListener('click', close);
-
-                    // Global Keyboard Hook
-                    document.addEventListener('keydown', (e) => {
-                        if (e.key === 'Escape' && isOpen) close();
-                    });
-                },
-                getState: () => isOpen
-            };
-        })();
-
-        /**
-         * MODULE 5: AJAX NOTIFICATION ENGINE
-         * Real-time polling and UI updating for notifications
-         */
-        <?php if(isLoggedIn()): ?>
-        const NotificationEngine = (function() {
-            const btnNotif = document.getElementById('sysBtnNotif');
-            const panel = document.getElementById('sysPanelNotif');
-            const list = document.getElementById('sysListNotif');
-            const badge = document.getElementById('sysBadgeNotif');
-            const btnMarkRead = document.getElementById('sysBtnMarkRead');
-            
-            let isOpen = false;
-            let pollTimer = null;
-            let currentUnread = 0;
-
-            function togglePanel(e) {
-                if(e) e.stopPropagation();
-                isOpen = !isOpen;
-                
-                if (isOpen) {
-                    panel.classList.add('is-open');
-                    btnNotif.classList.add('is-active-state');
-                    btnNotif.setAttribute('aria-expanded', 'true');
-                    fetchData(); // Always refresh on open
-                } else {
-                    closePanel();
-                }
-            }
-
-            function closePanel() {
-                isOpen = false;
-                panel.classList.remove('is-open');
-                btnNotif.classList.remove('is-active-state');
-                btnNotif.setAttribute('aria-expanded', 'false');
-            }
-
-            async function fetchData() {
-                try {
-                    const response = await fetch(CONFIG.ajaxBasePath + 'notifications_api.php?action=fetch', {
-                        method: 'GET',
-                        headers: { 
-                            'Cache-Control': 'no-cache', 
-                            'X-Requested-With': 'XMLHttpRequest' 
-                        }
-                    });
-                    
-                    if (!response.ok) throw new Error('HTTP Error: ' + response.status);
-                    
-                    const data = await response.json();
-                    if(data.status === 'success') {
-                        processData(data);
-                    }
-                } catch (error) {
-                    console.error("Notification API Failed:", error);
-                    renderError();
-                }
-            }
-
-            function processData(data) {
-                // Update Badge UI & Animate if new notifications arrived
-                if (data.unread_count > 0) {
-                    badge.style.display = 'flex';
-                    badge.textContent = data.unread_count > 99 ? '99+' : data.unread_count;
-                    
-                    // Trigger bell shake animation if count increased
-                    if (data.unread_count > currentUnread) {
-                        const icon = btnNotif.querySelector('i');
-                        icon.classList.remove('bell-shake-anim');
-                        void icon.offsetWidth; // Trigger reflow
-                        icon.classList.add('bell-shake-anim');
+                    <?php 
+                        $role_tag_class = 'role-tag-guest';
+                        $role_tag_text = 'ผู้ใช้ระบบ';
+                        $role_tag_icon = 'fa-user';
                         
-                        badge.classList.remove('badge-pop-anim');
-                        void badge.offsetWidth;
-                        badge.classList.add('badge-pop-anim');
-                    }
-                } else {
-                    badge.style.display = 'none';
-                }
-                
-                currentUnread = data.unread_count;
+                        switch($_SESSION['role']) {
+                            case 'admin':
+                                $role_tag_class = 'role-tag-admin';
+                                $role_tag_text = 'ผู้ดูแลระบบสูงสุด';
+                                $role_tag_icon = 'fa-crown';
+                                break;
+                            case 'teacher':
+                                $role_tag_class = 'role-tag-teacher';
+                                $role_tag_text = 'อาจารย์ / ผู้ดูแล';
+                                $role_tag_icon = 'fa-chalkboard-teacher';
+                                break;
+                            case 'seller':
+                                $role_tag_class = 'role-tag-seller';
+                                $role_tag_text = 'ร้านค้าที่ได้รับการอนุมัติ';
+                                $role_tag_icon = 'fa-store';
+                                break;
+                            case 'buyer':
+                                $role_tag_class = 'role-tag-buyer';
+                                $role_tag_text = 'สมาชิกทั่วไป';
+                                $role_tag_icon = 'fa-shopping-bag';
+                                break;
+                        }
+                    ?>
+                    <span class="sidebar-identity-role-tag <?= $role_tag_class ?>">
+                        <i class="fas <?= $role_tag_icon ?>"></i> <?= $role_tag_text ?>
+                    </span>
+                </div>
+            </div>
+        <?php else: ?>
+            <div class="sidebar-user-identity">
+                <div class="sidebar-huge-avatar" style="display:flex; justify-content:center; align-items:center; border:none; background:var(--theme-border);">
+                    <i class="fas fa-user-circle fa-3x" style="color:var(--theme-text-tertiary);"></i>
+                </div>
+                <div class="sidebar-identity-text">
+                    <h2 class="sidebar-identity-name">ผู้เยี่ยมชมระบบ</h2>
+                    <span class="sidebar-identity-role-tag role-tag-guest">
+                        <i class="fas fa-info-circle"></i> โปรดเข้าสู่ระบบ
+                    </span>
+                </div>
+            </div>
+        <?php endif; ?>
+    </div>
 
-                // Update List UI (Only if panel is open or empty to save DOM paint)
-                if (!isOpen && list.children.length > 0 && !list.innerHTML.includes('fa-spin')) return;
+    <nav class="sidebar-scroll-area" aria-label="Main Navigation">
+        
+        <div class="nav-group-label">ระบบตลาดกลาง (Marketplace)</div>
+        
+        <a href="<?= $base_path ?>pages/index.php" class="nav-menu-item <?= $current_page == 'index.php' ? 'is-active' : '' ?>">
+            <i class="fas fa-home nav-menu-icon"></i>
+            <span>หน้าหลัก</span>
+        </a>
+        
+        <a href="<?= $base_path ?>pages/wtb_board.php" class="nav-menu-item nav-item-warning <?= $current_page == 'wtb_board.php' ? 'is-active' : '' ?>">
+            <i class="fas fa-bullhorn nav-menu-icon"></i>
+            <span>กระดานตามหาของ (WTB)</span>
+        </a>
 
-                if (data.notifications && data.notifications.length > 0) {
-                    renderList(data.notifications);
-                } else {
-                    renderEmpty();
+        <?php if (isLoggedIn()): ?>
+            
+            <div class="nav-group-label">พื้นที่ส่วนตัว (Personal Space)</div>
+            
+            <a href="<?= $base_path ?>pages/profile.php" class="nav-menu-item <?= $current_page == 'profile.php' ? 'is-active' : '' ?>">
+                <i class="fas fa-id-badge nav-menu-icon"></i>
+                <span>จัดการข้อมูลบัญชี</span>
+            </a>
+            
+            <a href="<?= $base_path ?>pages/wishlist.php" class="nav-menu-item nav-item-danger <?= $current_page == 'wishlist.php' ? 'is-active' : '' ?>">
+                <i class="fas fa-heart nav-menu-icon"></i>
+                <span>รายการสินค้าที่ถูกใจ</span>
+            </a>
+            
+            <a href="<?= $base_path ?>pages/my_orders.php" class="nav-menu-item nav-item-success <?= $current_page == 'my_orders.php' ? 'is-active' : '' ?>">
+                <i class="fas fa-shopping-basket nav-menu-icon"></i>
+                <span>ประวัติคำสั่งซื้อ</span>
+            </a>
+
+            <?php if ($_SESSION['role'] === 'seller'): ?>
+                <div class="nav-group-label">เครื่องมือผู้ขาย (Seller Center)</div>
+                <a href="<?= $base_path ?>seller/dashboard.php" class="nav-menu-item nav-item-success">
+                    <i class="fas fa-store nav-menu-icon"></i>
+                    <span>แผงควบคุมร้านค้า</span>
+                </a>
+            <?php else: ?>
+                <a href="<?= $base_path ?>auth/register_seller.php" class="nav-menu-item">
+                    <i class="fas fa-store-alt nav-menu-icon"></i>
+                    <span>ลงทะเบียนเปิดร้านค้า</span>
+                </a>
+            <?php endif; ?>
+
+            <?php if (in_array($_SESSION['role'], ['admin', 'teacher'])): ?>
+                <div class="nav-group-label">ส่วนการจัดการ (Administration)</div>
+                <a href="<?= $base_path ?>admin/admin_dashboard.php" class="nav-menu-item nav-item-admin <?= $current_page == 'admin_dashboard.php' ? 'is-active' : '' ?>">
+                    <i class="fas fa-shield-halved nav-menu-icon"></i>
+                    <span>ศูนย์ควบคุมระบบ (Admin Panel)</span>
+                </a>
+                <a href="<?= $base_path ?>admin/approve_product.php" class="nav-menu-item nav-item-admin <?= $current_page == 'approve_product.php' ? 'is-active' : '' ?>">
+                    <i class="fas fa-clipboard-check nav-menu-icon"></i>
+                    <span>อนุมัติรายการสินค้า</span>
+                </a>
+                <a href="<?= $base_path ?>admin/approve_shop.php" class="nav-menu-item nav-item-admin <?= $current_page == 'approve_shop.php' ? 'is-active' : '' ?>">
+                    <i class="fas fa-store-slash nav-menu-icon"></i>
+                    <span>อนุมัติคำร้องเปิดร้าน</span>
+                </a>
+            <?php endif; ?>
+
+        <?php else: ?>
+            
+            <div class="nav-group-label">การเข้าถึงระบบ (Authentication)</div>
+            
+            <a href="<?= $base_path ?>auth/login.php" class="nav-menu-item">
+                <i class="fas fa-sign-in-alt nav-menu-icon"></i>
+                <span>เข้าสู่ระบบ (Login)</span>
+            </a>
+            
+            <a href="<?= $base_path ?>auth/register.php" class="nav-menu-item">
+                <i class="fas fa-user-plus nav-menu-icon"></i>
+                <span>สมัครสมาชิกใหม่ (Register)</span>
+            </a>
+            
+        <?php endif; ?>
+        
+    </nav>
+
+    <?php if (isLoggedIn()): ?>
+    <div class="sidebar-bottom-section">
+        <a href="<?= $base_path ?>auth/logout.php" class="btn-logout-massive">
+            <i class="fas fa-power-off"></i>
+            <span>ออกจากระบบอย่างปลอดภัย</span>
+        </a>
+    </div>
+    <?php endif; ?>
+
+</aside>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    'use strict';
+
+    /**
+     * MODULE 1: PRELOADER MANAGEMENT
+     */
+    const PreloaderController = {
+        element: document.getElementById('globalPreloader'),
+        init() {
+            if (!this.element) return;
+            document.body.classList.add('noscroll');
+            
+            window.addEventListener('load', () => {
+                setTimeout(() => {
+                    this.element.classList.add('is-hidden');
+                    document.body.classList.remove('noscroll');
+                }, 300); 
+            });
+            
+            setTimeout(() => {
+                if(!this.element.classList.contains('is-hidden')){
+                    this.element.classList.add('is-hidden');
+                    document.body.classList.remove('noscroll');
                 }
+            }, 3000);
+        }
+    };
+    PreloaderController.init();
+
+    /**
+     * MODULE 2: SCROLL ENGINE & NAVBAR EFFECTS
+     */
+    const ScrollController = {
+        navbar: document.getElementById('masterNavbarElement'),
+        progressBar: document.getElementById('scrollProgressBar'),
+        lastScrollY: 0,
+        ticking: false,
+
+        update() {
+            const currentScrollY = window.scrollY;
+            
+            if (currentScrollY > 20) {
+                this.navbar.classList.add('header-is-scrolled');
+            } else {
+                this.navbar.classList.remove('header-is-scrolled');
             }
 
-            function renderList(notifs) {
-                let html = '';
-                const basePath = '<?= $base_path ?>';
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            if(height > 0) {
+                const scrolled = (winScroll / height) * 100;
+                this.progressBar.style.width = scrolled + "%";
+            }
+
+            this.lastScrollY = currentScrollY;
+            this.ticking = false;
+        },
+
+        init() {
+            if(!this.navbar) return;
+            window.addEventListener('scroll', () => {
+                if (!this.ticking) {
+                    window.requestAnimationFrame(() => this.update());
+                    this.ticking = true;
+                }
+            }, { passive: true });
+        }
+    };
+    ScrollController.init();
+
+    /**
+     * MODULE 3: THEME MANAGER (🎯 FIXED)
+     */
+    const ThemeController = {
+        btn: document.getElementById('themeToggleMasterBtn'),
+        html: document.documentElement,
+        metaTheme: document.getElementById('theme-color-meta'),
+
+        init() {
+            if(!this.btn) return;
+            this.btn.addEventListener('click', () => this.toggle());
+        },
+
+        toggle() {
+            const isDark = this.html.classList.toggle('dark-theme');
+            if(isDark) {
+                this.html.setAttribute('data-theme', 'dark');
+                // บันทึกค่าแบบดิบๆ ลง localStorage ป้องกันการแปลง JSON ผิดพลาด
+                localStorage.setItem('bncc_enterprise_theme', 'dark');
+                if(this.metaTheme) this.metaTheme.setAttribute('content', '#111827');
+            } else {
+                this.html.setAttribute('data-theme', 'light');
+                localStorage.setItem('bncc_enterprise_theme', 'light');
+                if(this.metaTheme) this.metaTheme.setAttribute('content', '#ffffff');
+            }
+        }
+    };
+    ThemeController.init();
+
+    /**
+     * MODULE 4: SIDEBAR DRAWER MANAGER
+     */
+    const SidebarController = {
+        toggleBtn: document.getElementById('sidebarToggleMasterBtn'),
+        closeBtn: document.getElementById('sidebarCloseMasterBtn'),
+        drawer: document.getElementById('sidebarMasterDrawer'),
+        overlay: document.getElementById('globalSidebarOverlay'),
+        body: document.body,
+        isOpen: false,
+
+        init() {
+            if (!this.toggleBtn || !this.drawer || !this.overlay) return;
+
+            this.toggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggle();
+            });
+
+            this.closeBtn.addEventListener('click', () => this.close());
+            this.overlay.addEventListener('click', () => this.close());
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && this.isOpen) this.close();
+            });
+        },
+
+        toggle() {
+            this.isOpen ? this.close() : this.open();
+        },
+
+        open() {
+            this.isOpen = true;
+            this.body.classList.add('sidebar-open');
+            this.drawer.setAttribute('aria-hidden', 'false');
+            this.drawer.focus();
+        },
+
+        close() {
+            this.isOpen = false;
+            this.body.classList.remove('sidebar-open');
+            this.drawer.setAttribute('aria-hidden', 'true');
+        }
+    };
+    SidebarController.init();
+
+    /**
+     * MODULE 5: AJAX NOTIFICATION ENGINE
+     */
+    <?php if(isLoggedIn()): ?>
+    const NotificationController = {
+        toggleBtn: document.getElementById('notifToggleMasterBtn'),
+        panel: document.getElementById('notifDropdownPanel'),
+        listView: document.getElementById('notifListViewport'),
+        badge: document.getElementById('notifBadgeDynamic'),
+        markReadBtn: document.getElementById('markAllReadAction'),
+        isOpen: false,
+        pollInterval: 30000, 
+        pollTimer: null,
+        
+        // 🎯 404 FIX: Using absolute dynamic base path for AJAX calls
+        apiEndpoint: '<?= $base_path ?>ajax/notifications_api.php',
+
+        init() {
+            if(!this.toggleBtn || !this.panel) return;
+
+            this.toggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggle();
+            });
+
+            if(this.markReadBtn) {
+                this.markReadBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.executeMarkAllRead();
+                });
+            }
+
+            document.addEventListener('click', (e) => {
+                if (this.isOpen && !this.panel.contains(e.target) && !this.toggleBtn.contains(e.target)) {
+                    this.close();
+                }
+            });
+
+            this.fetchData();
+            this.startPolling();
+        },
+
+        toggle() {
+            this.isOpen ? this.close() : this.open();
+        },
+
+        open() {
+            this.isOpen = true;
+            this.panel.classList.add('is-active');
+            this.toggleBtn.classList.add('is-active');
+            this.toggleBtn.setAttribute('aria-expanded', 'true');
+            this.fetchData(); 
+        },
+
+        close() {
+            this.isOpen = false;
+            this.panel.classList.remove('is-active');
+            this.toggleBtn.classList.remove('is-active');
+            this.toggleBtn.setAttribute('aria-expanded', 'false');
+        },
+
+        startPolling() {
+            this.pollTimer = setInterval(() => this.fetchData(), this.pollInterval);
+        },
+
+        async fetchData() {
+            try {
+                const response = await fetch(this.apiEndpoint + '?action=fetch', {
+                    method: 'GET',
+                    headers: { 'Cache-Control': 'no-cache', 'X-Requested-With': 'XMLHttpRequest' }
+                });
                 
-                notifs.forEach(n => {
-                    const statusClass = n.is_read == 0 ? 'is-unread' : '';
+                if (!response.ok) throw new Error('Network response failure');
+                
+                const data = await response.json();
+                this.renderUI(data);
+            } catch (error) {
+                console.error("Notification Engine Error:", error);
+                if(this.isOpen && this.listView.innerHTML.includes('fa-circle-notch')) {
+                    this.listView.innerHTML = `<div class="notif-empty-state"><i class="fas fa-exclamation-triangle text-danger"></i><span>ไม่สามารถโหลดการแจ้งเตือนได้</span></div>`;
+                }
+            }
+        },
+
+        renderUI(data) {
+            if (data.status !== 'success') return;
+
+            if (data.unread_count > 0) {
+                this.badge.style.display = 'flex';
+                this.badge.textContent = data.unread_count > 99 ? '99+' : data.unread_count;
+                this.badge.classList.add('animate-pop');
+            } else {
+                this.badge.style.display = 'none';
+                this.badge.classList.remove('animate-pop');
+            }
+
+            if (!this.isOpen && this.listView.innerHTML !== '') return; 
+
+            if (data.notifications && data.notifications.length > 0) {
+                const htmlBuilder = data.notifications.map(notif => {
+                    const stateClass = notif.is_read == 0 ? 'state-unread' : '';
+                    const iconDef = notif.icon || '<i class="fas fa-bell"></i>';
                     
-                    // Generate smart icon based on message content if no icon provided
-                    let smartIcon = n.icon || '<i class="fas fa-bell"></i>';
-                    if(!n.icon) {
-                        if(n.message.includes('อนุมัติ')) smartIcon = '<i class="fas fa-check-circle"></i>';
-                        else if(n.message.includes('ปฏิเสธ') || n.message.includes('ลบ')) smartIcon = '<i class="fas fa-times-circle text-danger"></i>';
-                        else if(n.message.includes('สั่งซื้อ')) smartIcon = '<i class="fas fa-shopping-bag"></i>';
-                        else if(n.message.includes('ร้านค้า')) smartIcon = '<i class="fas fa-store"></i>';
-                    }
-                    
-                    // 🎯 THE ULTIMATE 404 FIX: Ensure absolute paths for all notification links
-                    let finalLink = '#';
-                    if (n.link && n.link !== '') {
-                        // If it's already an absolute HTTP link, use it.
-                        if (n.link.startsWith('http://') || n.link.startsWith('https://')) {
-                            finalLink = n.link;
+                    // 🎯 THE ULTIMATE 404 NOTIFICATION LINK FIX
+                    // เปลี่ยน relative path จาก DB ให้เป็น Absolute Path ป้องกัน 404 แบบเด็ดขาด
+                    let safeLink = '#';
+                    if (notif.link && notif.link !== '') {
+                        if (notif.link.startsWith('http://') || notif.link.startsWith('https://')) {
+                            safeLink = notif.link; // ถ้าเป็นลิงก์เต็ม ปล่อยผ่าน
                         } else {
-                            // Clean up leading slashes to prevent double slashes
-                            let cleanLink = n.link.replace(/^\/+/, '');
-                            finalLink = basePath + cleanLink;
+                            // ถ้าเป็นลิงก์ relative (เช่น admin/approve_shop.php) ให้เอา $base_path มาต่อหน้าเสมอ
+                            let cleanLink = notif.link.replace(/^\/+/, '');
+                            safeLink = '<?= $base_path ?>' + cleanLink;
                         }
                     }
                     
-                    html += `
-                        <a href="${finalLink}" class="notif-list-item ${statusClass}">
-                            <div class="item-icon-wrapper">${smartIcon}</div>
-                            <div class="item-text-wrapper">
-                                <span class="item-message">${n.message}</span>
-                                <span class="item-time"><i class="far fa-clock"></i> ${n.time || 'เมื่อสักครู่'}</span>
+                    return `
+                        <a href="${safeLink}" class="notif-entity-card ${stateClass}">
+                            <div class="notif-visual-icon">${iconDef}</div>
+                            <div class="notif-text-content">
+                                <span class="notif-message-string">${notif.message}</span>
+                                <span class="notif-timestamp-string"><i class="far fa-clock"></i> ${notif.time || 'ล่าสุด'}</span>
                             </div>
                         </a>
                     `;
-                });
-                list.innerHTML = html;
-            }
-
-            function renderEmpty() {
-                list.innerHTML = `
-                    <div class="panel-empty-state">
+                }).join('');
+                this.listView.innerHTML = htmlBuilder;
+            } else {
+                this.listView.innerHTML = `
+                    <div class="notif-empty-state">
                         <i class="fas fa-inbox box-empty"></i>
-                        <span>ไม่มีการแจ้งเตือนใหม่ในขณะนี้</span>
+                        <span>ยังไม่มีการแจ้งเตือนใหม่ในขณะนี้</span>
                     </div>
                 `;
             }
+        },
 
-            function renderError() {
-                if(list.innerHTML.includes('fa-spin')) {
-                    list.innerHTML = `
-                        <div class="panel-empty-state" style="color: var(--bncc-danger-500);">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            <span>เกิดข้อผิดพลาดในการโหลดข้อมูล</span>
-                            <button onclick="window.location.reload()" style="margin-top:10px; padding:5px 15px; border-radius:20px; border:1px solid currentColor; background:transparent; color:inherit; cursor:pointer;">รีเฟรชหน้าเว็บ</button>
-                        </div>
-                    `;
-                }
+        async executeMarkAllRead() {
+            try {
+                this.badge.style.display = 'none';
+                const items = this.listView.querySelectorAll('.state-unread');
+                items.forEach(item => item.classList.remove('state-unread'));
+
+                const formParams = new URLSearchParams();
+                formParams.append('action', 'mark_read');
+
+                await fetch(this.apiEndpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formParams
+                });
+                
+                this.fetchData();
+            } catch (err) {
+                console.error("Mark Read Failure:", err);
             }
-
-            async function markAllRead() {
-                try {
-                    // Optimistic UI Update (Immediate feedback)
-                    badge.style.display = 'none';
-                    currentUnread = 0;
-                    
-                    const unreadItems = list.querySelectorAll('.is-unread');
-                    unreadItems.forEach(el => el.classList.remove('is-unread'));
-
-                    // Button loading state
-                    const originalText = btnMarkRead.innerHTML;
-                    btnMarkRead.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-
-                    // Server Request
-                    const formData = new URLSearchParams();
-                    formData.append('action', 'mark_read');
-
-                    await fetch(CONFIG.ajaxBasePath + 'notifications_api.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: formData
-                    });
-                    
-                    // Reset button
-                    btnMarkRead.innerHTML = originalText;
-                    
-                } catch (err) {
-                    console.error("Failed to mark read:", err);
-                    fetchData(); // Rollback UI if failed
-                }
-            }
-
-            return {
-                init: function() {
-                    if (!btnNotif || !panel) return;
-
-                    // Bind Events
-                    btnNotif.addEventListener('click', togglePanel);
-                    
-                    if (btnMarkRead) {
-                        btnMarkRead.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            markAllRead();
-                        });
-                    }
-
-                    // Click outside listener
-                    document.addEventListener('click', (e) => {
-                        if (isOpen && !panel.contains(e.target) && !btnNotif.contains(e.target)) {
-                            closePanel();
-                        }
-                    });
-
-                    // Initial boot and polling setup
-                    fetchData();
-                    pollTimer = setInterval(fetchData, CONFIG.pollInterval);
-                }
-            };
-        })();
-        <?php endif; ?>
-
-        /**
-         * SYSTEM BOOTSTRAP
-         * Initialize all modules safely
-         */
-        try {
-            Preloader.init();
-            ScrollEngine.init();
-            ThemeManager.init();
-            DrawerController.init();
-            <?php if(isLoggedIn()): ?>
-            NotificationEngine.init();
-            <?php endif; ?>
-            console.log("%c BNCC Enterprise Engine Loaded Successfully", "color: #10b981; font-weight: bold; font-size: 14px;");
-        } catch (e) {
-            console.error("Critical Engine Failure during Bootstrap:", e);
         }
+    };
+    NotificationController.init();
+    <?php endif; ?>
 
-    });
-    </script>
+});
+</script>
 
-    <main id="bnccMainWorkspace" class="master-main-workspace" style="padding-top: calc(var(--bncc-header-height) + 2rem); min-height: calc(100vh - var(--bncc-header-height)); position: relative; z-index: var(--bncc-z-base); padding-bottom: 4rem;">
+<main class="bncc-master-main-wrapper" style="padding-top: calc(var(--bncc-header-height) + 1.5rem); min-height: calc(100vh - var(--bncc-header-height)); position: relative; z-index: var(--bncc-z-base);">
