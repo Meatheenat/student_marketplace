@@ -233,22 +233,22 @@ function logAdminAction($action_type, $target_type, $target_id, $details) {
 function sendNotification($user_id, $type, $message, $link = '#') {
     $db = getDB();
     
-    // ถ้าลิงก์ไม่ได้เป็น # และไม่ได้เริ่มด้วย http ให้ทำการดึง BASE_URL มาแปะหน้า
+    // 🎯 FIXED: เช็คพาร์ทก่อนบันทึกลง DB
     if ($link !== '#' && !filter_var($link, FILTER_VALIDATE_URL)) {
         $clean_link = ltrim($link, '/');
-        // ตรวจสอบว่าในลิงก์มีชื่อโปรเจกต์อยู่แล้วหรือไม่ เพื่อไม่ให้ซ้ำซ้อน
-       // 🎯 FIXED: ตรวจสอบว่าถ้ามีชื่อโฟลเดอร์โปรเจกต์อยู่แล้ว ไม่ต้องเติมซ้ำ
-if (strpos($clean_link, 'student_marketplace') !== false) {
-    $link = "$protocol://$host/" . $clean_link;
-} else {
-    $link = BASE_URL . $clean_link;
-}
+        // ถ้าลิงก์ที่ส่งมาไม่มีชื่อโฟลเดอร์โปรเจกต์ ให้เอา BASE_URL ไปแปะหน้า
+        if (strpos($clean_link, 'student_marketplace') === false) {
+            $link = BASE_URL . $clean_link;
+        } else {
+            // ถ้ามีอยู่แล้ว ให้ตรวจสอบว่ามี Protocol (http) หรือยัง ถ้าไม่มีให้เติม
+            $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
+            $link = $protocol . "://" . $_SERVER['HTTP_HOST'] . "/" . $clean_link;
+        }
     }
 
     $stmt = $db->prepare("INSERT INTO notifications (user_id, type, message, link, created_at) VALUES (?, ?, ?, ?, NOW())");
     return $stmt->execute([$user_id, $type, $message, $link]);
 }
-
 /**
  * 🎯 [ADDED] ฟังก์ชันเสริมสำหรับระบบติดตามร้านค้า (Follow System Helper)
  */
