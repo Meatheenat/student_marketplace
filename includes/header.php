@@ -2236,7 +2236,7 @@ if (isLoggedIn()) {
                 <?php if (!in_array($current_page, $hide_auth_list)): ?>
                     <div class="auth-action-group">
                         <a href="<?= $base_path ?>auth/login.php" class="btn-auth-login">เข้าสู่ระบบ</a>
-                        <a href="<?= $base_path ?>auth/register.php" class="btn-auth-register">สมัครสมาชิก</a>
+                    
                     </div>
                 <?php endif; ?>
 
@@ -2318,7 +2318,7 @@ if (isLoggedIn()) {
             <span>หน้าหลัก</span>
         </a>
         
-        <a href="<?= $base_path ?>pages/wtb_board.php" class="nav-menu-item nav-item-warning <?= $current_page == 'wtb_board.php' ? 'is-active' : '' ?>">
+        <a href="<?= $base_path ?>/pages/wtb_board.php" class="nav-menu-item nav-item-warning <?= $current_page == 'wtb_board.php' ? 'is-active' : '' ?>">
             <i class="fas fa-bullhorn nav-menu-icon"></i>
             <span>กระดานตามหาของ (WTB)</span>
         </a>
@@ -2472,7 +2472,7 @@ document.addEventListener('DOMContentLoaded', function() {
     ScrollController.init();
 
     /**
-     * MODULE 3: THEME MANAGER (🎯 FIXED)
+     * MODULE 3: THEME MANAGER (🎯 FIXED PERSISTENCE)
      */
     const ThemeController = {
         btn: document.getElementById('themeToggleMasterBtn'),
@@ -2486,16 +2486,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         toggle() {
             const isDark = this.html.classList.toggle('dark-theme');
-            if(isDark) {
-                this.html.setAttribute('data-theme', 'dark');
-                // บันทึกค่าแบบดิบๆ ลง localStorage ป้องกันการแปลง JSON ผิดพลาด
-                localStorage.setItem('bncc_enterprise_theme', 'dark');
-                if(this.metaTheme) this.metaTheme.setAttribute('content', '#111827');
-            } else {
-                this.html.setAttribute('data-theme', 'light');
-                localStorage.setItem('bncc_enterprise_theme', 'light');
-                if(this.metaTheme) this.metaTheme.setAttribute('content', '#ffffff');
-            }
+            const theme = isDark ? 'dark' : 'light';
+            this.html.setAttribute('data-theme', theme);
+            localStorage.setItem('bncc_enterprise_theme', theme);
+            if(this.metaTheme) this.metaTheme.setAttribute('content', isDark ? '#111827' : '#ffffff');
         }
     };
     ThemeController.init();
@@ -2547,7 +2541,7 @@ document.addEventListener('DOMContentLoaded', function() {
     SidebarController.init();
 
     /**
-     * MODULE 5: AJAX NOTIFICATION ENGINE
+     * MODULE 5: AJAX NOTIFICATION ENGINE (🎯 THE 404 & ABSOLUTE PATH FIX)
      */
     <?php if(isLoggedIn()): ?>
     const NotificationController = {
@@ -2560,7 +2554,8 @@ document.addEventListener('DOMContentLoaded', function() {
         pollInterval: 30000, 
         pollTimer: null,
         
-        // 🎯 404 FIX: Using absolute dynamic base path for AJAX calls
+        // 🎯 กำหนดพาร์ทหลักให้แน่นอน ป้องกัน AJAX 404
+        baseProject: '<?= $base_path ?>',
         apiEndpoint: '<?= $base_path ?>ajax/notifications_api.php',
 
         init() {
@@ -2586,6 +2581,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
             this.fetchData();
             this.startPolling();
+        },
+
+        // 🎯 ฟังก์ชันจัดการลิงก์ ป้องกันการเบิ้ลโฟลเดอร์ admin/admin หรือ pages/admin
+        resolveSafeLink(link) {
+            if (!link || link === '#' || link === '') return '#';
+            
+            // ถ้าเป็นลิงก์เต็ม (http/https) ให้ใช้ตัวเดิม
+            if (link.startsWith('http://') || link.startsWith('https://')) return link;
+
+            // ลบเครื่องหมาย / ที่อยู่ข้างหน้าลิงก์จาก DB (ถ้ามี)
+            let cleanLink = link.replace(/^\/+/, '');
+            
+            // 🎯 บังคับให้เริ่มจาก Root Project เสมอ (Base + Link)
+            return this.baseProject + cleanLink;
         },
 
         toggle() {
@@ -2625,7 +2634,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (error) {
                 console.error("Notification Engine Error:", error);
                 if(this.isOpen && this.listView.innerHTML.includes('fa-circle-notch')) {
-                    this.listView.innerHTML = `<div class="notif-empty-state"><i class="fas fa-exclamation-triangle text-danger"></i><span>ไม่สามารถโหลดการแจ้งเตือนได้</span></div>`;
+                    this.listView.innerHTML = `<div class="notif-empty-state"><i class="fas fa-exclamation-triangle text-danger"></i><span>ไม่สามารถโหลดข้อมูลได้</span></div>`;
                 }
             }
         },
@@ -2649,18 +2658,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     const stateClass = notif.is_read == 0 ? 'state-unread' : '';
                     const iconDef = notif.icon || '<i class="fas fa-bell"></i>';
                     
-                    // 🎯 THE ULTIMATE 404 NOTIFICATION LINK FIX
-                    // เปลี่ยน relative path จาก DB ให้เป็น Absolute Path ป้องกัน 404 แบบเด็ดขาด
-                    let safeLink = '#';
-                    if (notif.link && notif.link !== '') {
-                        if (notif.link.startsWith('http://') || notif.link.startsWith('https://')) {
-                            safeLink = notif.link; // ถ้าเป็นลิงก์เต็ม ปล่อยผ่าน
-                        } else {
-                            // ถ้าเป็นลิงก์ relative (เช่น admin/approve_shop.php) ให้เอา $base_path มาต่อหน้าเสมอ
-                            let cleanLink = notif.link.replace(/^\/+/, '');
-                            safeLink = '<?= $base_path ?>' + cleanLink;
-                        }
-                    }
+                    // 🎯 เรียกใช้ตัวจัดการลิงก์อัจฉริยะ แก้ปัญหา 404
+                    const safeLink = this.resolveSafeLink(notif.link);
                     
                     return `
                         <a href="${safeLink}" class="notif-entity-card ${stateClass}">
