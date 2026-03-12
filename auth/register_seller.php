@@ -502,7 +502,8 @@ require_once '../includes/header.php';
                     <div class="checkbox-wrapper">
                         <input type="checkbox" name="accept_terms" id="acceptTerms" class="custom-checkbox" <?= isset($_POST['accept_terms']) ? 'checked' : '' ?>>
                         <label for="acceptTerms" class="checkbox-label">
-                            ข้าพเจ้าขอยืนยันว่าข้อมูลข้างต้นเป็นความจริง และยอมรับ <a href="../pages/terms.php" target="_blank">เงื่อนไขการให้บริการ</a> รวมถึงการปฏิบัติตามกฎระเบียบของวิทยาลัยอย่างเคร่งครัด
+                           ข้าพเจ้าขอยืนยันว่าข้อมูลข้างต้นเป็นความจริง และยอมรับ <a href="../pages/terms.php" target="_blank">เงื่อนไขการให้บริการ</a> รวมถึงการปฏิบัติตามกฎระเบียบของวิทยาลัยอย่างเคร่งครัด
+
                         </label>
                     </div>
 
