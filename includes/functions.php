@@ -13,13 +13,11 @@ $host = $_SERVER['HTTP_HOST'];
  * ใช้ Path เต็มรูปแบบเพื่อให้ระบบอ้างอิงจาก Root ของ Domain เสมอ
  * ป้องกันการเกิด pages/admin/... หรือโฟลเดอร์ซ้อนกัน
  */
-// 🎯 FIXED: บังคับ Path ให้ตรงกับโฟลเดอร์โปรเจกต์บน Host BNCC
-$project_folder = "/s673190104/student_marketplace";
-$base_url = "$protocol://$host/$project_folder/"; 
+$project_folder = "s673190104/student_marketplace";
+$base_url = "$protocol://$host/$project_folder/";
 
-// คาดว่าของเดิมอาจจะเป็น: define('BASE_URL', '/s673190104/');
-// ให้แก้เป็น:
-define('BASE_URL', '/s673190104/student_marketplace/');
+define('BASE_URL', $base_url);
+
 // 2. จัดการ Session และ Output Buffering
 if (ob_get_level() == 0) ob_start(); 
 if (session_status() === PHP_SESSION_NONE) {
