@@ -491,11 +491,7 @@ $pending_posts = $stmt->fetchAll();
                     ขณะนี้ไม่มีโพสต์ตามหาของค้างรอการอนุมัติในระบบ 
                     คุณตรวจสอบโพสต์ทั้งหมดครบถ้วนแล้ว
                 </p>
-                <div class="mt-5">
-                    <a href="admin_dashboard.php" class="btn-back-dash" style="background: var(--adm-primary); color: #fff !important; border: none;">
-                        <i class="fas fa-arrow-left"></i> กลับสู่หน้าควบคุมหลัก
-                    </a>
-                </div>
+                
             </section>
 
         <?php endif; ?>
