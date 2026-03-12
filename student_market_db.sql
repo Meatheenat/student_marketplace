@@ -267,5 +267,7 @@ ALTER TABLE wtb_posts ADD COLUMN is_deleted TINYINT(1) DEFAULT 0, ADD COLUMN del
 UPDATE notifications 
 SET link = REPLACE(link, '../', '') 
 WHERE link LIKE '../%';
-
+ALTER TABLE `messages`
+    ADD COLUMN `image_path` VARCHAR(255) NULL DEFAULT NULL
+    AFTER `message`;
 

@@ -659,6 +659,227 @@ if ($target_id) {
         0% { background-position: 200% 0; }
         100% { background-position: -200% 0; }
     }
+
+    /* ===== IMAGE UPLOAD ===== */
+    .cht-img-preview-bar {
+        display: none;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 16px;
+        background: var(--cht-primary-light);
+        border-top: 1.5px solid var(--cht-border);
+        animation: slideUpBar 0.3s var(--cht-ease);
+    }
+
+    @keyframes slideUpBar {
+        from { transform: translateY(10px); opacity: 0; }
+        to   { transform: translateY(0);    opacity: 1; }
+    }
+
+    .cht-img-preview-bar.show { display: flex; }
+
+    .cht-img-thumb-wrap {
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    .cht-img-thumb {
+        width: 64px;
+        height: 64px;
+        object-fit: cover;
+        border-radius: 12px;
+        border: 2px solid var(--cht-border);
+        display: block;
+    }
+
+    .cht-img-remove {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        width: 20px;
+        height: 20px;
+        background: #ef4444;
+        color: #fff;
+        border-radius: 50%;
+        border: 2px solid var(--cht-surface);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.55rem;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+
+    .cht-img-remove:hover { transform: scale(1.2); }
+
+    .cht-img-preview-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .cht-img-preview-name {
+        font-size: 0.82rem;
+        font-weight: 800;
+        color: var(--cht-text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .cht-img-preview-size {
+        font-size: 0.72rem;
+        color: var(--cht-muted);
+        font-weight: 600;
+        margin-top: 2px;
+    }
+
+    .cht-attach-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        border: 1.5px solid var(--cht-border);
+        background: var(--cht-bg);
+        color: var(--cht-muted);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+
+    .cht-attach-btn:hover {
+        border-color: var(--cht-primary);
+        color: var(--cht-primary);
+        background: var(--cht-primary-light);
+    }
+
+    /* Image bubble */
+    .cht-img-bubble {
+        max-width: 260px;
+        border-radius: 16px;
+        overflow: hidden;
+        cursor: zoom-in;
+        border: 2px solid var(--cht-border);
+        transition: transform 0.25s var(--cht-ease), box-shadow 0.25s;
+        display: block;
+    }
+
+    .cht-img-bubble:hover {
+        transform: scale(1.03);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+
+    .cht-img-bubble img {
+        width: 100%;
+        height: auto;
+        display: block;
+        max-height: 280px;
+        object-fit: cover;
+    }
+
+    /* Sending overlay on image bubble */
+    .cht-bubble-sending {
+        opacity: 0.55;
+        pointer-events: none;
+    }
+
+    .cht-bubble-sending::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: rgba(255,255,255,0.3);
+        border-radius: inherit;
+    }
+
+    /* Lightbox */
+    .cht-lightbox {
+        position: fixed;
+        inset: 0;
+        z-index: 999999;
+        background: rgba(0,0,0,0.92);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(6px);
+        cursor: zoom-out;
+        animation: lightboxFade 0.3s ease;
+    }
+
+    @keyframes lightboxFade {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+
+    .cht-lightbox.open { display: flex; }
+
+    .cht-lightbox-img {
+        max-width: 92vw;
+        max-height: 92vh;
+        object-fit: contain;
+        border-radius: 16px;
+        animation: lightboxZoom 0.35s var(--cht-ease);
+        user-select: none;
+    }
+
+    @keyframes lightboxZoom {
+        from { transform: scale(0.85); opacity: 0; }
+        to   { transform: scale(1);    opacity: 1; }
+    }
+
+    .cht-lightbox-close {
+        position: fixed;
+        top: 20px;
+        right: 24px;
+        width: 44px;
+        height: 44px;
+        background: rgba(255,255,255,0.12);
+        border: 1.5px solid rgba(255,255,255,0.2);
+        border-radius: 14px;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 1.1rem;
+        transition: background 0.2s;
+    }
+
+    .cht-lightbox-close:hover { background: rgba(255,255,255,0.25); }
+
+    .cht-lightbox-hint {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255,255,255,0.1);
+        backdrop-filter: blur(10px);
+        color: rgba(255,255,255,0.7);
+        padding: 8px 20px;
+        border-radius: 50px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .cht-upload-progress {
+        height: 3px;
+        background: var(--cht-border);
+        border-radius: 0 0 0 0;
+        overflow: hidden;
+        display: none;
+    }
+
+    .cht-upload-progress.show { display: block; }
+
+    .cht-upload-progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, var(--cht-primary), #7c3aed);
+        border-radius: 0;
+        transition: width 0.3s ease;
+        width: 0%;
+    }
 </style>
 
 <div class="cht-page">
@@ -761,7 +982,26 @@ if ($target_id) {
                     </div>
 
                     <div class="cht-footer">
+                        <div class="cht-upload-progress" id="uploadProgress">
+                            <div class="cht-upload-progress-bar" id="uploadProgressBar"></div>
+                        </div>
+                        <div class="cht-img-preview-bar" id="imgPreviewBar">
+                            <div class="cht-img-thumb-wrap">
+                                <img src="" id="imgThumb" class="cht-img-thumb" alt="preview">
+                                <div class="cht-img-remove" id="imgRemoveBtn" title="ลบรูป">
+                                    <i class="fas fa-times"></i>
+                                </div>
+                            </div>
+                            <div class="cht-img-preview-info">
+                                <div class="cht-img-preview-name" id="imgPreviewName">ชื่อไฟล์</div>
+                                <div class="cht-img-preview-size" id="imgPreviewSize">ขนาดไฟล์</div>
+                            </div>
+                        </div>
                         <div class="cht-input-row">
+                            <input type="file" id="imgFileInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;">
+                            <button type="button" class="cht-attach-btn" id="attachBtn" title="แนบรูปภาพ">
+                                <i class="fas fa-image"></i>
+                            </button>
                             <textarea id="msgInput"
                                       class="cht-textarea"
                                       placeholder="พิมพ์ข้อความถึง <?= e($target_user['fullname']) ?>..."
@@ -771,27 +1011,38 @@ if ($target_id) {
                                 <i class="fas fa-paper-plane"></i>
                             </button>
                         </div>
-                        <div class="cht-footer-hint">กด Enter ส่ง · Shift+Enter ขึ้นบรรทัดใหม่</div>
+                        <div class="cht-footer-hint">กด Enter ส่ง · Shift+Enter ขึ้นบรรทัดใหม่ · <i class="fas fa-image"></i> แนบรูปได้สูงสุด 5MB</div>
                     </div>
 
                     <script>
                     (function() {
-                        const TARGET_ID = <?= (int)$target_user['id'] ?>;
-                        const MY_IMG   = '<?= !empty($_SESSION['profile_img']) ? "../assets/images/profiles/" . $_SESSION['profile_img'] : "../assets/images/profiles/default_profile.png" ?>';
+                        const TARGET_ID  = <?= (int)$target_user['id'] ?>;
+                        const MY_IMG     = '<?= !empty($_SESSION['profile_img']) ? "../assets/images/profiles/" . $_SESSION['profile_img'] : "../assets/images/profiles/default_profile.png" ?>';
                         const TARGET_IMG = '<?= $t_img ?>';
 
-                        const chatBody  = document.getElementById('chatBody');
-                        const skeleton  = document.getElementById('chatSkeleton');
-                        const msgInput  = document.getElementById('msgInput');
-                        const sendBtn   = document.getElementById('sendBtn');
+                        const chatBody       = document.getElementById('chatBody');
+                        const skeleton       = document.getElementById('chatSkeleton');
+                        const msgInput       = document.getElementById('msgInput');
+                        const sendBtn        = document.getElementById('sendBtn');
+                        const attachBtn      = document.getElementById('attachBtn');
+                        const imgFileInput   = document.getElementById('imgFileInput');
+                        const imgPreviewBar  = document.getElementById('imgPreviewBar');
+                        const imgThumb       = document.getElementById('imgThumb');
+                        const imgRemoveBtn   = document.getElementById('imgRemoveBtn');
+                        const imgPreviewName = document.getElementById('imgPreviewName');
+                        const imgPreviewSize = document.getElementById('imgPreviewSize');
+                        const uploadProgress = document.getElementById('uploadProgress');
+                        const uploadProgressBar = document.getElementById('uploadProgressBar');
 
                         let lastMsgId   = 0;
                         let isFirstLoad = true;
+                        let pendingFile = null;
 
+                        // ── Auto-resize textarea ──
                         msgInput.addEventListener('input', function() {
                             this.style.height = 'auto';
                             this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-                            sendBtn.disabled = this.value.trim() === '';
+                            updateSendBtn();
                         });
 
                         msgInput.addEventListener('keydown', function(e) {
@@ -803,43 +1054,115 @@ if ($target_id) {
 
                         sendBtn.addEventListener('click', sendMsg);
 
+                        // ── Paste image from clipboard ──
+                        document.addEventListener('paste', function(e) {
+                            const items = e.clipboardData?.items;
+                            if (!items) return;
+                            for (const item of items) {
+                                if (item.type.startsWith('image/')) {
+                                    const file = item.getAsFile();
+                                    if (file) setPreviewFile(file);
+                                    break;
+                                }
+                            }
+                        });
+
+                        // ── Drag & drop image onto chatBody ──
+                        chatBody.addEventListener('dragover', e => { e.preventDefault(); chatBody.style.outline = '2px dashed var(--cht-primary)'; });
+                        chatBody.addEventListener('dragleave', () => { chatBody.style.outline = ''; });
+                        chatBody.addEventListener('drop', e => {
+                            e.preventDefault();
+                            chatBody.style.outline = '';
+                            const file = e.dataTransfer?.files?.[0];
+                            if (file && file.type.startsWith('image/')) setPreviewFile(file);
+                        });
+
+                        // ── Attach button → open file picker ──
+                        attachBtn.addEventListener('click', () => imgFileInput.click());
+
+                        imgFileInput.addEventListener('change', function() {
+                            if (this.files[0]) setPreviewFile(this.files[0]);
+                            this.value = '';
+                        });
+
+                        imgRemoveBtn.addEventListener('click', clearPreview);
+
+                        function setPreviewFile(file) {
+                            const maxSize = 5 * 1024 * 1024;
+                            if (!file.type.startsWith('image/')) { showToast('รองรับเฉพาะไฟล์รูปภาพเท่านั้น', 'error'); return; }
+                            if (file.size > maxSize) { showToast('ไฟล์ต้องไม่เกิน 5MB', 'error'); return; }
+
+                            pendingFile = file;
+                            const reader = new FileReader();
+                            reader.onload = e => { imgThumb.src = e.target.result; };
+                            reader.readAsDataURL(file);
+
+                            imgPreviewName.textContent = file.name.length > 28 ? file.name.substring(0, 25) + '...' : file.name;
+                            imgPreviewSize.textContent = (file.size / 1024).toFixed(1) + ' KB';
+                            imgPreviewBar.classList.add('show');
+                            updateSendBtn();
+                        }
+
+                        function clearPreview() {
+                            pendingFile = null;
+                            imgThumb.src = '';
+                            imgPreviewBar.classList.remove('show');
+                            updateSendBtn();
+                        }
+
+                        function updateSendBtn() {
+                            sendBtn.disabled = msgInput.value.trim() === '' && !pendingFile;
+                        }
+
+                        // ── Build message row ──
                         function buildMsgRow(msg) {
                             const isMine = msg.is_mine;
-                            const row = document.createElement('div');
+                            const row    = document.createElement('div');
                             row.className = 'cht-msg-row' + (isMine ? ' mine' : '');
 
-                            const avatarSrc = isMine ? MY_IMG : TARGET_IMG;
+                            const avatarSrc   = isMine ? MY_IMG : TARGET_IMG;
                             const bubbleClass = isMine ? 'mine' : 'other';
+
+                            let contentHtml = '';
+
+                            if (msg.image_path) {
+                                const imgSrc = '../assets/images/chat/' + msg.image_path;
+                                contentHtml += `
+                                    <div class="cht-img-bubble" onclick="openLightbox('${imgSrc}')">
+                                        <img src="${imgSrc}" alt="รูปภาพ" loading="lazy">
+                                    </div>`;
+                            }
+
+                            if (msg.message && msg.message.trim()) {
+                                const safeText = msg.message.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+                                contentHtml += `<div class="cht-bubble ${bubbleClass}">${safeText}</div>`;
+                            }
 
                             row.innerHTML = `
                                 <img src="${avatarSrc}" class="cht-msg-avatar" alt="">
                                 <div class="cht-bubble-wrap">
-                                    <div class="cht-bubble ${bubbleClass}">${msg.message.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div>
+                                    ${contentHtml}
                                     <div class="cht-bubble-time">${msg.time}</div>
                                 </div>`;
                             return row;
                         }
 
+                        // ── Fetch messages ──
                         function fetchMessages() {
                             fetch(`../ajax/chat_api.php?action=fetch&other_user_id=${TARGET_ID}&last_id=${lastMsgId}`)
                                 .then(r => r.json())
                                 .then(data => {
-                                    if (isFirstLoad) {
-                                        skeleton.remove();
-                                        isFirstLoad = false;
-                                    }
+                                    if (isFirstLoad) { skeleton.remove(); isFirstLoad = false; }
 
                                     if (data.status === 'success' && data.messages.length > 0) {
-                                        const wasAtBottom = chatBody.scrollHeight - chatBody.scrollTop - chatBody.clientHeight < 80;
+                                        const wasAtBottom = chatBody.scrollHeight - chatBody.scrollTop - chatBody.clientHeight < 100;
 
                                         data.messages.forEach(msg => {
                                             chatBody.appendChild(buildMsgRow(msg));
                                             lastMsgId = msg.id;
                                         });
 
-                                        if (wasAtBottom || lastMsgId === data.messages[data.messages.length - 1].id) {
-                                            chatBody.scrollTop = chatBody.scrollHeight;
-                                        }
+                                        if (wasAtBottom) chatBody.scrollTop = chatBody.scrollHeight;
                                     }
                                 })
                                 .catch(() => {
@@ -847,9 +1170,10 @@ if ($target_id) {
                                 });
                         }
 
+                        // ── Send message (text + optional image) ──
                         function sendMsg() {
                             const text = msgInput.value.trim();
-                            if (!text) return;
+                            if (!text && !pendingFile) return;
 
                             sendBtn.disabled = true;
                             sendBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
@@ -858,34 +1182,98 @@ if ($target_id) {
                             fd.append('action', 'send');
                             fd.append('receiver_id', TARGET_ID);
                             fd.append('message', text);
+                            if (pendingFile) fd.append('chat_image', pendingFile);
 
+                            const textSnapshot = text;
                             msgInput.value = '';
                             msgInput.style.height = 'auto';
+                            clearPreview();
 
-                            fetch('../ajax/chat_api.php', { method: 'POST', body: fd })
-                                .then(r => r.json())
-                                .then(data => {
-                                    sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
-                                    if (data.status === 'success') {
-                                        fetchMessages();
-                                        msgInput.focus();
-                                    }
-                                })
-                                .catch(() => {
-                                    sendBtn.disabled = false;
-                                    sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
-                                });
+                            // Show upload progress for image
+                            if (pendingFile || fd.get('chat_image')) {
+                                uploadProgress.classList.add('show');
+                                let prog = 0;
+                                const progTimer = setInterval(() => {
+                                    prog = Math.min(prog + 12, 85);
+                                    uploadProgressBar.style.width = prog + '%';
+                                }, 80);
+
+                                fetch('../ajax/chat_api.php', { method: 'POST', body: fd })
+                                    .then(r => r.json())
+                                    .then(data => {
+                                        clearInterval(progTimer);
+                                        uploadProgressBar.style.width = '100%';
+                                        setTimeout(() => {
+                                            uploadProgress.classList.remove('show');
+                                            uploadProgressBar.style.width = '0%';
+                                        }, 400);
+                                        sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+                                        if (data.status === 'success') { fetchMessages(); msgInput.focus(); }
+                                        else showToast(data.message || 'เกิดข้อผิดพลาด', 'error');
+                                    })
+                                    .catch(() => {
+                                        clearInterval(progTimer);
+                                        uploadProgress.classList.remove('show');
+                                        sendBtn.disabled = false;
+                                        sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+                                        showToast('ส่งไม่สำเร็จ กรุณาลองใหม่', 'error');
+                                    });
+                            } else {
+                                fetch('../ajax/chat_api.php', { method: 'POST', body: fd })
+                                    .then(r => r.json())
+                                    .then(data => {
+                                        sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+                                        if (data.status === 'success') { fetchMessages(); msgInput.focus(); }
+                                    })
+                                    .catch(() => {
+                                        sendBtn.disabled = false;
+                                        sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+                                    });
+                            }
                         }
 
-                        const contactSearch = document.getElementById('contactSearch');
-                        if (contactSearch) {
-                            contactSearch.addEventListener('input', function() {
-                                const q = this.value.toLowerCase();
-                                document.querySelectorAll('.cht-contact').forEach(c => {
-                                    c.style.display = c.dataset.name.includes(q) ? '' : 'none';
-                                });
+                        // ── Lightbox ──
+                        window.openLightbox = function(src) {
+                            const lb    = document.getElementById('chtLightbox');
+                            const lbImg = document.getElementById('chtLightboxImg');
+                            lbImg.src = src;
+                            lb.classList.add('open');
+                            document.body.style.overflow = 'hidden';
+                        };
+
+                        document.getElementById('chtLightbox')?.addEventListener('click', function(e) {
+                            if (e.target === this || e.target.id === 'chtLightboxClose') {
+                                this.classList.remove('open');
+                                document.body.style.overflow = '';
+                            }
+                        });
+
+                        document.addEventListener('keydown', e => {
+                            if (e.key === 'Escape') {
+                                document.getElementById('chtLightbox')?.classList.remove('open');
+                                document.body.style.overflow = '';
+                            }
+                        });
+
+                        // ── Toast ──
+                        function showToast(msg, type = 'info') {
+                            const colors = { error: ['rgba(239,68,68,0.1)', 'rgba(239,68,68,0.3)', '#991b1b'], info: ['rgba(79,70,229,0.1)', 'rgba(79,70,229,0.3)', '#4338ca'] };
+                            const [bg, border, color] = colors[type] || colors.info;
+                            const t = document.createElement('div');
+                            t.style.cssText = `position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(10px);background:${bg};border:1.5px solid ${border};color:${color};padding:10px 22px;border-radius:50px;font-weight:800;font-size:0.88rem;z-index:999999;opacity:0;transition:all 0.35s var(--cht-ease);white-space:nowrap;backdrop-filter:blur(10px)`;
+                            t.textContent = msg;
+                            document.body.appendChild(t);
+                            requestAnimationFrame(() => { t.style.opacity = '1'; t.style.transform = 'translateX(-50%) translateY(0)'; });
+                            setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 3000);
+                        }
+
+                        // ── Contact search ──
+                        document.getElementById('contactSearch')?.addEventListener('input', function() {
+                            const q = this.value.toLowerCase();
+                            document.querySelectorAll('.cht-contact').forEach(c => {
+                                c.style.display = c.dataset.name.includes(q) ? '' : 'none';
                             });
-                        }
+                        });
 
                         fetchMessages();
                         setInterval(fetchMessages, 2000);
@@ -903,6 +1291,13 @@ if ($target_id) {
 
         </div>
     </div>
+</div>
+
+<!-- Lightbox -->
+<div class="cht-lightbox" id="chtLightbox">
+    <button class="cht-lightbox-close" id="chtLightboxClose"><i class="fas fa-times"></i></button>
+    <img class="cht-lightbox-img" id="chtLightboxImg" src="" alt="ขยายรูป">
+    <div class="cht-lightbox-hint"><i class="fas fa-times" style="margin-right:6px;"></i> คลิกหรือกด ESC เพื่อปิด</div>
 </div>
 
 <?php require_once '../includes/footer.php'; ?>
