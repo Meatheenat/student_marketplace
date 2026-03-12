@@ -5,7 +5,11 @@
 $pageTitle = "กระดานตามหาของ - BNCC Market Marketplace";
 require_once '../includes/header.php';
 require_once '../includes/functions.php';
-
+if (!isLoggedIn()) {
+    $_SESSION['flash_message'] = "กรุณาเข้าสู่ระบบเพื่อเข้าใช้งานส่วนนี้";
+    $_SESSION['flash_type'] = "warning";
+    redirect('../auth/login.php');
+}
 $db = getDB();
 
 /**
