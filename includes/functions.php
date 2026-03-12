@@ -230,22 +230,30 @@ function logAdminAction($action_type, $target_type, $target_id, $details) {
  * 🔔 ฟังก์ชันส่งการแจ้งเตือน (In-App Notification)
  * 🎯 FIXED: บังคับให้ Link เป็นแบบ Absolute Path อัตโนมัติ ป้องกัน 404
  */
+/**
+ * 🔔 ฟังก์ชันส่งการแจ้งเตือน (In-App Notification)
+ * 🎯 FIXED: แก้ปัญหาลิงก์ขาดโฟลเดอร์ student_marketplace (404)
+ */
 function sendNotification($user_id, $type, $message, $link = '#') {
     $db = getDB();
     
-    // 🎯 FIXED: เช็คพาร์ทก่อนบันทึกลง DB
     if ($link !== '#' && !filter_var($link, FILTER_VALIDATE_URL)) {
         $clean_link = ltrim($link, '/');
-        // ถ้าลิงก์ที่ส่งมาไม่มีชื่อโฟลเดอร์โปรเจกต์ ให้เอา BASE_URL ไปแปะหน้า
+        
+        // 🎯 ตรวจสอบว่าลิงก์มีชื่อโฟลเดอร์โปรเจกต์ "ครบถ้วน" หรือยัง
+        // ถ้าไม่มีก้อน student_marketplace ให้เอา BASE_URL (ที่มีพาร์ทครบ) ไปแปะหน้าทันที
         if (strpos($clean_link, 'student_marketplace') === false) {
             $link = BASE_URL . $clean_link;
         } else {
-            // ถ้ามีอยู่แล้ว ให้ตรวจสอบว่ามี Protocol (http) หรือยัง ถ้าไม่มีให้เติม
+            // ถ้ามีชื่อโปรเจกต์แล้ว แต่ยังไม่มี http (เป็นพาร์ทจาก root domain)
+            // ให้เติม protocol และ host เข้าไปข้างหน้าให้สมบูรณ์
             $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-            $link = $protocol . "://" . $_SERVER['HTTP_HOST'] . "/" . $clean_link;
+            $host = $_SERVER['HTTP_HOST'];
+            $link = "$protocol://$host/" . $clean_link;
         }
     }
 
+    // บันทึกลงฐานข้อมูลพร้อมเวลาปัจจุบัน
     $stmt = $db->prepare("INSERT INTO notifications (user_id, type, message, link, created_at) VALUES (?, ?, ?, ?, NOW())");
     return $stmt->execute([$user_id, $type, $message, $link]);
 }
