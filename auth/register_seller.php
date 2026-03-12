@@ -1,6 +1,7 @@
 <?php
 require_once '../includes/functions.php';
 
+// 1. ตรวจสอบสถานะการเข้าสู่ระบบ (ถ้ายังไม่ Login ให้ดีดไปหน้า Login)
 if (!isLoggedIn()) {
     $_SESSION['flash_message'] = "กรุณาเข้าสู่ระบบก่อนดำเนินการสมัครเป็นผู้ขาย";
     $_SESSION['flash_type'] = "warning";
@@ -8,6 +9,7 @@ if (!isLoggedIn()) {
     exit();
 }
 
+// 2. ตรวจสอบว่าผู้ใช้เป็น Seller อยู่แล้วหรือไม่ (ถ้าเป็นแล้วไม่ให้สมัครซ้ำ)
 if ($_SESSION['role'] === 'seller') {
     $_SESSION['flash_message'] = "บัญชีของคุณได้รับการอนุมัติเป็นร้านค้าเรียบร้อยแล้ว";
     $_SESSION['flash_type'] = "info";
@@ -18,6 +20,7 @@ if ($_SESSION['role'] === 'seller') {
 $db = getDB();
 $user_id = $_SESSION['user_id'];
 
+// ตรวจสอบว่ามีคำขอที่รอดำเนินการ (Pending) อยู่หรือไม่
 $stmt_check = $db->prepare("SELECT status, shop_name FROM shops WHERE user_id = ? ORDER BY created_at DESC LIMIT 1");
 $stmt_check->execute([$user_id]);
 $existing_shop = $stmt_check->fetch(PDO::FETCH_ASSOC);
@@ -29,30 +32,34 @@ if ($existing_shop && $existing_shop['status'] === 'pending') {
 
 $form_errors = [];
 
+// ประมวลผลฟอร์มเมื่อมีการกดส่งข้อมูล
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_pending) {
     $shop_name = isset($_POST['shop_name']) ? trim($_POST['shop_name']) : '';
     $shop_desc = isset($_POST['shop_description']) ? trim($_POST['shop_description']) : '';
     $accept_terms = isset($_POST['accept_terms']) ? true : false;
 
+    // ตรวจสอบความถูกต้องของข้อมูล (Validation) - แก้ไขให้รับ 1 ตัวอักษรขึ้นไป
     if (empty($shop_name)) {
         $form_errors[] = "กรุณาระบุชื่อร้านค้าของคุณ";
-    } elseif (mb_strlen($shop_name) < 3 || mb_strlen($shop_name) > 50) {
-        $form_errors[] = "ชื่อร้านค้าต้องมีความยาวระหว่าง 3 ถึง 50 ตัวอักษร";
+    } elseif (mb_strlen($shop_name) > 50) {
+        $form_errors[] = "ชื่อร้านค้าต้องมีความยาวไม่เกิน 50 ตัวอักษร";
     }
 
     if (empty($shop_desc)) {
         $form_errors[] = "กรุณาระบุรายละเอียดร้านค้าเพื่อเป็นข้อมูลให้ผู้ซื้อ";
-    } elseif (mb_strlen($shop_desc) < 10) {
-        $form_errors[] = "รายละเอียดร้านค้าควรมีความยาวอย่างน้อย 10 ตัวอักษร";
+    } elseif (mb_strlen($shop_desc) > 500) {
+        $form_errors[] = "รายละเอียดร้านค้าไม่ควรเกิน 500 ตัวอักษร";
     }
 
     if (!$accept_terms) {
         $form_errors[] = "คุณต้องกดยอมรับเงื่อนไขการให้บริการก่อนส่งคำขอ";
     }
 
+    // หากไม่มีข้อผิดพลาด ให้บันทึกลงฐานข้อมูล
     if (empty($form_errors)) {
         try {
             $db->beginTransaction();
+            // บันทึกข้อมูลร้านค้าโดยกำหนดสถานะเป็น 'pending' รอแอดมินอนุมัติ
             $stmt = $db->prepare("INSERT INTO shops (user_id, shop_name, shop_description, status, created_at) VALUES (?, ?, ?, 'pending', NOW())");
             $stmt->execute([$user_id, $shop_name, $shop_desc]);
             $db->commit();
@@ -73,6 +80,9 @@ require_once '../includes/header.php';
 ?>
 
 <style>
+    /* ============================================================
+       SELLER REGISTRATION STYLESHEET
+       ============================================================ */
     :root {
         --seller-hue-primary: 238;
         --seller-color-primary: hsl(var(--seller-hue-primary), 80%, 60%);
@@ -540,14 +550,14 @@ require_once '../includes/header.php';
                     </div>
                 </div>
                 <div class="feature-list-item">
-                    <div class="feature-icon-wrapper"><i class="fas fa-shield-check"></i></div>
+                    <div class="feature-icon-wrapper"><i class="fas fa-shield-alt"></i></div>
                     <div class="feature-text-content">
                         <h4>ปลอดภัยและตรวจสอบได้</h4>
                         <p>ระบบคัดกรองร้านค้าเพื่อสร้างความมั่นใจให้กับผู้ซื้อทุกคนในชุมชน</p>
                     </div>
                 </div>
                 <div class="feature-list-item">
-                    <div class="feature-icon-wrapper"><i class="fas fa-chart-pie"></i></div>
+                    <div class="feature-icon-wrapper"><i class="fas fa-chart-line"></i></div>
                     <div class="feature-text-content">
                         <h4>จัดการร้านค้าครบวงจร</h4>
                         <p>มีระบบจัดการหลังบ้าน สต๊อกสินค้า และดูสถิติการขายฟรีไม่มีค่าธรรมเนียม</p>
@@ -634,7 +644,7 @@ require_once '../includes/header.php';
                     </div>
 
                     <button type="submit" class="action-submit-btn" id="btnSubmitRequest" disabled>
-                        ส่งคำขอเปิดร้านค้า <i class="fas fa-arrow-right"></i>
+                        ส่งคำขอเปิดร้านค้า <i class="fas fa-arrow-right ms-2"></i>
                     </button>
                     
                 </form>
@@ -647,7 +657,6 @@ require_once '../includes/header.php';
 <script>
 /**
  * Real-time Form Validation System
- * Handles character counting and enabling/disabling the submit button dynamically.
  */
 document.addEventListener('DOMContentLoaded', function() {
     const elShopName = document.getElementById('inputShopName');
@@ -658,16 +667,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const cntDesc = document.getElementById('counterShopDesc');
     const regForm = document.getElementById('sellerRegistrationForm');
 
-    // Prevent execution if form doesn't exist (e.g., in pending state)
     if (!regForm) return;
 
-    // Logic to evaluate form readiness
     function evaluateFormValidity() {
         const valName = elShopName.value.trim();
         const valDesc = elShopDesc.value.trim();
         
-        const isNameValid = valName.length >= 3 && valName.length <= 50;
-        const isDescValid = valDesc.length >= 10 && valDesc.length <= 500;
+        // แก้ไขเงื่อนไขตรงนี้: รับค่าแค่ 1 ตัวอักษรขึ้นไปก็ให้ผ่านได้
+        const isNameValid = valName.length >= 1 && valName.length <= 50;
+        const isDescValid = valDesc.length >= 1 && valDesc.length <= 500;
         const isTermsChecked = elTerms.checked;
 
         // Visual feedback for valid inputs
@@ -677,15 +685,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Enable button only if all criteria meet
         if (isNameValid && isDescValid && isTermsChecked) {
             elBtnSubmit.removeAttribute('disabled');
-            // Adding a pulse effect when it becomes active
-            elBtnSubmit.style.animation = 'none';
-            setTimeout(() => elBtnSubmit.style.animation = 'checkBounce 0.4s ease', 10);
         } else {
             elBtnSubmit.setAttribute('disabled', 'true');
         }
     }
 
-    // Logic to update character counters
     function updateCharCounters() {
         const lenName = elShopName.value.length;
         const lenDesc = elShopDesc.value.length;
@@ -693,38 +697,37 @@ document.addEventListener('DOMContentLoaded', function() {
         cntName.textContent = `${lenName} / 50`;
         cntDesc.textContent = `${lenDesc} / 500`;
 
-        // Toggle warning colors if limit reached
         cntName.classList.toggle('limit-reached', lenName >= 50);
         cntDesc.classList.toggle('limit-reached', lenDesc >= 500);
     }
 
-    // Attach Event Listeners
     ['input', 'keyup', 'change', 'paste'].forEach(evt => {
-        elShopName.addEventListener(evt, () => {
-            updateCharCounters();
-            evaluateFormValidity();
-        });
-        
-        elShopDesc.addEventListener(evt, () => {
-            updateCharCounters();
-            evaluateFormValidity();
-        });
-    });
-
-    elTerms.addEventListener('change', evaluateFormValidity);
-
-    // Form Submission Loader
-    regForm.addEventListener('submit', function(e) {
-        if (!elBtnSubmit.disabled) {
-            elBtnSubmit.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> กำลังประมวลผล...';
-            elBtnSubmit.style.opacity = '0.8';
-            elBtnSubmit.style.cursor = 'wait';
-            // We do not strictly disable it here to ensure the form submits properly across all browsers, 
-            // but the visual state changes.
+        if(elShopName) {
+            elShopName.addEventListener(evt, () => {
+                updateCharCounters();
+                evaluateFormValidity();
+            });
+        }
+        if(elShopDesc) {
+            elShopDesc.addEventListener(evt, () => {
+                updateCharCounters();
+                evaluateFormValidity();
+            });
         }
     });
 
-    // Initial check on load (useful if browser preserves input values on back navigation)
+    if(elTerms) {
+        elTerms.addEventListener('change', evaluateFormValidity);
+    }
+
+    regForm.addEventListener('submit', function(e) {
+        if (!elBtnSubmit.disabled) {
+            elBtnSubmit.innerHTML = '<i class="fas fa-circle-notch fa-spin me-2"></i> กำลังดำเนินการ...';
+            elBtnSubmit.style.opacity = '0.8';
+            elBtnSubmit.style.cursor = 'wait';
+        }
+    });
+
     updateCharCounters();
     evaluateFormValidity();
 });
