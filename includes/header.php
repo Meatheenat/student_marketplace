@@ -968,7 +968,5 @@ if (isLoggedIn()) {
     </script>
 
     <main class="master-main-content" style="min-height: 80vh; padding-top: 2rem;">
-        ```
 
----
 
