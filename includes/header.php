@@ -327,451 +327,26 @@ if (isLoggedIn()) {
             height: auto;
         }
 
-        /* ======================================================================================
-        ADVANCED UI COMPONENT LIBRARY (BNCC ENTERPRISE UX)
-        Provides reusable components for the entire application to ensure consistency
-        ======================================================================================
-        */
+        /* Utility Classes Engine */
+        .u-flex { display: flex; }
+        .u-flex-col { flex-direction: column; }
+        .u-items-center { align-items: center; }
+        .u-justify-center { justify-content: center; }
+        .u-justify-between { justify-content: space-between; }
+        .u-w-full { width: 100%; }
+        .u-h-full { height: 100%; }
+        .u-relative { position: relative; }
+        .u-absolute { position: absolute; }
+        .u-hidden { display: none !important; }
+        .u-block { display: block; }
         
-        /* Flexbox Utility Classes */
-        .ui-flex { display: flex; }
-        .ui-flex-col { flex-direction: column; }
-        .ui-flex-row { flex-direction: row; }
-        .ui-flex-wrap { flex-wrap: wrap; }
-        .ui-items-start { align-items: flex-start; }
-        .ui-items-center { align-items: center; }
-        .ui-items-end { align-items: flex-end; }
-        .ui-items-stretch { align-items: stretch; }
-        .ui-justify-start { justify-content: flex-start; }
-        .ui-justify-center { justify-content: center; }
-        .ui-justify-end { justify-content: flex-end; }
-        .ui-justify-between { justify-content: space-between; }
-        .ui-justify-around { justify-content: space-around; }
-
-        /* Sizing Utility Classes */
-        .ui-w-full { width: 100%; }
-        .ui-h-full { height: 100%; }
-        .ui-w-screen { width: 100vw; }
-        .ui-h-screen { height: 100vh; }
-        .ui-w-auto { width: auto; }
-        .ui-h-auto { height: auto; }
-        .ui-max-w-full { max-width: 100%; }
+        .u-text-center { text-align: center; }
+        .u-text-left { text-align: left; }
+        .u-text-right { text-align: right; }
         
-        /* Positioning Utilities */
-        .ui-relative { position: relative; }
-        .ui-absolute { position: absolute; }
-        .ui-fixed { position: fixed; }
-        .ui-sticky { position: sticky; top: 0; }
-        
-        /* Display Utilities */
-        .ui-hidden { display: none !important; }
-        .ui-block { display: block; }
-        .ui-inline-block { display: inline-block; }
-        
-        /* Text Alignment & Formatting */
-        .ui-text-center { text-align: center; }
-        .ui-text-left { text-align: left; }
-        .ui-text-right { text-align: right; }
-        .ui-text-justify { text-align: justify; }
-        .ui-uppercase { text-transform: uppercase; }
-        .ui-lowercase { text-transform: lowercase; }
-        .ui-capitalize { text-transform: capitalize; }
-        .ui-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        
-        /* Typography System */
-        .ui-font-light { font-weight: 300; }
-        .ui-font-normal { font-weight: 400; }
-        .ui-font-medium { font-weight: 500; }
-        .ui-font-semibold { font-weight: 600; }
-        .ui-font-bold { font-weight: 700; }
-        .ui-font-extrabold { font-weight: 800; }
-        .ui-font-black { font-weight: 900; }
-        
-        .ui-text-xs { font-size: var(--bncc-font-xs); }
-        .ui-text-sm { font-size: var(--bncc-font-sm); }
-        .ui-text-base { font-size: var(--bncc-font-base); }
-        .ui-text-lg { font-size: var(--bncc-font-lg); }
-        .ui-text-xl { font-size: var(--bncc-font-xl); }
-        .ui-text-2xl { font-size: var(--bncc-font-2xl); }
-        .ui-text-3xl { font-size: var(--bncc-font-3xl); }
-        .ui-text-4xl { font-size: var(--bncc-font-4xl); }
-        
-        /* Comprehensive Spacing System (Margin & Padding) */
-        .ui-m-0 { margin: 0px; }
-        .ui-m-1 { margin: 0.25rem; }
-        .ui-m-2 { margin: 0.5rem; }
-        .ui-m-3 { margin: 0.75rem; }
-        .ui-m-4 { margin: 1rem; }
-        .ui-m-5 { margin: 1.25rem; }
-        .ui-m-6 { margin: 1.5rem; }
-        .ui-m-8 { margin: 2rem; }
-        .ui-m-10 { margin: 2.5rem; }
-        .ui-m-12 { margin: 3rem; }
-        .ui-m-16 { margin: 4rem; }
-        .ui-m-20 { margin: 5rem; }
-        
-        .ui-mt-0 { margin-top: 0px; }
-        .ui-mt-1 { margin-top: 0.25rem; }
-        .ui-mt-2 { margin-top: 0.5rem; }
-        .ui-mt-3 { margin-top: 0.75rem; }
-        .ui-mt-4 { margin-top: 1rem; }
-        .ui-mt-5 { margin-top: 1.25rem; }
-        .ui-mt-6 { margin-top: 1.5rem; }
-        .ui-mt-8 { margin-top: 2rem; }
-        .ui-mt-10 { margin-top: 2.5rem; }
-        .ui-mt-12 { margin-top: 3rem; }
-        
-        .ui-mb-0 { margin-bottom: 0px; }
-        .ui-mb-1 { margin-bottom: 0.25rem; }
-        .ui-mb-2 { margin-bottom: 0.5rem; }
-        .ui-mb-3 { margin-bottom: 0.75rem; }
-        .ui-mb-4 { margin-bottom: 1rem; }
-        .ui-mb-5 { margin-bottom: 1.25rem; }
-        .ui-mb-6 { margin-bottom: 1.5rem; }
-        .ui-mb-8 { margin-bottom: 2rem; }
-        .ui-mb-10 { margin-bottom: 2.5rem; }
-        .ui-mb-12 { margin-bottom: 3rem; }
-        
-        .ui-ml-0 { margin-left: 0px; }
-        .ui-ml-1 { margin-left: 0.25rem; }
-        .ui-ml-2 { margin-left: 0.5rem; }
-        .ui-ml-3 { margin-left: 0.75rem; }
-        .ui-ml-4 { margin-left: 1rem; }
-        .ui-ml-6 { margin-left: 1.5rem; }
-        .ui-ml-8 { margin-left: 2rem; }
-        
-        .ui-mr-0 { margin-right: 0px; }
-        .ui-mr-1 { margin-right: 0.25rem; }
-        .ui-mr-2 { margin-right: 0.5rem; }
-        .ui-mr-3 { margin-right: 0.75rem; }
-        .ui-mr-4 { margin-right: 1rem; }
-        .ui-mr-6 { margin-right: 1.5rem; }
-        .ui-mr-8 { margin-right: 2rem; }
-        
-        .ui-p-0 { padding: 0px; }
-        .ui-p-1 { padding: 0.25rem; }
-        .ui-p-2 { padding: 0.5rem; }
-        .ui-p-3 { padding: 0.75rem; }
-        .ui-p-4 { padding: 1rem; }
-        .ui-p-5 { padding: 1.25rem; }
-        .ui-p-6 { padding: 1.5rem; }
-        .ui-p-8 { padding: 2rem; }
-        .ui-p-10 { padding: 2.5rem; }
-        .ui-p-12 { padding: 3rem; }
-        
-        .ui-pt-0 { padding-top: 0px; }
-        .ui-pt-1 { padding-top: 0.25rem; }
-        .ui-pt-2 { padding-top: 0.5rem; }
-        .ui-pt-3 { padding-top: 0.75rem; }
-        .ui-pt-4 { padding-top: 1rem; }
-        .ui-pt-5 { padding-top: 1.25rem; }
-        .ui-pt-6 { padding-top: 1.5rem; }
-        .ui-pt-8 { padding-top: 2rem; }
-        .ui-pt-10 { padding-top: 2.5rem; }
-        .ui-pt-12 { padding-top: 3rem; }
-        
-        .ui-pb-0 { padding-bottom: 0px; }
-        .ui-pb-1 { padding-bottom: 0.25rem; }
-        .ui-pb-2 { padding-bottom: 0.5rem; }
-        .ui-pb-3 { padding-bottom: 0.75rem; }
-        .ui-pb-4 { padding-bottom: 1rem; }
-        .ui-pb-5 { padding-bottom: 1.25rem; }
-        .ui-pb-6 { padding-bottom: 1.5rem; }
-        .ui-pb-8 { padding-bottom: 2rem; }
-        .ui-pb-10 { padding-bottom: 2.5rem; }
-        .ui-pb-12 { padding-bottom: 3rem; }
-        
-        .ui-pl-0 { padding-left: 0px; }
-        .ui-pl-1 { padding-left: 0.25rem; }
-        .ui-pl-2 { padding-left: 0.5rem; }
-        .ui-pl-3 { padding-left: 0.75rem; }
-        .ui-pl-4 { padding-left: 1rem; }
-        .ui-pl-6 { padding-left: 1.5rem; }
-        .ui-pl-8 { padding-left: 2rem; }
-        
-        .ui-pr-0 { padding-right: 0px; }
-        .ui-pr-1 { padding-right: 0.25rem; }
-        .ui-pr-2 { padding-right: 0.5rem; }
-        .ui-pr-3 { padding-right: 0.75rem; }
-        .ui-pr-4 { padding-right: 1rem; }
-        .ui-pr-6 { padding-right: 1.5rem; }
-        .ui-pr-8 { padding-right: 2rem; }
-        
-        .ui-px-0 { padding-left: 0px; padding-right: 0px; }
-        .ui-px-1 { padding-left: 0.25rem; padding-right: 0.25rem; }
-        .ui-px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
-        .ui-px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
-        .ui-px-4 { padding-left: 1rem; padding-right: 1rem; }
-        .ui-px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
-        .ui-px-8 { padding-left: 2rem; padding-right: 2rem; }
-        
-        .ui-py-0 { padding-top: 0px; padding-bottom: 0px; }
-        .ui-py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
-        .ui-py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
-        .ui-py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
-        .ui-py-4 { padding-top: 1rem; padding-bottom: 1rem; }
-        .ui-py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
-        .ui-py-8 { padding-top: 2rem; padding-bottom: 2rem; }
-
-        /* Border Radius Utilities */
-        .ui-rounded-none { border-radius: var(--bncc-radius-none); }
-        .ui-rounded-sm { border-radius: var(--bncc-radius-sm); }
-        .ui-rounded-md { border-radius: var(--bncc-radius-md); }
-        .ui-rounded-lg { border-radius: var(--bncc-radius-lg); }
-        .ui-rounded-xl { border-radius: var(--bncc-radius-xl); }
-        .ui-rounded-2xl { border-radius: var(--bncc-radius-2xl); }
-        .ui-rounded-full { border-radius: var(--bncc-radius-full); }
-        
-        /* Shadow Utilities */
-        .ui-shadow-sm { box-shadow: var(--bncc-shadow-sm); }
-        .ui-shadow-md { box-shadow: var(--bncc-shadow-md); }
-        .ui-shadow-lg { box-shadow: var(--bncc-shadow-lg); }
-        .ui-shadow-xl { box-shadow: var(--bncc-shadow-xl); }
-        .ui-shadow-none { box-shadow: none; }
-
-        /* Basic Grid System */
-        .ui-grid { display: grid; }
-        .ui-grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
-        .ui-grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        .ui-grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-        .ui-grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-        .ui-grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-        .ui-grid-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-        .ui-grid-cols-12 { grid-template-columns: repeat(12, minmax(0, 1fr)); }
-        
-        .ui-gap-1 { gap: 0.25rem; }
-        .ui-gap-2 { gap: 0.5rem; }
-        .ui-gap-3 { gap: 0.75rem; }
-        .ui-gap-4 { gap: 1rem; }
-        .ui-gap-6 { gap: 1.5rem; }
-        .ui-gap-8 { gap: 2rem; }
-
-        /* UI Colors: Text */
-        .ui-text-primary { color: var(--bncc-primary-500); }
-        .ui-text-success { color: var(--bncc-success-500); }
-        .ui-text-danger { color: var(--bncc-danger-500); }
-        .ui-text-warning { color: var(--bncc-warning-500); }
-        .ui-text-info { color: var(--bncc-info-500); }
-        .ui-text-white { color: #ffffff; }
-        .ui-text-black { color: #000000; }
-        .ui-text-main { color: var(--theme-text-primary); }
-        .ui-text-sub { color: var(--theme-text-secondary); }
-        .ui-text-muted { color: var(--theme-text-tertiary); }
-        
-        /* UI Colors: Backgrounds */
-        .ui-bg-primary { background-color: var(--bncc-primary-500); }
-        .ui-bg-success { background-color: var(--bncc-success-500); }
-        .ui-bg-danger { background-color: var(--bncc-danger-500); }
-        .ui-bg-warning { background-color: var(--bncc-warning-500); }
-        .ui-bg-info { background-color: var(--bncc-info-500); }
-        .ui-bg-white { background-color: #ffffff; }
-        .ui-bg-transparent { background-color: transparent; }
-        .ui-bg-surface { background-color: var(--theme-surface); }
-        .ui-bg-surface-alt { background-color: var(--theme-surface-alt); }
-        .ui-bg-base { background-color: var(--theme-bg); }
-
-        /* Enterprise Components: Buttons */
-        .ui-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            border-radius: var(--bncc-radius-md);
-            font-weight: 600;
-            font-size: var(--bncc-font-sm);
-            line-height: 1.5;
-            text-align: center;
-            white-space: nowrap;
-            vertical-align: middle;
-            user-select: none;
-            border: 1px solid transparent;
-            transition: all var(--bncc-duration-fast) var(--bncc-ease-in-out);
-            cursor: pointer;
-        }
-
-        .ui-btn:disabled, .ui-btn.is-disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            pointer-events: none;
-        }
-
-        .ui-btn-primary {
-            color: #ffffff;
-            background-color: var(--bncc-primary-500);
-            box-shadow: var(--bncc-shadow-sm);
-        }
-        
-        .ui-btn-primary:hover {
-            background-color: var(--bncc-primary-600);
-            box-shadow: var(--bncc-shadow-md);
-            transform: translateY(-1px);
-        }
-
-        .ui-btn-secondary {
-            color: var(--theme-text-primary);
-            background-color: var(--theme-surface-alt);
-            border-color: var(--theme-border);
-        }
-
-        .ui-btn-secondary:hover {
-            background-color: var(--theme-hover-bg);
-            border-color: var(--theme-border-focus);
-        }
-        
-        .ui-btn-danger {
-            color: #ffffff;
-            background-color: var(--bncc-danger-500);
-        }
-        
-        .ui-btn-danger:hover {
-            background-color: var(--bncc-danger-600);
-            box-shadow: var(--bncc-shadow-md), 0 0 10px rgba(239, 68, 68, 0.4);
-        }
-
-        .ui-btn-ghost {
-            color: var(--theme-text-secondary);
-            background-color: transparent;
-        }
-        
-        .ui-btn-ghost:hover {
-            color: var(--theme-text-primary);
-            background-color: var(--theme-hover-bg);
-        }
-
-        /* Enterprise Components: Cards */
-        .ui-card {
-            background-color: var(--theme-surface);
-            border: 1px solid var(--theme-border);
-            border-radius: var(--bncc-radius-lg);
-            box-shadow: var(--theme-shadow-base);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            transition: transform var(--bncc-duration-normal), box-shadow var(--bncc-duration-normal);
-        }
-        
-        .ui-card:hover {
-            box-shadow: var(--theme-shadow-hover);
-        }
-        
-        .ui-card-header {
-            padding: 1.25rem 1.5rem;
-            border-bottom: 1px solid var(--theme-border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        
-        .ui-card-body {
-            padding: 1.5rem;
-            flex-grow: 1;
-        }
-        
-        .ui-card-footer {
-            padding: 1.25rem 1.5rem;
-            border-top: 1px solid var(--theme-border);
-            background-color: var(--theme-surface-alt);
-        }
-
-        /* Enterprise Components: Badges */
-        .ui-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.125rem 0.625rem;
-            border-radius: var(--bncc-radius-full);
-            font-size: var(--bncc-font-xs);
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            white-space: nowrap;
-        }
-        
-        .ui-badge-primary { background-color: var(--bncc-primary-100); color: var(--bncc-primary-700); }
-        .ui-badge-success { background-color: var(--bncc-success-100); color: var(--bncc-success-700); }
-        .ui-badge-danger { background-color: var(--bncc-danger-100); color: var(--bncc-danger-700); }
-        .ui-badge-warning { background-color: var(--bncc-warning-100); color: var(--bncc-warning-700); }
-        
-        .dark-theme .ui-badge-primary { background-color: rgba(99, 102, 241, 0.2); color: var(--bncc-primary-300); }
-        .dark-theme .ui-badge-success { background-color: rgba(16, 185, 129, 0.2); color: var(--bncc-success-300); }
-        .dark-theme .ui-badge-danger { background-color: rgba(239, 68, 68, 0.2); color: var(--bncc-danger-300); }
-        .dark-theme .ui-badge-warning { background-color: rgba(245, 158, 11, 0.2); color: var(--bncc-warning-300); }
-
-        /* Enterprise Components: Form Inputs */
-        .ui-input {
-            display: block;
-            width: 100%;
-            padding: 0.625rem 1rem;
-            font-size: var(--bncc-font-sm);
-            font-weight: 400;
-            line-height: 1.5;
-            color: var(--theme-text-primary);
-            background-color: var(--theme-input-bg);
-            background-clip: padding-box;
-            border: 1px solid var(--theme-border);
-            border-radius: var(--bncc-radius-md);
-            transition: border-color var(--bncc-duration-fast), box-shadow var(--bncc-duration-fast);
-        }
-        
-        .ui-input:focus {
-            border-color: var(--bncc-primary-400);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-            outline: 0;
-        }
-
-        /* Enterprise Components: Tooltips */
-        .ui-tooltip {
-            position: relative;
-            display: inline-block;
-        }
-        
-        .ui-tooltip .ui-tooltip-text {
-            visibility: hidden;
-            width: max-content;
-            max-width: 250px;
-            background-color: var(--bncc-surface-dark);
-            color: #ffffff;
-            text-align: center;
-            border-radius: var(--bncc-radius-md);
-            padding: 0.5rem 0.75rem;
-            font-size: var(--bncc-font-xs);
-            font-weight: 500;
-            position: absolute;
-            z-index: var(--bncc-z-tooltip);
-            bottom: 125%;
-            left: 50%;
-            transform: translateX(-50%) translateY(10px);
-            opacity: 0;
-            transition: opacity 0.3s, transform 0.3s;
-            box-shadow: var(--bncc-shadow-lg);
-            pointer-events: none;
-        }
-        
-        .dark-theme .ui-tooltip .ui-tooltip-text {
-            background-color: var(--bncc-surface-light);
-            color: var(--bncc-text-primary-light);
-        }
-        
-        .ui-tooltip .ui-tooltip-text::after {
-            content: "";
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            margin-left: -5px;
-            border-width: 5px;
-            border-style: solid;
-            border-color: var(--bncc-surface-dark) transparent transparent transparent;
-        }
-        
-        .dark-theme .ui-tooltip .ui-tooltip-text::after {
-            border-color: var(--bncc-surface-light) transparent transparent transparent;
-        }
-        
-        .ui-tooltip:hover .ui-tooltip-text {
-            visibility: visible;
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
+        .u-font-bold { font-weight: 700; }
+        .u-font-extrabold { font-weight: 800; }
+        .u-font-black { font-weight: 900; }
 
         /* Custom Scrollbar Architecture */
         ::-webkit-scrollbar {
@@ -850,51 +425,6 @@ if (isLoggedIn()) {
         @keyframes skeleton-loading {
             0% { background-position: 200% 0; }
             100% { background-position: -200% 0; }
-        }
-
-        @keyframes bell-shake {
-            0% { transform: rotate(0); }
-            10% { transform: rotate(15deg); }
-            20% { transform: rotate(-10deg); }
-            30% { transform: rotate(10deg); }
-            40% { transform: rotate(-10deg); }
-            50% { transform: rotate(5deg); }
-            60% { transform: rotate(-5deg); }
-            70% { transform: rotate(0); }
-            100% { transform: rotate(0); }
-        }
-
-        @keyframes heartbeat {
-            0% { transform: scale(1); }
-            14% { transform: scale(1.3); }
-            28% { transform: scale(1); }
-            42% { transform: scale(1.3); }
-            70% { transform: scale(1); }
-            100% { transform: scale(1); }
-        }
-
-        @keyframes bounce-in {
-            0% { transform: scale(0.3); opacity: 0; }
-            50% { transform: scale(1.05); }
-            70% { transform: scale(0.9); }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        @keyframes slide-in-bounce {
-            0% { transform: translateX(-100%); opacity: 0; }
-            60% { transform: translateX(10px); opacity: 1; }
-            80% { transform: translateX(-5px); }
-            100% { transform: translateX(0); }
-        }
-
-        @keyframes glow-pulse {
-            0%, 100% { box-shadow: 0 0 5px rgba(99, 102, 241, 0.5); }
-            50% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.8), 0 0 30px rgba(99, 102, 241, 0.4); }
-        }
-
-        @keyframes shimmer {
-            0% { background-position: -200% center; }
-            100% { background-position: 200% center; }
         }
 
         /* Global Preloader Component */
@@ -1385,7 +915,10 @@ if (isLoggedIn()) {
             background: linear-gradient(135deg, var(--bncc-primary-500), var(--bncc-primary-700));
         }
 
-        /* SIDEBAR DRAWER ARCHITECTURE */
+        /* ============================================================
+           SECTION 6: SIDEBAR DRAWER ARCHITECTURE (The Requested Feature)
+           ============================================================ */
+        
         .global-overlay {
             position: fixed;
             top: 0;
@@ -1702,7 +1235,9 @@ if (isLoggedIn()) {
             transform: translateY(-2px);
         }
 
-        /* ADVANCED NOTIFICATION DROPDOWN SYSTEM */
+        /* ============================================================
+           SECTION 7: ADVANCED NOTIFICATION DROPDOWN SYSTEM
+           ============================================================ */
         
         .notification-dropdown-container {
             position: absolute;
@@ -1914,7 +1449,10 @@ if (isLoggedIn()) {
             text-decoration: underline;
         }
 
-        /* RESPONSIVE MEDIA QUERIES */
+        /* ============================================================
+           SECTION 8: RESPONSIVE MEDIA QUERIES
+           ============================================================ */
+        
         @media screen and (max-width: 1024px) {
             .header-layout-container { padding-right: 1.5rem; padding-left: 1.5rem; }
             .brand-typography { font-size: 1.25rem; }
@@ -1947,49 +1485,19 @@ if (isLoggedIn()) {
             .header-icon-btn { width: 38px; height: 38px; font-size: 1.1rem; }
             .sidebar-master-drawer { width: 85vw; }
         }
+
     </style>
 
     <script>
-        // Enterprise JS Utilities Namespace
-        window.BNCCUtils = {
-            formatCurrency: function(amount) {
-                return new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(amount);
-            },
-            formatDate: function(dateString) {
-                const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-                return new Date(dateString).toLocaleDateString('th-TH', options);
-            },
-            storage: {
-                set: function(key, value, ttlDays = 30) {
-                    const now = new Date();
-                    const item = {
-                        value: value,
-                        expiry: now.getTime() + (ttlDays * 24 * 60 * 60 * 1000),
-                    };
-                    localStorage.setItem(key, JSON.stringify(item));
-                },
-                get: function(key) {
-                    const itemStr = localStorage.getItem(key);
-                    if (!itemStr) return null;
-                    const item = JSON.parse(itemStr);
-                    const now = new Date();
-                    if (now.getTime() > item.expiry) {
-                        localStorage.removeItem(key);
-                        return null;
-                    }
-                    return item.value;
-                }
-            }
-        };
-
         /**
-         * EARLY BLOCKING SCRIPTS
+         * SECTION 9: EARLY BLOCKING SCRIPTS
          * Theme Initialization - Executes before DOM renders to prevent flash of wrong theme
          */
         (function() {
             try {
+                // Determine theme from localStorage or OS preference
                 var sysTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                var savedTheme = window.BNCCUtils.storage.get('bncc_enterprise_theme') || localStorage.getItem('bncc_enterprise_theme');
+                var savedTheme = localStorage.getItem('bncc_enterprise_theme');
                 var activeTheme = savedTheme || sysTheme;
                 
                 if (activeTheme === 'dark') {
@@ -2214,11 +1722,11 @@ if (isLoggedIn()) {
 
             <?php if (in_array($_SESSION['role'], ['admin', 'teacher'])): ?>
                 <div class="nav-group-label">ส่วนการจัดการ (Administration)</div>
-                <a href="<?= $base_path ?>admin/admin_dashboard.php" class="nav-menu-item nav-item-admin">
+                <a href="<?= $base_path ?>admin/admin_dashboard.php" class="nav-menu-item nav-item-admin <?= $current_page == 'admin_dashboard.php' ? 'is-active' : '' ?>">
                     <i class="fas fa-shield-halved nav-menu-icon"></i>
                     <span>ศูนย์ควบคุมระบบ (Admin Panel)</span>
                 </a>
-                <a href="<?= $base_path ?>admin/approve_product.php" class="nav-menu-item nav-item-admin">
+                <a href="<?= $base_path ?>admin/approve_product.php" class="nav-menu-item nav-item-admin <?= $current_page == 'approve_product.php' ? 'is-active' : '' ?>">
                     <i class="fas fa-clipboard-check nav-menu-icon"></i>
                     <span>อนุมัติรายการสินค้า</span>
                 </a>
@@ -2268,8 +1776,10 @@ document.addEventListener('DOMContentLoaded', function() {
         element: document.getElementById('globalPreloader'),
         init() {
             if (!this.element) return;
+            // Prevent scrolling while loading
             document.body.classList.add('noscroll');
             
+            // Artificial small delay to ensure CSS parses before hiding
             window.addEventListener('load', () => {
                 setTimeout(() => {
                     this.element.classList.add('is-hidden');
@@ -2277,6 +1787,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 300); 
             });
             
+            // Fallback fail-safe just in case 'load' event hangs
             setTimeout(() => {
                 if(!this.element.classList.contains('is-hidden')){
                     this.element.classList.add('is-hidden');
@@ -2299,12 +1810,14 @@ document.addEventListener('DOMContentLoaded', function() {
         update() {
             const currentScrollY = window.scrollY;
             
+            // Navbar Glass Effect Trigger
             if (currentScrollY > 20) {
                 this.navbar.classList.add('header-is-scrolled');
             } else {
                 this.navbar.classList.remove('header-is-scrolled');
             }
 
+            // Scroll Progress Calculation
             const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
             const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
             if(height > 0) {
@@ -2345,12 +1858,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const isDark = this.html.classList.toggle('dark-theme');
             if(isDark) {
                 this.html.setAttribute('data-theme', 'dark');
-                window.BNCCUtils.storage.set('bncc_enterprise_theme', 'dark');
                 localStorage.setItem('bncc_enterprise_theme', 'dark');
                 if(this.metaTheme) this.metaTheme.setAttribute('content', '#111827');
             } else {
                 this.html.setAttribute('data-theme', 'light');
-                window.BNCCUtils.storage.set('bncc_enterprise_theme', 'light');
                 localStorage.setItem('bncc_enterprise_theme', 'light');
                 if(this.metaTheme) this.metaTheme.setAttribute('content', '#ffffff');
             }
@@ -2380,6 +1891,7 @@ document.addEventListener('DOMContentLoaded', function() {
             this.closeBtn.addEventListener('click', () => this.close());
             this.overlay.addEventListener('click', () => this.close());
 
+            // Accessibility & Keyboard support
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape' && this.isOpen) this.close();
             });
@@ -2418,7 +1930,7 @@ document.addEventListener('DOMContentLoaded', function() {
         pollInterval: 30000, 
         pollTimer: null,
         
-        // 🎯 404 FIX: Using dynamic base path for AJAX calls
+        // 🎯 404 FIX: Using dynamic base path for AJAX calls to guarantee resolution
         apiEndpoint: '<?= $base_path ?>ajax/notifications_api.php',
 
         init() {
@@ -2491,18 +2003,21 @@ document.addEventListener('DOMContentLoaded', function() {
         renderUI(data) {
             if (data.status !== 'success') return;
 
+            // Update Badge Logic
             if (data.unread_count > 0) {
                 this.badge.style.display = 'flex';
                 this.badge.textContent = data.unread_count > 99 ? '99+' : data.unread_count;
-                this.badge.classList.add('animate-pop');
-                // Add bell shake animation for unread notifications
-                this.toggleBtn.querySelector('i').style.animation = 'bell-shake 0.6s ease-in-out';
-                setTimeout(() => {
-                    this.toggleBtn.querySelector('i').style.animation = '';
-                }, 600);
+                // Avoid redundant animation triggers if value hasn't changed
+                if(this.badge.getAttribute('data-count') !== String(data.unread_count)) {
+                    this.badge.classList.remove('animate-pop');
+                    void this.badge.offsetWidth; // Trigger reflow
+                    this.badge.classList.add('animate-pop');
+                    this.badge.setAttribute('data-count', data.unread_count);
+                }
             } else {
                 this.badge.style.display = 'none';
                 this.badge.classList.remove('animate-pop');
+                this.badge.setAttribute('data-count', '0');
             }
 
             if (!this.isOpen && this.listView.innerHTML !== '') return; 
@@ -2535,7 +2050,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         async executeMarkAllRead() {
             try {
+                // Optimistic UI update
                 this.badge.style.display = 'none';
+                this.badge.setAttribute('data-count', '0');
                 const items = this.listView.querySelectorAll('.state-unread');
                 items.forEach(item => item.classList.remove('state-unread'));
 
