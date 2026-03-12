@@ -723,6 +723,72 @@ require_once '../includes/header.php';
         transform: translateY(-3px);
     }
 
+    .pd-btn-chat {
+        position: relative;
+        padding: 18px 22px;
+        border-radius: var(--pd-radius-lg);
+        background: linear-gradient(135deg, #059669, #10b981);
+        border: 2px solid rgba(16,185,129,0.3);
+        color: #fff;
+        font-weight: 800;
+        font-size: 1.05rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        text-decoration: none;
+        transition: all 0.35s var(--pd-transition);
+        box-shadow: 0 10px 25px rgba(16,185,129,0.28);
+        overflow: hidden;
+        white-space: nowrap;
+    }
+
+    .pd-btn-chat::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+        opacity: 0;
+        transition: 0.3s;
+    }
+
+    .pd-btn-chat:hover::before { opacity: 1; }
+
+    .pd-btn-chat:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 40px rgba(16,185,129,0.45);
+        color: #fff;
+        background: linear-gradient(135deg, #047857, #059669);
+    }
+
+    .pd-btn-chat:active { transform: translateY(-1px); }
+
+    .pd-btn-chat-ping {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #fff;
+        opacity: 0.9;
+    }
+
+    .pd-btn-chat-ping::before {
+        content: '';
+        position: absolute;
+        inset: -3px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.4);
+        animation: chatPing 1.8s cubic-bezier(0,0,0.2,1) infinite;
+    }
+
+    @keyframes chatPing {
+        0% { transform: scale(1); opacity: 0.7; }
+        75%, 100% { transform: scale(2.2); opacity: 0; }
+    }
+
     .pd-btn-icon {
         width: 58px;
         height: 58px;
@@ -1864,9 +1930,10 @@ require_once '../includes/header.php';
                         <i class="fas fa-shopping-bag"></i>
                         นัดรับสินค้า
                     </a>
-                    <a href="chat.php?user=<?= $product['owner_id'] ?>" class="pd-btn-secondary" title="แชทกับผู้ขาย">
-                        <i class="fas fa-comment-alt"></i>
-                        แชท
+                    <a href="chat.php?user=<?= $product['owner_id'] ?>" class="pd-btn-chat" id="chatSellerBtn" title="แชทกับผู้ขาย">
+                        <span class="pd-btn-chat-ping"></span>
+                        <i class="fas fa-comment-dots"></i>
+                        <span>แชทผู้ขาย</span>
                     </a>
                 <?php elseif ($user_id == $product['owner_id']): ?>
                     <a href="../seller/edit_product.php?id=<?= $product_id ?>" class="pd-btn-primary">
