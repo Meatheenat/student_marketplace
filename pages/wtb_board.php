@@ -349,24 +349,41 @@ $posts = $stmt->fetchAll();
                         <p class="wtb-item-desc"><?= nl2br(htmlspecialchars($post['description'])) ?></p>
 
                         <div class="wtb-card-footer">
-                            <div class="wtb-budget-display">
-                                <span class="budget-label">งบประมาณที่มี</span>
-                                <span class="budget-amount">
-                                    <?= $post['budget'] > 0 ? '฿' . number_format($post['budget']) : 'คุยราคากันเอง' ?>
-                                </span>
-                            </div>
+    <div class="wtb-budget-display mb-3">
+        <span class="budget-label">งบประมาณที่มี</span>
+        <span class="budget-amount">
+            <?= $post['budget'] > 0 ? '฿' . number_format($post['budget']) : 'คุยราคากันเอง' ?>
+        </span>
+    </div>
 
-                            <?php if (isLoggedIn() && $_SESSION['user_id'] == $post['user_id']): ?>
-                                <a href="wtb_board.php?delete=<?= $post['id'] ?>" class="btn-wtb-danger" onclick="return confirm('คุณต้องการปิดประกาศนี้ใช่หรือไม่?')">
-                                    <i class="fas fa-check-circle"></i> ปิดประกาศนี้
-                                </a>
-                            <?php else: ?>
-                                <a href="chat.php?user=<?= $post['user_id'] ?>" class="btn-wtb-primary">
-                                    <i class="fas fa-comment-alt"></i> ติดต่อเสนอราคา
-                                </a>
-                            <?php endif; ?>
-                        </div>
-                    </div>
+    <div class="d-flex flex-column gap-2">
+        <?php if (isLoggedIn()): ?>
+            <?php if ($_SESSION['user_id'] == $post['user_id']): ?>
+                <div class="d-flex gap-2">
+                    <a href="wtb_edit.php?id=<?= $post['id'] ?>" class="btn-wtb-action btn-wtb-outline flex-grow-1" style="border: 2px solid var(--wtb-accent); border-radius: 14px; padding: 10px; font-weight: 800; text-align: center; text-decoration: none;">
+                        <i class="fas fa-edit"></i> แก้ไข
+                    </a>
+                    <a href="wtb_board.php?delete=<?= $post['id'] ?>" class="btn-wtb-action btn-wtb-danger flex-grow-1" style="background: #fee2e2; color: #ef4444; border-radius: 14px; padding: 10px; font-weight: 800; text-align: center; text-decoration: none;" onclick="return confirm('ยืนยันการปิดประกาศนี้?')">
+                        <i class="fas fa-check"></i> ปิดประกาศ
+                    </a>
+                </div>
+            <?php elseif ($_SESSION['role'] == 'admin'): ?>
+                <a href="chat.php?user=<?= $post['user_id'] ?>" class="btn-wtb-action btn-wtb-primary" style="background: var(--wtb-accent); color: #fff; border-radius: 14px; padding: 12px; font-weight: 800; text-align: center; text-decoration: none;">
+                    <i class="fas fa-comment-alt"></i> ติดต่อเสนอสินค้า
+                </a>
+                <a href="../admin/wtb_delete_admin.php?id=<?= $post['id'] ?>" class="btn-wtb-action" style="background: #ef4444; color: #fff; border-radius: 14px; padding: 10px; font-weight: 800; text-align: center; text-decoration: none; margin-top: 5px;" onclick="return confirm('แอดมิน: ยืนยันการลบประกาศนี้ไปที่ถังขยะ?')">
+                    <i class="fas fa-trash-alt"></i> ลบประกาศ (Admin)
+                </a>
+            <?php else: ?>
+                <a href="chat.php?user=<?= $post['user_id'] ?>" class="btn-wtb-action btn-wtb-primary" style="background: var(--wtb-accent); color: #fff; border-radius: 14px; padding: 12px; font-weight: 800; text-align: center; text-decoration: none;">
+                    <i class="fas fa-comment-alt"></i> ติดต่อเสนอสินค้า
+                </a>
+            <?php endif; ?>
+        <?php else: ?>
+            <a href="../auth/login.php" class="btn-wtb-action btn-wtb-primary" style="background: var(--wtb-accent); color: #fff; border-radius: 14px; padding: 12px; font-weight: 800; text-align: center; text-decoration: none;">เข้าสู่ระบบเพื่อติดต่อ</a>
+        <?php endif; ?>
+    </div>
+</div>
                 </article>
             <?php endforeach; ?>
         <?php else: ?>
