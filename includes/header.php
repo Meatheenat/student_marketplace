@@ -2790,4 +2790,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<main class="bncc-master-main-wrapper" style="padding-top: <?= $hide_navbar ? '0' : 'calc(var(--bncc-header-height) + 1.5rem)'?>; min-height: calc(100vh - var(--bncc-header-height)); position: relative; z-index: var(--bncc-z-base);">
+<main class="bncc-master-main-wrapper" style="padding-top: calc(var(--bncc-header-height) + 1.5rem) min-height: calc(100vh - var(--bncc-header-height)); position: relative; z-index: var(--bncc-z-base);">
