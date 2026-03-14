@@ -1,474 +1,1116 @@
 <?php
-/**
- * ============================================================================================
- * 🔄 BNCC MARKETPLACE - BARTER SYSTEM ENGINE (V 2.0.0)
- * ============================================================================================
- * Architecture: Model-View-Controller (Integrated Stage)
- * Design Strategy: High-Contrast Enterprise Solid UX
- * Features: Live Search, Category Mapping, Smooth Morphing Cards
- * --------------------------------------------------------------------------------------------
- */
-
 require_once '../includes/functions.php';
 
-// --------------------------------------------------------------------------------------------
-// [SECTION 1] DATA ACQUISITION & LOGIC CONTROLLER
-// --------------------------------------------------------------------------------------------
 $db = getDB();
 $user_id = $_SESSION['user_id'] ?? null;
 
-// ดึงหมวดหมู่ (สมมติว่าใช้หมวดหมู่เดียวกับสินค้า หรือจะ Hardcode ก็ได้)
-$categories = [
-    ['id' => 1, 'name' => 'อุปกรณ์การเรียน', 'icon' => 'fa-book'],
-    ['id' => 2, 'name' => 'เสื้อผ้า/เครื่องแต่งกาย', 'icon' => 'fa-tshirt'],
-    ['id' => 3, 'name' => 'อุปกรณ์อิเล็กทรอนิกส์', 'icon' => 'fa-laptop'],
-    ['id' => 4, 'name' => 'อาหาร/ขนม', 'icon' => 'fa-cookie-bite'],
-    ['id' => 5, 'name' => 'ของสะสม/โมเดล', 'icon' => 'fa-gamepad']
-];
+$q = isset($_GET['q']) ? trim($_GET['q']) : '';
+$cat = isset($_GET['cat']) ? $_GET['cat'] : 'all';
 
-// ดึงรายการแลกเปลี่ยน (BARTER POSTS) พร้อม Join ข้อมูลผู้ใช้
-$query = "SELECT b.*, u.fullname, u.profile_img, u.role as user_role 
+$query = "SELECT b.*, u.fullname, u.profile_img, u.role as user_role, u.created_at as user_since
           FROM barter_posts b 
           JOIN users u ON b.user_id = u.id 
-          WHERE b.status = 'open' 
-          ORDER BY b.created_at DESC";
-$stmt = $db->prepare($query);
-$stmt->execute();
-$barter_list = $stmt->fetchAll();
+          WHERE b.status = 'open' ";
 
-// คำนวณสถิติเบื้องต้น (Board Analytics)
-$total_posts = count($barter_list);
-$today_posts = 0;
-foreach($barter_list as $item) {
-    if(date('Y-m-d', strtotime($item['created_at'])) == date('Y-m-d')) $today_posts++;
+$params = [];
+if (!empty($q)) {
+    $query .= " AND (b.title LIKE ? OR b.item_have LIKE ? OR b.item_want LIKE ? OR b.description LIKE ?)";
+    $search_param = "%$q%";
+    $params = [$search_param, $search_param, $search_param, $search_param];
 }
 
-$pageTitle = "กระดานแลกเปลี่ยนสินค้า (Barter Hub)";
+$query .= " ORDER BY b.created_at DESC";
+
+$stmt = $db->prepare($query);
+$stmt->execute($params);
+$barter_entries = $stmt->fetchAll();
+
+$pageTitle = "กระดานแลกเปลี่ยนสินค้า";
 require_once '../includes/header.php';
 ?>
 
 <style>
-    /* 🎨 SECTION 1: DESIGN TOKENS */
-    :root {
-        --bt-primary: #4f46e5;
-        --bt-primary-soft: rgba(79, 70, 229, 0.1);
-        --bt-success: #10b981;
-        --bt-success-soft: rgba(16, 185, 129, 0.1);
-        --bt-danger: #ef4444;
-        --bt-warning: #f59e0b;
-        --bt-surface: #ffffff;
-        --bt-base: #f8fafc;
-        --bt-border: #e2e8f0;
-        --bt-text-main: #0f172a;
-        --bt-text-sub: #64748b;
-        --bt-radius-luxe: 32px;
-        --bt-radius-standard: 20px;
-        --bt-shadow-luxe: 0 20px 40px rgba(0, 0, 0, 0.06);
-        --bt-transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .dark-theme {
-        --bt-surface: #111827;
-        --bt-base: #030712;
-        --bt-border: #1f2937;
-        --bt-text-main: #f8fafc;
-        --bt-text-sub: #94a3b8;
-    }
-
-    /* 🏛️ SECTION 2: LAYOUT FOUNDATION */
-    .barter-hub-wrapper {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 40px 20px;
-        animation: hubReveal 0.8s var(--bt-transition);
-    }
-
-    @keyframes hubReveal {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* 🚀 SECTION 3: HERO ANALYTICS BAR */
-    .analytics-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 20px;
-        margin-bottom: 40px;
-    }
-
-    .analytic-card {
-        background: var(--bt-surface);
-        border: 2px solid var(--bt-border);
-        padding: 25px;
-        border-radius: var(--bt-radius-standard);
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        transition: var(--bt-transition);
-    }
-
-    .analytic-card:hover { transform: translateY(-5px); border-color: var(--bt-primary); box-shadow: var(--bt-shadow-luxe); }
-
-    .analytic-icon {
-        width: 55px; height: 55px; border-radius: 15px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 1.5rem; background: var(--bt-primary-soft); color: var(--bt-primary);
-    }
-
-    /* 🔍 SECTION 4: ADVANCED FILTER SYSTEM */
-    .filter-dock {
-        background: var(--bt-surface);
-        border: 2px solid var(--bt-border);
-        border-radius: var(--bt-radius-standard);
-        padding: 30px;
-        margin-bottom: 40px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 20px;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .search-input-group { position: relative; flex: 1; min-width: 300px; }
-    .search-input-group i { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: var(--bt-text-sub); }
-    .ui-search {
-        width: 100%; padding: 15px 15px 15px 50px; border-radius: 15px;
-        border: 2px solid var(--bt-border); background: var(--bt-base);
-        font-family: inherit; font-weight: 600; color: var(--bt-text-main);
-        transition: 0.3s;
-    }
-    .ui-search:focus { outline: none; border-color: var(--bt-primary); background: var(--bt-surface); }
-
-    /* 📦 SECTION 5: BARTER CARD ARCHITECTURE */
-    .barter-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-        gap: 30px;
-    }
-
-    .barter-card {
-        background: var(--bt-surface);
-        border: 2px solid var(--bt-border);
-        border-radius: var(--bt-radius-standard);
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        transition: var(--bt-transition);
-        position: relative;
-    }
-
-    .barter-card:hover {
-        transform: translateY(-12px) scale(1.02);
-        box-shadow: 0 30px 60px -12px rgba(0,0,0,0.15);
-        border-color: var(--bt-primary);
-    }
-
-    .barter-card::after {
-        content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 5px;
-        background: linear-gradient(90deg, var(--bt-primary), var(--bt-accent));
-        opacity: 0; transition: 0.3s;
-    }
-    .barter-card:hover::after { opacity: 1; }
-
-    .card-media { width: 100%; height: 240px; overflow: hidden; position: relative; background: #eee; }
-    .card-media img { width: 100%; height: 100%; object-fit: cover; transition: 0.8s ease; }
-    .barter-card:hover .card-media img { transform: scale(1.1); }
-
-    .card-status-pill {
-        position: absolute; top: 15px; left: 15px; padding: 6px 15px;
-        background: rgba(0,0,0,0.7); color: #fff; border-radius: 10px;
-        font-size: 0.7rem; font-weight: 800; backdrop-filter: blur(5px);
-    }
-
-    .card-body { padding: 30px; flex: 1; display: flex; flex-direction: column; }
-    .post-title { font-size: 1.4rem; font-weight: 900; line-height: 1.2; margin-bottom: 20px; color: var(--bt-text-main); }
-
-    /* 🔄 BARTER TRACK UI */
-    .barter-exchange-track {
-        display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;
-        background: var(--bt-base); padding: 15px; border-radius: 18px; border: 1px solid var(--bt-border);
-    }
-
-    .track-node { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 0.9rem; }
-    .node-have { color: var(--bt-success); }
-    .node-want { color: var(--bt-primary); }
+:root {
+    --core-primary: #4f46e5;
+    --core-primary-hover: #4338ca;
+    --core-primary-light: #e0e7ff;
+    --core-primary-dark: #312e81;
+    --core-primary-alpha: rgba(79, 70, 229, 0.15);
     
-    .track-divider { 
-        height: 1px; background: var(--bt-border); margin: 5px 0; position: relative;
-        display: flex; align-items: center; justify-content: center;
-    }
-    .track-divider i { background: var(--bt-base); padding: 0 10px; font-size: 0.7rem; color: var(--bt-text-sub); }
+    --core-success: #10b981;
+    --core-success-hover: #059669;
+    --core-success-light: #d1fae5;
+    --core-success-dark: #064e3b;
+    --core-success-alpha: rgba(16, 185, 129, 0.15);
 
-    .post-desc { font-size: 0.95rem; line-height: 1.6; color: var(--bt-text-sub); margin-bottom: 25px; height: 3.2em; overflow: hidden; }
+    --core-danger: #ef4444;
+    --core-danger-hover: #dc2626;
+    --core-danger-light: #fee2e2;
+    --core-danger-dark: #7f1d1d;
+    --core-danger-alpha: rgba(239, 68, 68, 0.15);
 
-    .card-footer {
-        padding-top: 20px; border-top: 2px solid var(--bt-border);
-        display: flex; align-items: center; justify-content: space-between;
-    }
+    --core-warning: #f59e0b;
+    --core-warning-hover: #d97706;
+    --core-warning-light: #fef3c7;
+    --core-warning-dark: #78350f;
+    --core-warning-alpha: rgba(245, 158, 11, 0.15);
 
-    .user-mini-pfp { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 2px solid var(--bt-primary); }
+    --core-info: #3b82f6;
+    --core-info-hover: #2563eb;
+    --core-info-light: #dbeafe;
+    --core-info-dark: #1e3a8a;
+    --core-info-alpha: rgba(59, 130, 246, 0.15);
 
-    /* 📱 RESPONSIVE ADAPTATION */
-    @media (max-width: 1024px) {
-        .analytics-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-    @media (max-width: 600px) {
-        .analytics-grid { grid-template-columns: 1fr; }
-        .pd-layout-grid { padding: 20px; }
-        .filter-dock { flex-direction: column; align-items: stretch; }
-    }
+    --surface-main: #ffffff;
+    --surface-alt: #f8fafc;
+    --surface-card: #ffffff;
+    --surface-hover: #f1f5f9;
+    --surface-glass: rgba(255, 255, 255, 0.8);
+    
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-tertiary: #94a3b8;
+    --text-inverse: #ffffff;
 
-    /* 🎞️ SECTION 6: SKELETON LOADERS */
-    .skeleton { background: linear-gradient(90deg, var(--bt-border) 25%, var(--bt-base) 50%, var(--bt-border) 75%); background-size: 200% 100%; animation: loading 1.5s infinite; }
-    @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    --border-light: #f1f5f9;
+    --border-main: #e2e8f0;
+    --border-strong: #cbd5e1;
 
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+    --shadow-glow-primary: 0 0 20px rgba(79, 70, 229, 0.3);
+
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.5rem;
+    --radius-3xl: 2rem;
+    --radius-full: 9999px;
+
+    --font-sans: 'Prompt', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    --z-negative: -1;
+    --z-base: 0;
+    --z-dropdown: 50;
+    --z-sticky: 100;
+    --z-modal-backdrop: 200;
+    --z-modal: 250;
+    --z-toast: 300;
+}
+
+html[data-theme="dark"], .dark-theme {
+    --surface-main: #020617;
+    --surface-alt: #0f172a;
+    --surface-card: #1e293b;
+    --surface-hover: #334155;
+    --surface-glass: rgba(15, 23, 42, 0.8);
+    
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-tertiary: #64748b;
+    --text-inverse: #0f172a;
+
+    --border-light: #1e293b;
+    --border-main: #334155;
+    --border-strong: #475569;
+
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.7), 0 4px 6px -2px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.8), 0 10px 10px -5px rgba(0, 0, 0, 0.6);
+    --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.9);
+}
+
+*, ::before, ::after { box-sizing: border-box; margin: 0; padding: 0; border-width: 0; border-style: solid; border-color: var(--border-main); }
+html { font-family: var(--font-sans); line-height: 1.5; -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body { background-color: var(--surface-main); color: var(--text-primary); transition: background-color var(--transition-normal), color var(--transition-normal); -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: inherit; }
+img, svg, video, canvas, audio, iframe, embed, object { display: block; max-width: 100%; height: auto; }
+button, input, optgroup, select, textarea { font-family: inherit; font-size: 100%; line-height: inherit; color: inherit; margin: 0; padding: 0; background: transparent; }
+button, [role="button"] { cursor: pointer; }
+
+.container-xl { max-width: 1536px; margin-left: auto; margin-right: auto; padding-left: 2rem; padding-right: 2rem; }
+
+.d-none { display: none !important; }
+.d-block { display: block; }
+.d-inline-block { display: inline-block; }
+.d-flex { display: flex; }
+.d-grid { display: grid; }
+
+.flex-row { flex-direction: row; }
+.flex-col { flex-direction: column; }
+.flex-wrap { flex-wrap: wrap; }
+.flex-nowrap { flex-wrap: nowrap; }
+
+.items-start { align-items: flex-start; }
+.items-center { align-items: center; }
+.items-end { align-items: flex-end; }
+.items-stretch { align-items: stretch; }
+
+.justify-start { justify-content: flex-start; }
+.justify-center { justify-content: center; }
+.justify-end { justify-content: flex-end; }
+.justify-between { justify-content: space-between; }
+.justify-around { justify-content: space-around; }
+
+.flex-1 { flex: 1 1 0%; }
+.flex-auto { flex: 1 1 auto; }
+.flex-none { flex: none; }
+.shrink-0 { flex-shrink: 0; }
+
+.grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+.gap-0 { gap: 0px; }
+.gap-1 { gap: 0.25rem; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 0.75rem; }
+.gap-4 { gap: 1rem; }
+.gap-5 { gap: 1.25rem; }
+.gap-6 { gap: 1.5rem; }
+.gap-8 { gap: 2rem; }
+.gap-10 { gap: 2.5rem; }
+.gap-12 { gap: 3rem; }
+
+.m-0 { margin: 0px; }
+.m-1 { margin: 0.25rem; }
+.m-2 { margin: 0.5rem; }
+.m-3 { margin: 0.75rem; }
+.m-4 { margin: 1rem; }
+.m-6 { margin: 1.5rem; }
+.m-8 { margin: 2rem; }
+.m-10 { margin: 2.5rem; }
+
+.mt-0 { margin-top: 0px; }
+.mt-1 { margin-top: 0.25rem; }
+.mt-2 { margin-top: 0.5rem; }
+.mt-3 { margin-top: 0.75rem; }
+.mt-4 { margin-top: 1rem; }
+.mt-6 { margin-top: 1.5rem; }
+.mt-8 { margin-top: 2rem; }
+.mt-10 { margin-top: 2.5rem; }
+.mt-12 { margin-top: 3rem; }
+.mt-16 { margin-top: 4rem; }
+.mt-auto { margin-top: auto; }
+
+.mb-0 { margin-bottom: 0px; }
+.mb-1 { margin-bottom: 0.25rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-3 { margin-bottom: 0.75rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mb-6 { margin-bottom: 1.5rem; }
+.mb-8 { margin-bottom: 2rem; }
+.mb-10 { margin-bottom: 2.5rem; }
+.mb-12 { margin-bottom: 3rem; }
+.mb-16 { margin-bottom: 4rem; }
+.mb-auto { margin-bottom: auto; }
+
+.ml-0 { margin-left: 0px; }
+.ml-1 { margin-left: 0.25rem; }
+.ml-2 { margin-left: 0.5rem; }
+.ml-3 { margin-left: 0.75rem; }
+.ml-4 { margin-left: 1rem; }
+.ml-6 { margin-left: 1.5rem; }
+.ml-8 { margin-left: 2rem; }
+.ml-auto { margin-left: auto; }
+
+.mr-0 { margin-right: 0px; }
+.mr-1 { margin-right: 0.25rem; }
+.mr-2 { margin-right: 0.5rem; }
+.mr-3 { margin-right: 0.75rem; }
+.mr-4 { margin-right: 1rem; }
+.mr-6 { margin-right: 1.5rem; }
+.mr-8 { margin-right: 2rem; }
+.mr-auto { margin-right: auto; }
+
+.p-0 { padding: 0px; }
+.p-1 { padding: 0.25rem; }
+.p-2 { padding: 0.5rem; }
+.p-3 { padding: 0.75rem; }
+.p-4 { padding: 1rem; }
+.p-5 { padding: 1.25rem; }
+.p-6 { padding: 1.5rem; }
+.p-8 { padding: 2rem; }
+.p-10 { padding: 2.5rem; }
+
+.pt-0 { padding-top: 0px; }
+.pt-1 { padding-top: 0.25rem; }
+.pt-2 { padding-top: 0.5rem; }
+.pt-3 { padding-top: 0.75rem; }
+.pt-4 { padding-top: 1rem; }
+.pt-6 { padding-top: 1.5rem; }
+.pt-8 { padding-top: 2rem; }
+.pt-10 { padding-top: 2.5rem; }
+
+.pb-0 { padding-bottom: 0px; }
+.pb-1 { padding-bottom: 0.25rem; }
+.pb-2 { padding-bottom: 0.5rem; }
+.pb-3 { padding-bottom: 0.75rem; }
+.pb-4 { padding-bottom: 1rem; }
+.pb-6 { padding-bottom: 1.5rem; }
+.pb-8 { padding-bottom: 2rem; }
+.pb-10 { padding-bottom: 2.5rem; }
+
+.pl-0 { padding-left: 0px; }
+.pl-1 { padding-left: 0.25rem; }
+.pl-2 { padding-left: 0.5rem; }
+.pl-3 { padding-left: 0.75rem; }
+.pl-4 { padding-left: 1rem; }
+.pl-6 { padding-left: 1.5rem; }
+.pl-8 { padding-left: 2rem; }
+
+.pr-0 { padding-right: 0px; }
+.pr-1 { padding-right: 0.25rem; }
+.pr-2 { padding-right: 0.5rem; }
+.pr-3 { padding-right: 0.75rem; }
+.pr-4 { padding-right: 1rem; }
+.pr-6 { padding-right: 1.5rem; }
+.pr-8 { padding-right: 2rem; }
+
+.w-full { width: 100%; }
+.w-auto { width: auto; }
+.w-screen { width: 100vw; }
+.h-full { height: 100%; }
+.h-auto { height: auto; }
+.h-screen { height: 100vh; }
+.max-w-full { max-width: 100%; }
+
+.absolute { position: absolute; }
+.relative { position: relative; }
+.fixed { position: fixed; }
+.sticky { position: sticky; }
+
+.top-0 { top: 0px; }
+.right-0 { right: 0px; }
+.bottom-0 { bottom: 0px; }
+.left-0 { left: 0px; }
+.inset-0 { top: 0px; right: 0px; bottom: 0px; left: 0px; }
+
+.z-0 { z-index: 0; }
+.z-10 { z-index: 10; }
+.z-20 { z-index: 20; }
+.z-30 { z-index: 30; }
+.z-40 { z-index: 40; }
+.z-50 { z-index: var(--z-dropdown); }
+
+.bg-primary { background-color: var(--core-primary); }
+.bg-success { background-color: var(--core-success); }
+.bg-danger { background-color: var(--core-danger); }
+.bg-warning { background-color: var(--core-warning); }
+.bg-info { background-color: var(--core-info); }
+.bg-surface { background-color: var(--surface-main); }
+.bg-card { background-color: var(--surface-card); }
+.bg-base { background-color: var(--surface-alt); }
+.bg-transparent { background-color: transparent; }
+
+.text-primary { color: var(--core-primary); }
+.text-success { color: var(--core-success); }
+.text-danger { color: var(--core-danger); }
+.text-warning { color: var(--core-warning); }
+.text-info { color: var(--core-info); }
+.text-main { color: var(--text-primary); }
+.text-sub { color: var(--text-secondary); }
+.text-muted { color: var(--text-tertiary); }
+.text-white { color: #ffffff; }
+
+.text-xs { font-size: 0.75rem; line-height: 1rem; }
+.text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+.text-base { font-size: 1rem; line-height: 1.5rem; }
+.text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+.text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+.text-2xl { font-size: 1.5rem; line-height: 2rem; }
+.text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
+.text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
+.text-5xl { font-size: 3rem; line-height: 1; }
+
+.font-light { font-weight: 300; }
+.font-normal { font-weight: 400; }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+.font-extrabold { font-weight: 800; }
+.font-black { font-weight: 900; }
+
+.text-left { text-align: left; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-justify { text-align: justify; }
+
+.uppercase { text-transform: uppercase; }
+.lowercase { text-transform: lowercase; }
+.capitalize { text-transform: capitalize; }
+.italic { font-style: italic; }
+
+.line-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+.rounded-none { border-radius: 0px; }
+.rounded-sm { border-radius: var(--radius-sm); }
+.rounded-md { border-radius: var(--radius-md); }
+.rounded-lg { border-radius: var(--radius-lg); }
+.rounded-xl { border-radius: var(--radius-xl); }
+.rounded-2xl { border-radius: var(--radius-2xl); }
+.rounded-3xl { border-radius: var(--radius-3xl); }
+.rounded-full { border-radius: var(--radius-full); }
+
+.border { border-width: 1px; }
+.border-2 { border-width: 2px; }
+.border-4 { border-width: 4px; }
+.border-t { border-top-width: 1px; }
+.border-r { border-right-width: 1px; }
+.border-b { border-bottom-width: 1px; }
+.border-l { border-left-width: 1px; }
+
+.border-solid { border-style: solid; }
+.border-dashed { border-style: dashed; }
+.border-dotted { border-style: dotted; }
+
+.border-color-main { border-color: var(--border-main); }
+.border-color-light { border-color: var(--border-light); }
+.border-color-strong { border-color: var(--border-strong); }
+.border-color-primary { border-color: var(--core-primary); }
+.border-color-success { border-color: var(--core-success); }
+.border-color-danger { border-color: var(--core-danger); }
+.border-color-warning { border-color: var(--core-warning); }
+
+.shadow-none { box-shadow: none; }
+.shadow-sm { box-shadow: var(--shadow-sm); }
+.shadow-md { box-shadow: var(--shadow-md); }
+.shadow-lg { box-shadow: var(--shadow-lg); }
+.shadow-xl { box-shadow: var(--shadow-xl); }
+.shadow-2xl { box-shadow: var(--shadow-2xl); }
+
+.opacity-0 { opacity: 0; }
+.opacity-25 { opacity: 0.25; }
+.opacity-50 { opacity: 0.5; }
+.opacity-75 { opacity: 0.75; }
+.opacity-100 { opacity: 1; }
+
+.transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 300ms; }
+.duration-150 { transition-duration: 150ms; }
+.duration-300 { transition-duration: 300ms; }
+.duration-500 { transition-duration: 500ms; }
+.ease-in-out { transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
+.ease-bounce { transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+.cursor-pointer { cursor: pointer; }
+.cursor-not-allowed { cursor: not-allowed; }
+.pointer-events-none { pointer-events: none; }
+.pointer-events-auto { pointer-events: auto; }
+
+.overflow-hidden { overflow: hidden; }
+.overflow-auto { overflow: auto; }
+.overflow-x-auto { overflow-x: auto; }
+.overflow-y-auto { overflow-y: auto; }
+
+.object-cover { object-fit: cover; }
+.object-contain { object-fit: contain; }
+
+@keyframes reveal-up {
+    0% { opacity: 0; transform: translateY(40px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-soft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+@keyframes slide-in-right {
+    0% { opacity: 0; transform: translateX(100%); }
+    100% { opacity: 1; transform: translateX(0); }
+}
+@keyframes fade-out-up {
+    0% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-20px); }
+}
+
+.animate-reveal-up { animation: reveal-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.animate-pulse-soft { animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+.btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 0.5rem; padding: 0.75rem 1.5rem; border-radius: var(--radius-lg);
+    font-weight: 700; font-size: 1rem; line-height: 1.5; text-align: center;
+    white-space: nowrap; transition: var(--transition-bounce);
+    outline: none; text-decoration: none; border: 2px solid transparent;
+}
+.btn:active { transform: scale(0.96); }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; pointer-events: none; }
+
+.btn-primary { background-color: var(--core-primary); color: #ffffff; box-shadow: var(--shadow-md); }
+.btn-primary:hover { background-color: var(--core-primary-hover); box-shadow: var(--shadow-glow-primary); transform: translateY(-2px); }
+
+.btn-secondary { background-color: var(--surface-alt); color: var(--text-primary); border-color: var(--border-strong); }
+.btn-secondary:hover { background-color: var(--surface-hover); border-color: var(--core-primary); color: var(--core-primary); transform: translateY(-2px); }
+
+.btn-danger { background-color: var(--core-danger); color: #ffffff; }
+.btn-danger:hover { background-color: var(--core-danger-hover); box-shadow: 0 4px 15px var(--core-danger-alpha); transform: translateY(-2px); }
+
+.btn-icon { width: 44px; height: 44px; padding: 0; border-radius: var(--radius-full); }
+
+.form-input {
+    display: block; width: 100%; padding: 1rem 1.25rem;
+    font-size: 1rem; font-weight: 500; line-height: 1.5; color: var(--text-primary);
+    background-color: var(--surface-main); background-clip: padding-box;
+    border: 2px solid var(--border-strong); border-radius: var(--radius-lg);
+    transition: var(--transition-fast);
+}
+.form-input:focus { border-color: var(--core-primary); box-shadow: 0 0 0 4px var(--core-primary-alpha); outline: none; }
+.form-input::placeholder { color: var(--text-tertiary); opacity: 1; }
+
+.badge {
+    display: inline-flex; align-items: center; padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-full); font-size: 0.75rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; gap: 0.375rem;
+}
+.badge-primary { background-color: var(--core-primary-light); color: var(--core-primary-dark); }
+.dark-theme .badge-primary { background-color: var(--core-primary-alpha); color: var(--core-primary-light); }
+.badge-success { background-color: var(--core-success-light); color: var(--core-success-dark); }
+.dark-theme .badge-success { background-color: var(--core-success-alpha); color: var(--core-success-light); }
+
+.commander-hub {
+    background: var(--surface-glass);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 2px solid var(--border-main);
+    border-radius: var(--radius-2xl);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-lg);
+    position: sticky;
+    top: calc(var(--bncc-header-height, 80px) + 1rem);
+    z-index: var(--z-sticky);
+    transition: var(--transition-bounce);
+}
+.commander-hub:focus-within { border-color: var(--core-primary); box-shadow: var(--shadow-xl), var(--shadow-glow-primary); transform: translateY(-2px); }
+
+.search-field-group { position: relative; display: flex; flex-direction: column; width: 100%; gap: 1rem; }
+@media (min-width: 768px) { .search-field-group { flex-direction: row; align-items: center; } }
+
+.search-icon-abs { position: absolute; left: 1.25rem; top: 1.25rem; color: var(--text-tertiary); font-size: 1.25rem; pointer-events: none; }
+.search-input-master { padding-left: 3.5rem; flex-grow: 1; height: 3.5rem; border-radius: var(--radius-xl); background-color: var(--surface-alt); }
+.search-select-master { height: 3.5rem; border-radius: var(--radius-xl); background-color: var(--surface-alt); cursor: pointer; min-width: 200px; }
+
+.quick-filter-chip {
+    padding: 0.5rem 1rem; border-radius: var(--radius-full);
+    border: 1px solid var(--border-strong); background: var(--surface-main);
+    color: var(--text-secondary); font-size: 0.875rem; font-weight: 700;
+    cursor: pointer; transition: var(--transition-fast); text-decoration: none;
+    display: inline-flex; align-items: center; gap: 0.5rem;
+}
+.quick-filter-chip:hover { background: var(--surface-hover); border-color: var(--core-primary); color: var(--core-primary); }
+.quick-filter-chip.active { background: var(--core-primary); border-color: var(--core-primary); color: #ffffff; }
+
+.layout-toggle-group { display: flex; background: var(--surface-alt); border-radius: var(--radius-lg); padding: 0.25rem; border: 1px solid var(--border-main); }
+.layout-toggle-btn {
+    padding: 0.5rem 1rem; border-radius: var(--radius-md); border: none;
+    color: var(--text-tertiary); font-size: 1.25rem; cursor: pointer; transition: var(--transition-fast); background: transparent;
+}
+.layout-toggle-btn:hover { color: var(--text-primary); }
+.layout-toggle-btn.active { background: var(--surface-main); color: var(--core-primary); box-shadow: var(--shadow-sm); }
+
+.masonry-grid-layout {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 2rem;
+    align-items: start;
+}
+
+.list-layout { display: flex; flex-direction: column; gap: 1.5rem; }
+
+.barter-card-entity {
+    background: var(--surface-card);
+    border: 2px solid var(--border-main);
+    border-radius: var(--radius-2xl);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease, border-color 0.4s ease;
+    transform-style: preserve-3d;
+    will-change: transform;
+}
+.barter-card-entity:hover { transform: translateY(-12px) scale(1.01); box-shadow: var(--shadow-2xl); border-color: var(--core-primary); z-index: 10; }
+.barter-card-entity::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    border-radius: inherit; padding: 2px;
+    background: linear-gradient(135deg, var(--core-primary), transparent 40%, transparent 60%, var(--core-success));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    opacity: 0; transition: opacity 0.5s ease; z-index: 2;
+}
+.barter-card-entity:hover::before { opacity: 1; }
+
+.list-layout .barter-card-entity { flex-direction: row; }
+
+.card-visual-chamber { position: relative; width: 100%; height: 280px; overflow: hidden; background: var(--surface-alt); flex-shrink: 0; }
+.list-layout .card-visual-chamber { width: 300px; height: 100%; min-height: 250px; border-right: 2px solid var(--border-main); }
+
+.card-visual-chamber img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transform-origin: center center;
+}
+.barter-card-entity:hover .card-visual-chamber img { transform: scale(1.1) rotate(1deg); }
+
+.floating-status-pill {
+    position: absolute; top: 1rem; right: 1rem;
+    background: var(--surface-glass); backdrop-filter: blur(8px);
+    border: 1px solid var(--border-light); border-radius: var(--radius-lg);
+    padding: 0.5rem 1rem; font-size: 0.75rem; font-weight: 900;
+    color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.05em;
+    display: flex; align-items: center; gap: 0.5rem; box-shadow: var(--shadow-md); z-index: 2;
+}
+.floating-status-pill.is-yours { background: var(--core-primary); color: #fff; border-color: var(--core-primary-hover); }
+
+.preview-overlay-btn {
+    position: absolute; inset: 0; background: rgba(15, 23, 42, 0.5);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: var(--transition-normal); z-index: 3; cursor: zoom-in;
+}
+.card-visual-chamber:hover .preview-overlay-btn { opacity: 1; }
+.preview-icon-circle {
+    width: 60px; height: 60px; border-radius: 50%; background: var(--surface-main);
+    color: var(--text-primary); display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem; transform: scale(0.8); transition: var(--transition-bounce);
+}
+.card-visual-chamber:hover .preview-icon-circle { transform: scale(1); }
+
+.card-data-chamber { padding: 2rem; display: flex; flex-direction: column; flex-grow: 1; position: relative; z-index: 2; background: var(--surface-card); }
+.list-layout .card-data-chamber { padding: 2.5rem; }
+
+.entity-headline { font-size: 1.5rem; font-weight: 900; line-height: 1.2; color: var(--text-primary); margin-bottom: 1.5rem; }
+
+.nexus-exchange-module {
+    display: flex; flex-direction: column; gap: 1rem;
+    background: var(--surface-alt); border: 1px solid var(--border-main);
+    border-radius: var(--radius-xl); padding: 1.5rem; margin-bottom: 1.5rem;
+    position: relative;
+}
+.list-layout .nexus-exchange-module { flex-direction: row; align-items: center; gap: 2rem; }
+
+.nexus-node { display: flex; align-items: flex-start; gap: 1rem; position: relative; z-index: 2; flex: 1; }
+.nexus-node-icon {
+    width: 48px; height: 48px; border-radius: var(--radius-lg); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 1.25rem;
+}
+.icon-source { background: var(--core-success-light); color: var(--core-success-dark); border: 1px solid var(--core-success); }
+.icon-target { background: var(--core-primary-light); color: var(--core-primary-dark); border: 1px solid var(--core-primary); }
+.dark-theme .icon-source { background: var(--core-success-alpha); color: var(--core-success); border-color: var(--core-success-dark); }
+.dark-theme .icon-target { background: var(--core-primary-alpha); color: var(--core-primary); border-color: var(--core-primary-dark); }
+
+.nexus-node-content { display: flex; flex-direction: column; flex-grow: 1; min-width: 0; }
+.nexus-node-label { font-size: 0.7rem; font-weight: 900; text-transform: uppercase; color: var(--text-tertiary); letter-spacing: 0.1em; margin-bottom: 0.25rem; }
+.nexus-node-value { font-size: 1.125rem; font-weight: 800; color: var(--text-primary); word-break: break-word; }
+
+.nexus-flow-connector {
+    display: flex; align-items: center; justify-content: center;
+    position: relative; padding-left: 1.5rem; color: var(--text-tertiary);
+}
+.list-layout .nexus-flow-connector { padding: 0; width: 40px; }
+
+.nexus-flow-connector::before {
+    content: ''; position: absolute; left: 23px; top: -15px; bottom: -15px; width: 2px;
+    background-image: linear-gradient(to bottom, var(--border-strong) 50%, transparent 50%);
+    background-size: 2px 8px; background-repeat: repeat-y; z-index: 1;
+}
+.list-layout .nexus-flow-connector::before {
+    left: -15px; right: -15px; top: 50%; bottom: auto; height: 2px; width: auto;
+    background-image: linear-gradient(to right, var(--border-strong) 50%, transparent 50%);
+    background-size: 8px 2px; background-repeat: repeat-x;
+}
+
+.swap-indicator-icon {
+    background: var(--surface-alt); padding: 0.25rem 0; position: relative; z-index: 2;
+    font-size: 1.25rem; transition: var(--transition-bounce);
+}
+.list-layout .swap-indicator-icon { padding: 0 0.25rem; transform: rotate(90deg); }
+.barter-card-entity:hover .swap-indicator-icon { color: var(--core-primary); transform: rotate(180deg) scale(1.2); }
+.list-layout .barter-card-entity:hover .swap-indicator-icon { transform: rotate(270deg) scale(1.2); }
+
+.entity-details-text { font-size: 1rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 2rem; flex-grow: 1; }
+
+.entity-footer-bridge {
+    margin-top: auto; padding-top: 1.5rem; border-top: 2px solid var(--border-main);
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+}
+
+.author-signature { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; padding: 0.5rem; border-radius: var(--radius-lg); transition: var(--transition-fast); margin-left: -0.5rem; }
+.author-signature:hover { background: var(--surface-hover); }
+.author-signature-pfp { width: 48px; height: 48px; border-radius: var(--radius-full); object-fit: cover; border: 2px solid var(--core-primary); padding: 2px; }
+.author-signature-meta { display: flex; flex-direction: column; }
+.author-signature-name { font-size: 1rem; font-weight: 800; color: var(--text-primary); line-height: 1.2; }
+.author-signature-role { font-size: 0.75rem; font-weight: 700; color: var(--core-primary); text-transform: uppercase; margin-top: 0.25rem; }
+
+.action-trigger-btn {
+    width: 48px; height: 48px; border-radius: var(--radius-lg); background: var(--surface-alt);
+    color: var(--text-primary); display: flex; align-items: center; justify-content: center;
+    font-size: 1.25rem; text-decoration: none; border: 2px solid var(--border-main);
+    transition: var(--transition-bounce); position: relative; overflow: hidden;
+}
+.action-trigger-btn::before { content: ''; position: absolute; inset: 0; background: var(--core-primary); transform: scaleY(0); transform-origin: bottom; transition: var(--transition-normal); z-index: 0; }
+.action-trigger-btn:hover { border-color: var(--core-primary); color: #fff; transform: translateY(-3px); box-shadow: var(--shadow-md); }
+.action-trigger-btn:hover::before { transform: scaleY(1); }
+.action-trigger-btn i { position: relative; z-index: 1; }
+
+.toast-notification-system {
+    position: fixed; bottom: 2rem; right: 2rem; z-index: var(--z-toast);
+    display: flex; flex-direction: column; gap: 1rem; pointer-events: none;
+}
+.toast-item {
+    background: var(--surface-card); border: 2px solid var(--border-main);
+    border-radius: var(--radius-lg); padding: 1rem 1.5rem; box-shadow: var(--shadow-xl);
+    display: flex; align-items: center; gap: 1rem; pointer-events: auto;
+    animation: slide-in-right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+.toast-item.closing { animation: fade-out-up 0.4s forwards; }
+.toast-icon { width: 32px; height: 32px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+.toast-icon.success { background: var(--core-success-light); color: var(--core-success-dark); }
+
+.lightbox-modal-system {
+    position: fixed; inset: 0; z-index: var(--z-modal-backdrop);
+    background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; visibility: hidden; transition: var(--transition-normal);
+}
+.lightbox-modal-system.is-open { opacity: 1; visibility: visible; }
+.lightbox-content-wrapper { position: relative; max-width: 90vw; max-height: 90vh; }
+.lightbox-image-target { max-width: 100%; max-height: 90vh; border-radius: var(--radius-xl); box-shadow: var(--shadow-2xl); transform: scale(0.95); transition: var(--transition-bounce); }
+.lightbox-modal-system.is-open .lightbox-image-target { transform: scale(1); }
+.lightbox-close-trigger {
+    position: absolute; top: -2rem; right: -2rem; width: 48px; height: 48px;
+    border-radius: var(--radius-full); background: var(--surface-main); color: var(--text-primary);
+    display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+    border: none; cursor: pointer; transition: var(--transition-bounce); box-shadow: var(--shadow-lg);
+}
+.lightbox-close-trigger:hover { background: var(--core-danger); color: #fff; transform: rotate(90deg) scale(1.1); }
+
+.empty-void-state {
+    grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 6rem 2rem; background: var(--surface-card); border: 4px dashed var(--border-main);
+    border-radius: var(--radius-3xl); text-align: center;
+}
+.empty-void-icon { font-size: 6rem; color: var(--border-strong); margin-bottom: 2rem; animation: bb-float 4s ease-in-out infinite; }
+.empty-void-headline { font-size: 2.25rem; font-weight: 900; color: var(--text-primary); margin-bottom: 1rem; }
+.empty-void-subtext { font-size: 1.125rem; color: var(--text-secondary); max-width: 600px; margin-bottom: 2.5rem; line-height: 1.6; }
+
+@media (max-width: 1024px) {
+    .masonry-grid-layout { grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); }
+    .list-layout .barter-card-entity { flex-direction: column; }
+    .list-layout .card-visual-chamber { width: 100%; border-right: none; border-bottom: 2px solid var(--border-main); }
+    .list-layout .nexus-exchange-module { flex-direction: column; align-items: stretch; gap: 1rem; }
+    .list-layout .nexus-flow-connector { padding: 0 0 0 1.5rem; width: auto; align-items: flex-start; justify-content: flex-start; }
+    .list-layout .nexus-flow-connector::before { left: 23px; top: -15px; bottom: -15px; height: auto; width: 2px; background-image: linear-gradient(to bottom, var(--border-strong) 50%, transparent 50%); background-size: 2px 8px; background-repeat: repeat-y; }
+    .list-layout .swap-indicator-icon { transform: rotate(0deg); padding: 0.25rem 0; }
+    .list-layout .barter-card-entity:hover .swap-indicator-icon { transform: rotate(180deg) scale(1.2); }
+}
+
+@media (max-width: 640px) {
+    .masonry-grid-layout { grid-template-columns: 1fr; }
+    .card-data-chamber { padding: 1.5rem; }
+    .nexus-exchange-module { padding: 1rem; }
+    .entity-headline { font-size: 1.25rem; }
+    .search-field-group { flex-direction: column; align-items: stretch; }
+    .search-select-master { width: 100%; }
+    .lightbox-close-trigger { top: 1rem; right: 1rem; }
+}
+
+/* Skeleton Loading Framework */
+.is-loading .card-visual-chamber img { opacity: 0; }
+.is-loading .card-visual-chamber { background: linear-gradient(90deg, var(--border-main) 25%, var(--border-light) 50%, var(--border-main) 75%); background-size: 200% 100%; animation: bb-shimmer 1.5s infinite; }
+.is-loading .entity-headline, .is-loading .nexus-node-value, .is-loading .entry-description, .is-loading .author-signature-name { 
+    color: transparent !important; background: linear-gradient(90deg, var(--border-main) 25%, var(--border-light) 50%, var(--border-main) 75%); background-size: 200% 100%; animation: bb-shimmer 1.5s infinite; border-radius: var(--radius-sm);
+}
 </style>
 
-<div class="barter-hub-wrapper">
+<main class="container-xl py-10" id="mainBarterContext">
 
-    <div class="ui-flex ui-justify-between ui-items-end ui-mb-12">
-        <div class="header-text-block">
-            <h1 class="ui-font-black ui-text-5xl ui-mb-2">Barter <span class="ui-text-primary">Hub</span></h1>
-            <p class="ui-text-sub ui-font-bold ui-text-xl">แลกเปลี่ยนของใช้ภายในวิทยาลัยพณิชยการบางนา (Cash-free System)</p>
+    <header class="flex-col md:flex-row d-flex justify-between items-start md:items-end gap-6 mb-10 animate-reveal-up">
+        <div>
+            <div class="d-flex items-center gap-3 mb-4">
+                <span class="badge badge-primary"><i class="fas fa-globe-asia"></i> กระดานสาธารณะ</span>
+                <span class="text-xs font-black text-muted uppercase tracking-widest">ระบบแลกเปลี่ยน v3.0</span>
+            </div>
+            <h1 class="text-5xl font-black mb-2 text-main">Barter <span class="text-primary">Ecosystem</span></h1>
+            <p class="text-xl font-bold text-sub">เปลี่ยนของที่ไม่ได้ใช้ เป็นของที่อยากได้ แบบไร้เงินสด 100%</p>
         </div>
-        <div class="header-action-block">
-            <?php if(isLoggedIn()): ?>
-                <button onclick="openPostModal()" class="ui-btn ui-btn-primary" style="padding: 18px 35px; border-radius: 20px; font-weight: 900; font-size: 1.1rem; box-shadow: 0 10px 20px var(--bt-primary-glow);">
-                    <i class="fas fa-plus-circle ui-mr-2"></i> สร้างประกาศแลกเปลี่ยน
+        
+        <div class="flex-none w-full md:w-auto">
+            <a href="post_barter.php" class="btn btn-primary w-full md:w-auto" style="padding: 1.25rem 2.5rem; font-size: 1.125rem;">
+                <i class="fas fa-plus-square"></i> สร้างประกาศแลกเปลี่ยน
+            </a>
+        </div>
+    </header>
+
+    <div class="commander-hub mb-12 animate-reveal-up" style="animation-delay: 0.1s;">
+        <form action="" method="GET" class="search-field-group">
+            <div class="relative flex-grow">
+                <i class="fas fa-search search-icon-abs"></i>
+                <input type="text" name="q" id="omniSearchInput" class="form-input search-input-master" placeholder="ค้นหาสิ่งที่อยากได้ หรือของที่อยากเอามาแลก..." value="<?= e($q) ?>" autocomplete="off">
+            </div>
+            
+            <div class="flex-none">
+                <select name="cat" class="form-input search-select-master" onchange="this.form.submit()">
+                    <option value="all" <?= $cat == 'all' ? 'selected' : '' ?>>ทุกหมวดหมู่</option>
+                    <option value="learning" <?= $cat == 'learning' ? 'selected' : '' ?>>อุปกรณ์การเรียน/หนังสือ</option>
+                    <option value="fashion" <?= $cat == 'fashion' ? 'selected' : '' ?>>เสื้อผ้า/เครื่องแต่งกาย</option>
+                    <option value="it" <?= $cat == 'it' ? 'selected' : '' ?>>ไอที/อิเล็กทรอนิกส์</option>
+                    <option value="hobby" <?= $cat == 'hobby' ? 'selected' : '' ?>>ของสะสม/งานอดิเรก</option>
+                    <option value="other" <?= $cat == 'other' ? 'selected' : '' ?>>อื่นๆ</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary flex-none h-14 px-8">
+                ค้นหา
+            </button>
+
+            <div class="layout-toggle-group d-none md:d-flex">
+                <button type="button" class="layout-toggle-btn active" data-layout="grid" aria-label="Grid View">
+                    <i class="fas fa-th-large"></i>
                 </button>
-            <?php else: ?>
-                <a href="../auth/login.php" class="ui-btn ui-btn-secondary" style="padding: 18px 35px; border-radius: 20px;">
-                    เข้าสู่ระบบเพื่อลงประกาศ
+                <button type="button" class="layout-toggle-btn" data-layout="list" aria-label="List View">
+                    <i class="fas fa-list"></i>
+                </button>
+            </div>
+        </form>
+
+        <div class="d-flex items-center flex-wrap gap-3 mt-4">
+            <span class="text-xs font-black text-muted uppercase mr-2">ค้นหาด่วน:</span>
+            <a href="?q=หนังสือ" class="quick-filter-chip"><i class="fas fa-book"></i> หนังสือเรียน</a>
+            <a href="?q=เสื้อช็อป" class="quick-filter-chip"><i class="fas fa-tshirt"></i> เสื้อช็อป</a>
+            <a href="?q=เมาส์" class="quick-filter-chip"><i class="fas fa-mouse"></i> เมาส์/คีย์บอร์ด</a>
+            <a href="?q=ipad" class="quick-filter-chip"><i class="fas fa-tablet-alt"></i> อุปกรณ์ Apple</a>
+            <?php if(!empty($q)): ?>
+                <a href="barter_board.php" class="quick-filter-chip" style="background:var(--core-danger-light); color:var(--core-danger-dark); border-color:var(--core-danger);">
+                    <i class="fas fa-times-circle"></i> ล้างการค้นหา
                 </a>
             <?php endif; ?>
         </div>
     </div>
 
-    
-
-    <div class="filter-dock">
-        <div class="search-input-group">
-            <i class="fas fa-search"></i>
-            <input type="text" id="barterSearch" class="ui-search" placeholder="ค้นหาสิ่งของที่คุณกำลังตามหา หรือสิ่งที่คุณมี...">
-        </div>
-        <div class="ui-flex ui-gap-3">
-            <select id="categoryFilter" class="ui-search" style="padding-left: 20px; min-width: 200px;">
-                <option value="all">ทุกหมวดหมู่</option>
-                <?php foreach($categories as $cat): ?>
-                    <option value="<?= $cat['id'] ?>"><?= $cat['name'] ?></option>
-                <?php endforeach; ?>
-            </select>
-            <button class="ui-btn ui-btn-secondary" style="border-radius: 15px; width: 55px;"><i class="fas fa-sliders-h"></i></button>
-        </div>
-    </div>
-
-    <div id="barterMasterGrid" class="barter-grid">
-        <?php if(count($barter_list) > 0): ?>
-            <?php foreach($barter_list as $index => $item): 
+    <div class="masonry-grid-layout" id="barterLayoutTarget">
+        <?php if (count($barter_entries) > 0): ?>
+            <?php foreach ($barter_entries as $index => $item): 
                 $img_path = !empty($item['image_url']) ? "../assets/images/barter/".$item['image_url'] : "../assets/images/products/default.png";
+                $poster_avatar = !empty($item['profile_img']) ? "../assets/images/profiles/".$item['profile_img'] : "../assets/images/profiles/default_profile.png";
                 $is_mine = ($user_id == $item['user_id']);
+                $delay = ($index % 8) * 0.05;
             ?>
-                <div class="barter-card scroll-reveal-node" data-category="<?= rand(1,5) ?>" data-title="<?= strtolower(e($item['title'])) ?>">
-                    <div class="card-media">
-                        <img src="<?= $img_path ?>" alt="Barter Media">
-                        <div class="card-status-pill">
-                            <i class="far fa-clock"></i> <?= date('d M Y', strtotime($item['created_at'])) ?>
+                <article class="barter-card-entity card-reveal-target js-tilt" data-tilt data-tilt-max="5" data-tilt-speed="400" data-tilt-perspective="1000" style="animation-delay: <?= $delay ?>s;">
+                    <div class="card-visual-chamber">
+                        <img src="<?= $img_path ?>" alt="<?= e($item['title']) ?>" loading="lazy" class="js-lightbox-trigger" data-highres="<?= $img_path ?>">
+                        <div class="preview-overlay-btn js-lightbox-trigger" data-highres="<?= $img_path ?>">
+                            <div class="preview-icon-circle"><i class="fas fa-expand-arrows-alt"></i></div>
                         </div>
-                        <?php if($is_mine): ?>
-                            <div style="position:absolute; top:15px; right:15px; background:var(--bt-primary); color:white; padding:5px 12px; border-radius:8px; font-size:0.65rem; font-weight:900;">YOUR POST</div>
-                        <?php endif; ?>
-                    </div>
-                    
-                    <div class="card-body">
-                        <h3 class="post-title"><?= e($item['title']) ?></h3>
                         
-                        <div class="barter-exchange-track">
-                            <div class="track-node node-have">
-                                <i class="fas fa-box-open"></i> 
-                                <span style="font-size:0.7rem; color:var(--bt-text-sub); text-transform:uppercase; margin-right:5px;">Have:</span>
-                                <?= e($item['item_have']) ?>
-                            </div>
-                            <div class="track-divider">
-                                <i><i class="fas fa-exchange-alt"></i> SWAP WITH</i>
-                            </div>
-                            <div class="track-node node-want">
-                                <i class="fas fa-heart"></i> 
-                                <span style="font-size:0.7rem; color:var(--bt-text-sub); text-transform:uppercase; margin-right:5px;">Want:</span>
-                                <?= e($item['item_want']) ?>
-                            </div>
+                        <div class="floating-status-pill <?= $is_mine ? 'is-yours' : '' ?>">
+                            <?php if($is_mine): ?>
+                                <i class="fas fa-star"></i> ประกาศของฉัน
+                            <?php else: ?>
+                                <i class="fas fa-sync fa-spin" style="animation-duration: 3s;"></i> พร้อมแลก
+                            <?php endif; ?>
                         </div>
+                    </div>
 
-                        <p class="post-desc"><?= e($item['description']) ?></p>
+                    <div class="card-data-chamber">
+                        <h2 class="entity-headline line-clamp-2" title="<?= e($item['title']) ?>"><?= e($item['title']) ?></h2>
 
-                        <div class="card-footer">
-                            <div class="ui-flex ui-items-center ui-gap-3">
-                                <img src="<?= $base_path ?>assets/images/profiles/<?= $item['profile_img'] ?: 'default_profile.png' ?>" class="user-mini-pfp">
-                                <div>
-                                    <div class="ui-text-xs ui-font-black"><?= e($item['fullname']) ?></div>
-                                    <div class="ui-text-xs ui-text-muted"><?= htmlspecialchars($item['user_role']) ?></div>
+                        <div class="nexus-exchange-module">
+                            <div class="nexus-node">
+                                <div class="nexus-node-icon icon-source"><i class="fas fa-box-open"></i></div>
+                                <div class="nexus-node-content">
+                                    <span class="nexus-node-label">I Have (มีของ)</span>
+                                    <div class="nexus-node-value line-clamp-2"><?= e($item['item_have']) ?></div>
                                 </div>
                             </div>
-                            <a href="barter_detail.php?id=<?= $item['id'] ?>" class="ui-text-primary ui-font-black ui-text-sm" style="text-decoration:none;">
-                                รายละเอียด <i class="fas fa-chevron-right ui-ml-1"></i>
+
+                            <div class="nexus-flow-connector">
+                                <i class="fas fa-exchange-alt swap-indicator-icon"></i>
+                            </div>
+
+                            <div class="nexus-node">
+                                <div class="nexus-node-icon icon-target"><i class="fas fa-hand-holding-heart"></i></div>
+                                <div class="nexus-node-content">
+                                    <span class="nexus-node-label">I Want (อยากได้)</span>
+                                    <div class="nexus-node-value line-clamp-2"><?= e($item['item_want']) ?></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <p class="entity-details-text line-clamp-3">
+                            <?= e($item['description']) ?>
+                        </p>
+
+                        <div class="entity-footer-bridge">
+                            <a href="view_profile.php?id=<?= $item['user_id'] ?>" class="author-signature">
+                                <img src="<?= $poster_avatar ?>" class="author-signature-pfp" alt="Profile">
+                                <div class="author-signature-meta">
+                                    <span class="author-signature-name"><?= e($item['fullname']) ?></span>
+                                    <span class="author-signature-role">
+                                        <?= getUserBadge($item['user_role']) ?> <?= htmlspecialchars($item['user_role']) ?>
+                                    </span>
+                                </div>
                             </a>
+
+                            <div class="d-flex items-center gap-2">
+                                <button type="button" class="action-trigger-btn js-share-btn" data-url="<?= BASE_URL ?>/pages/barter_detail.php?id=<?= $item['id'] ?>" aria-label="Share">
+                                    <i class="fas fa-share-alt"></i>
+                                </button>
+                                <a href="barter_detail.php?id=<?= $item['id'] ?>" class="action-trigger-btn" aria-label="View Details" style="background:var(--core-primary); color:#fff; border-color:var(--core-primary);">
+                                    <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </article>
             <?php endforeach; ?>
         <?php else: ?>
-            <div style="grid-column: 1/-1; text-align:center; padding:120px 40px; border:4px dashed var(--bt-border); border-radius:40px; background:var(--bt-surface);">
-                <i class="fas fa-sync-alt fa-6x ui-text-muted ui-mb-6" style="opacity:0.2;"></i>
-                <h2 class="ui-font-black ui-text-muted ui-text-3xl">ยังไม่มีประกาศแลกเปลี่ยนในขณะนี้</h2>
-                <p class="ui-text-sub ui-font-bold ui-mb-8">มาเริ่มสร้างประกาศเป็นคนแรกของระบบกันเถอะ!</p>
-                <button onclick="openPostModal()" class="ui-btn ui-btn-primary" style="padding:15px 40px; border-radius:15px;">เริ่มลงประกาศเลย</button>
+            <div class="empty-void-state animate-reveal-up">
+                <i class="fas fa-satellite-dish empty-void-icon"></i>
+                <h2 class="empty-void-headline">ไม่พบสัญญาณการแลกเปลี่ยน</h2>
+                <p class="empty-void-subtext">
+                    ไม่มีรายการที่ตรงกับคำค้นหา <strong>"<?= e($q) ?>"</strong> ในระบบ ณ ตอนนี้<br>
+                    คุณอาจเป็นคนแรกที่สร้างโอกาสใหม่ๆ ในการแลกเปลี่ยนสิ่งของที่นี่
+                </p>
+                <div class="d-flex items-center justify-center gap-4 flex-wrap">
+                    <a href="barter_board.php" class="btn btn-secondary px-8 py-4"><i class="fas fa-undo"></i> ดูทั้งหมด</a>
+                    <a href="post_barter.php" class="btn btn-primary px-8 py-4"><i class="fas fa-plus"></i> สร้างประกาศของฉัน</a>
+                </div>
             </div>
         <?php endif; ?>
     </div>
 
-</div>
+</main>
 
-<div id="postBarterModal" class="pd-modal-mask">
-    <div class="pd-modal-content" style="max-width: 800px;">
-        <div class="ui-flex ui-justify-between ui-items-center ui-mb-8">
-            <h2 class="ui-font-black ui-text-3xl">สร้างประกาศ <span class="ui-text-primary">แลกเปลี่ยน</span></h2>
-            <button onclick="closeEngineModal('postBarterModal')" style="background:none; border:none; font-size:1.5rem; color:var(--bt-text-sub); cursor:pointer;"><i class="fas fa-times"></i></button>
-        </div>
-        
-        <form action="../auth/process_barter.php" method="POST" enctype="multipart/form-data">
-            <div class="ui-grid ui-grid-cols-2 ui-gap-8 ui-mb-6">
-                <div style="background:var(--bt-success-soft); padding:25px; border-radius:24px; border:2px solid var(--bt-success);">
-                    <label class="ui-font-black ui-text-xs ui-text-success ui-uppercase ui-mb-4 ui-block">สิ่งที่พี่มีจะเอามาแลก (I HAVE)</label>
-                    <input type="text" name="item_have" class="ui-input" style="border-color:var(--bt-success);" placeholder="เช่น หูฟังไร้สาย, หนังสือ ฯลฯ" required>
-                    <p class="ui-text-xs ui-text-muted ui-mt-3">บอกสิ่งที่พี่มีอยู่ตอนนี้ให้คนอื่นรู้</p>
-                </div>
-                <div style="background:var(--bt-primary-soft); padding:25px; border-radius:24px; border:2px solid var(--bt-primary);">
-                    <label class="ui-font-black ui-text-xs ui-text-primary ui-uppercase ui-mb-4 ui-block">สิ่งที่พี่อยากได้ตอบแทน (I WANT)</label>
-                    <input type="text" name="item_want" class="ui-input" style="border-color:var(--bt-primary);" placeholder="เช่น เมาส์บลูทูธ, แฟลชไดร์ฟ ฯลฯ" required>
-                    <p class="ui-text-xs ui-text-muted ui-mt-3">พี่อยากแลกกับอะไร ใส่มาเลย!</p>
-                </div>
-            </div>
+<div class="toast-notification-system" id="globalToastContainer" aria-live="polite"></div>
 
-            <div class="ui-mb-6">
-                <label class="ui-font-black ui-text-xs ui-text-muted ui-uppercase ui-mb-2 ui-block">หัวข้อประกาศให้ดูน่าสนใจ</label>
-                <input type="text" name="title" class="ui-input" placeholder="เช่น แลกอุปกรณ์คอมพิวเตอร์สภาพกริ๊บ..." required>
-            </div>
-
-            <div class="ui-mb-6">
-                <label class="ui-font-black ui-text-xs ui-text-muted ui-uppercase ui-mb-2 ui-block">รายละเอียดและตำหนิสินค้า</label>
-                <textarea name="description" class="ui-input" style="min-height:120px;" placeholder="บอกรายละเอียดเพิ่มเติมเพื่อให้คนตัดสินใจง่ายขึ้น..."></textarea>
-            </div>
-
-            <div class="ui-grid ui-grid-cols-2 ui-gap-6 ui-mb-10">
-                <div>
-                    <label class="ui-font-black ui-text-xs ui-text-muted ui-uppercase ui-mb-2 ui-block">เลือกหมวดหมู่</label>
-                    <select name="category_id" class="ui-input">
-                        <?php foreach($categories as $cat): ?>
-                            <option value="<?= $cat['id'] ?>"><?= $cat['name'] ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div>
-                    <label class="ui-font-black ui-text-xs ui-text-muted ui-uppercase ui-mb-2 ui-block">รูปประกอบ (ถ้ามี)</label>
-                    <input type="file" name="barter_img" class="ui-input">
-                </div>
-            </div>
-
-            <button type="submit" class="btn-luxe-primary ui-w-full" style="padding:22px; border-radius:18px;">
-                <i class="fas fa-paper-plane ui-mr-2"></i> ยืนยันการลงประกาศแลกเปลี่ยน
-            </button>
-        </form>
+<div class="lightbox-modal-system" id="masterLightbox" aria-hidden="true" role="dialog">
+    <div class="lightbox-content-wrapper">
+        <button class="lightbox-close-trigger" id="lightboxCloseBtn" aria-label="Close Lightbox"><i class="fas fa-times"></i></button>
+        <img src="" alt="High Resolution Preview" class="lightbox-image-target" id="lightboxImageTarget">
     </div>
 </div>
 
 <script>
-    /**
-     * MODULE 1: INTERACTIVE FILTER ENGINE
-     * Handles real-time search and category filtering with visual feedback
-     */
-    const BarterEngine = {
-        searchInput: document.getElementById('barterSearch'),
-        categorySelect: document.getElementById('categoryFilter'),
-        cards: document.querySelectorAll('.barter-card'),
-        
+/**
+ * ============================================================================================
+ * BNCC BARTER ENGINE LOGIC - V3
+ * ============================================================================================
+ */
+document.addEventListener('DOMContentLoaded', () => {
+    'use strict';
+
+    // MODULE: LAYOUT CONTROLLER
+    const LayoutEngine = {
+        gridBtn: document.querySelector('[data-layout="grid"]'),
+        listBtn: document.querySelector('[data-layout="list"]'),
+        targetContainer: document.getElementById('barterLayoutTarget'),
+        storageKey: 'bncc_barter_layout_pref',
+
         init() {
-            this.searchInput.addEventListener('input', () => this.filter());
-            this.categorySelect.addEventListener('change', () => this.filter());
-            console.log("Barter Filtering Engine Ready.");
+            if (!this.gridBtn || !this.listBtn || !this.targetContainer) return;
+            
+            const savedLayout = localStorage.getItem(this.storageKey) || 'grid';
+            this.applyLayout(savedLayout);
+
+            this.gridBtn.addEventListener('click', () => this.applyLayout('grid'));
+            this.listBtn.addEventListener('click', () => this.applyLayout('list'));
         },
 
-        filter() {
-            const searchTerm = this.searchInput.value.toLowerCase();
-            const selectedCat = this.categorySelect.value;
-
-            this.cards.forEach(card => {
-                const title = card.getAttribute('data-title');
-                const cat = card.getAttribute('data-category');
-                
-                const matchesSearch = title.includes(searchTerm);
-                const matchesCat = (selectedCat === 'all' || cat === selectedCat);
-
-                if (matchesSearch && matchesCat) {
-                    card.style.display = 'flex';
-                    card.style.animation = 'luxeFadeIn 0.5s ease-out forwards';
-                } else {
-                    card.style.display = 'none';
-                }
+        applyLayout(type) {
+            if (type === 'list') {
+                this.targetContainer.classList.remove('masonry-grid-layout');
+                this.targetContainer.classList.add('list-layout');
+                this.listBtn.classList.add('active');
+                this.gridBtn.classList.remove('active');
+            } else {
+                this.targetContainer.classList.remove('list-layout');
+                this.targetContainer.classList.add('masonry-grid-layout');
+                this.gridBtn.classList.add('active');
+                this.listBtn.classList.remove('active');
+            }
+            localStorage.setItem(this.storageKey, type);
+            
+            // Trigger reflow on cards for smooth transition
+            const cards = this.targetContainer.querySelectorAll('.barter-card-entity');
+            cards.forEach(card => {
+                card.style.transform = 'scale(0.98)';
+                setTimeout(() => card.style.transform = '', 150);
             });
         }
     };
 
-    /**
-     * MODULE 2: SCROLL REVEAL (INTERSECTION OBSERVER)
-     * Handles entrance animations as user scrolls the board
-     */
-    const revealObserver = new IntersectionObserver((entries) => {
-        entries.forEach((entry, index) => {
-            if (entry.isIntersecting) {
-                setTimeout(() => {
-                    entry.target.classList.add('show');
-                    entry.target.style.opacity = '1';
-                    entry.target.style.transform = 'translateY(0)';
-                }, index * 80);
-                revealObserver.unobserve(entry.target);
-            }
-        });
-    }, { threshold: 0.1, rootMargin: "0px 0px -50px 0px" });
+    // MODULE: SCROLL REVEAL (INTERSECTION OBSERVER)
+    const RevealEngine = {
+        init() {
+            const targets = document.querySelectorAll('.card-reveal-target');
+            targets.forEach(t => {
+                t.style.opacity = '0';
+                t.style.transform = 'translateY(40px)';
+            });
 
-    document.querySelectorAll('.scroll-reveal-node').forEach(el => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(30px)';
-        el.style.transition = 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
-        revealObserver.observe(el);
-    });
+            const observer = new IntersectionObserver((entries, obs) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('animate-reveal-up');
+                        obs.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
 
-    /**
-     * MODULE 3: MODAL DYNAMICS
-     */
-    function openPostModal() {
-        document.getElementById('postBarterModal').style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-    }
-
-    function closeEngineModal(id) {
-        document.getElementById(id).style.display = 'none';
-        document.body.style.overflow = 'auto';
-    }
-
-    window.onclick = function(event) {
-        if (event.target.classList.contains('pd-modal-mask')) {
-            event.target.style.display = 'none';
-            document.body.style.overflow = 'auto';
+            targets.forEach(t => observer.observe(t));
         }
-    }
+    };
 
-    // Initialize Engine
-    BarterEngine.init();
+    // MODULE: LIGHTBOX VIEWER
+    const LightboxEngine = {
+        modal: document.getElementById('masterLightbox'),
+        imgTarget: document.getElementById('lightboxImageTarget'),
+        closeBtn: document.getElementById('lightboxCloseBtn'),
+        triggers: document.querySelectorAll('.js-lightbox-trigger'),
 
-    /**
-     * MODULE 4: ANALYTICS BOOTSTRAP
-     */
-    console.log("%c BNCC Barter Board Activated ", "background: #10b981; color: white; font-weight: 900; padding: 5px 10px; border-radius: 5px;");
+        init() {
+            if (!this.modal || !this.imgTarget) return;
 
+            this.triggers.forEach(trigger => {
+                trigger.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const src = trigger.getAttribute('data-highres');
+                    if (src) this.open(src);
+                });
+            });
+
+            this.closeBtn.addEventListener('click', () => this.close());
+            this.modal.addEventListener('click', (e) => {
+                if (e.target === this.modal) this.close();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') this.close();
+            });
+        },
+
+        open(src) {
+            this.imgTarget.src = src;
+            this.modal.classList.add('is-open');
+            document.body.style.overflow = 'hidden';
+        },
+
+        close() {
+            this.modal.classList.remove('is-open');
+            setTimeout(() => { this.imgTarget.src = ''; }, 300);
+            document.body.style.overflow = '';
+        }
+    };
+
+    // MODULE: TOAST NOTIFICATION SYSTEM
+    const ToastEngine = {
+        container: document.getElementById('globalToastContainer'),
+
+        show(message, type = 'success') {
+            if (!this.container) return;
+
+            const toast = document.createElement('div');
+            toast.className = 'toast-item';
+            
+            const iconClass = type === 'success' ? 'fa-check text-success' : 'fa-info text-info';
+            const iconBg = type === 'success' ? 'bg-success-light' : 'bg-info-light';
+
+            toast.innerHTML = `
+                <div class="toast-icon ${type}"><i class="fas ${iconClass}"></i></div>
+                <div class="text-sm font-bold text-main">${message}</div>
+            `;
+
+            this.container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('closing');
+                toast.addEventListener('animationend', () => toast.remove());
+            }, 3000);
+        }
+    };
+
+    // MODULE: SHARE FUNCTIONALITY
+    const ShareEngine = {
+        init() {
+            const btns = document.querySelectorAll('.js-share-btn');
+            btns.forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const url = btn.getAttribute('data-url');
+                    
+                    try {
+                        await navigator.clipboard.writeText(url);
+                        ToastEngine.show('คัดลอกลิงก์สำหรับแชร์เรียบร้อยแล้ว', 'success');
+                        
+                        // Icon animation feedback
+                        const icon = btn.querySelector('i');
+                        const oldClass = icon.className;
+                        icon.className = 'fas fa-check text-success';
+                        setTimeout(() => icon.className = oldClass, 2000);
+                    } catch (err) {
+                        console.error('Failed to copy: ', err);
+                    }
+                });
+            });
+        }
+    };
+
+    // MODULE: VANILLA TILT 3D EFFECT (Lightweight implementation)
+    const TiltEngine = {
+        init() {
+            const elements = document.querySelectorAll('[data-tilt]');
+            
+            elements.forEach(el => {
+                el.addEventListener('mousemove', (e) => this.handleTilt(e, el));
+                el.addEventListener('mouseleave', () => this.resetTilt(el));
+            });
+        },
+
+        handleTilt(e, el) {
+            // Only apply on Desktop to prevent weird mobile behavior
+            if (window.innerWidth < 1024) return;
+
+            const max = parseInt(el.getAttribute('data-tilt-max')) || 10;
+            const rect = el.getBoundingClientRect();
+            
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            
+            const percentX = (x - centerX) / centerX;
+            const percentY = -(y - centerY) / centerY;
+            
+            el.style.transform = `perspective(1000px) rotateY(${percentX * max}deg) rotateX(${percentY * max}deg) scale3d(1.02, 1.02, 1.02)`;
+        },
+
+        resetTilt(el) {
+            el.style.transform = `perspective(1000px) rotateY(0deg) rotateX(0deg) scale3d(1, 1, 1)`;
+        }
+    };
+
+    // BOOT SEQUENCE
+    LayoutEngine.init();
+    RevealEngine.init();
+    LightboxEngine.init();
+    ShareEngine.init();
+    TiltEngine.init();
+
+    console.log("%c BNCC BARTER COMMANDER ACTIVE ", "background: #4f46e5; color: white; font-weight: 900; padding: 5px 10px; border-radius: 5px;");
+});
 </script>
 
 <?php require_once '../includes/footer.php'; ?>
