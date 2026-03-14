@@ -556,7 +556,7 @@ $posts = $stmt->fetchAll();
                                     
                                     <?php if ($_SESSION['user_id'] == $post['user_id']): ?>
                                         <div class="btr-owner-actions">
-                                            <a href="../seller/edit_barter.php?id=<?= $post['id'] ?>" class="btr-btn-base btn-action-sm btn-edit-mode">
+                                            <a href="../pages/edit_barter.php?id=<?= $post['id'] ?>" class="btr-btn-base btn-action-sm btn-edit-mode">
                                                 <i class="fas fa-edit"></i>
                                                 <span>แก้ไข</span>
                                             </a>
