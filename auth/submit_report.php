@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($product_id > 0) {
                 redirect("product_detail.php?id=" . $product_id);
             } else {
-                redirect("pages/index.php");
+                redirect("..pages/index.php");
             }
         }
     } else {
