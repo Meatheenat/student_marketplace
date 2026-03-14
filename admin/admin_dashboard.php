@@ -1,6 +1,6 @@
 <?php
 /**
- * Student Marketplace - Admin Dashboard (High Performance UI + Full Recycle Bin)
+ * Student Marketplace - Admin Dashboard (High Performance UI + Full Recycle Bin + Barter Engine)
  * [SOLID HIGH-CONTRAST REDESIGN]
  */
 $pageTitle = "ระบบผู้ดูแล (Admin) - BNCC Market";
@@ -22,17 +22,22 @@ $count_pending_products = $db->query("SELECT COUNT(*) FROM products WHERE status
 
 // ดึงสถิติถังขยะ
 $count_trashed_products = $db->query("SELECT COUNT(*) FROM products WHERE is_deleted = 1")->fetchColumn();
-$count_trashed_comments = $db->query("SELECT COUNT(*) FROM reviews WHERE is_deleted = 1")->fetchColumn(); // 🎯 นับคอมเมนต์ที่ถูกลบ
+$count_trashed_comments = $db->query("SELECT COUNT(*) FROM reviews WHERE is_deleted = 1")->fetchColumn();
 
+// ดึงสถิติรายงาน
 $count_pending_reports = $db->query("SELECT COUNT(*) FROM reports WHERE status = 'pending'")->fetchColumn();
 $count_comment_reports = $db->query("SELECT COUNT(*) FROM reports WHERE target_type = 'comment' AND status = 'pending'")->fetchColumn();
-// 🎯 วางต่อท้ายจาก $count_comment_reports
+
+// ดึงสถิติรออนุมัติ WTB & Barter
 $count_pending_wtb = $db->query("SELECT COUNT(*) FROM wtb_posts WHERE status = 'pending'")->fetchColumn();
+// 🎯 🛠️ ดึงสถิติ Barter รออนุมัติ
+$count_pending_barter = $db->query("SELECT COUNT(*) FROM barter_posts WHERE status = 'pending'")->fetchColumn();
+
 // ดึงประวัติการทำงาน
 $log_stmt = $db->query("SELECT l.*, u.fullname as admin_name FROM admin_logs l JOIN users u ON l.admin_id = u.id ORDER BY l.created_at DESC LIMIT 10");
 $admin_logs = $log_stmt->fetchAll();
 
-// 2. ดึงรายการรออนุมัติ
+// 2. ดึงรายการรออนุมัติเบื้องต้น (โชว์ในตาราง)
 $pending_stmt = $db->query("SELECT s.*, u.fullname FROM shops s JOIN users u ON s.user_id = u.id WHERE s.status = 'pending' ORDER BY s.created_at DESC LIMIT 5");
 $pending_shops = $pending_stmt->fetchAll();
 
@@ -50,7 +55,7 @@ $trash_stmt = $db->query("
 ");
 $trashed_products = $trash_stmt->fetchAll();
 
-// 🎯 🛠️ 4. ดึงรายการคอมเมนต์ในถังขยะ
+// 4. ดึงรายการคอมเมนต์ในถังขยะ
 $trash_rev_stmt = $db->query("
     SELECT r.id, r.comment, r.deleted_at, p.title as product_name, u.fullname as author_name, del_u.fullname as deleter_name 
     FROM reviews r 
@@ -77,6 +82,7 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
         --solid-warning: #f59e0b;
         --solid-danger: #ef4444;
         --solid-info: #0ea5e9;
+        --solid-purple: #8b5cf6; /* Added for Barter */
     }
 
     .dark-theme {
@@ -85,11 +91,12 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
         --solid-text: #ffffff;
         --solid-border: #334155;
         --solid-primary: #6366f1;
+        --solid-purple: #a78bfa;
     }
 
     body { background-color: var(--solid-bg) !important; color: var(--solid-text); }
 
-    .admin-wrapper { max-width: 1200px; margin: 40px auto 80px; padding: 0 20px; }
+    .admin-wrapper { max-width: 1300px; margin: 40px auto 80px; padding: 0 20px; }
 
     /* 🏰 Header */
     .dashboard-header { 
@@ -101,7 +108,7 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
     .dashboard-header h1 { font-size: 2.2rem; font-weight: 900; margin: 0; color: var(--solid-text); letter-spacing: -1px; }
 
     /* 📊 Stat Cards */
-    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 40px; }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 40px; }
     .stat-card { 
         background: var(--solid-card); 
         padding: 25px; 
@@ -114,7 +121,7 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
         box-shadow: 0 10px 20px rgba(0,0,0,0.02);
     }
     .stat-card:hover { transform: translateY(-5px); border-color: var(--solid-primary); box-shadow: 0 15px 30px rgba(0,0,0,0.08); }
-    .stat-icon { width: 65px; height: 65px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; flex-shrink: 0; }
+    .stat-icon { width: 60px; height: 60px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; flex-shrink: 0; }
 
     /* ⚡ Action Cards */
     .action-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 25px; margin-bottom: 50px; }
@@ -190,42 +197,64 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
         <div class="stat-card">
             <div class="stat-icon" style="background: rgba(99, 102, 241, 0.15); color: var(--solid-primary); border: 2px solid var(--solid-primary);"><i class="fas fa-users"></i></div>
             <div>
-                <div style="font-size: 2rem; font-weight: 900; line-height: 1;"><?= $count_users ?></div>
-                <div style="color: var(--text-muted); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-top: 5px;">สมาชิก</div>
+                <div style="font-size: 1.8rem; font-weight: 900; line-height: 1;"><?= $count_users ?></div>
+                <div style="color: var(--text-muted); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; margin-top: 5px;">สมาชิก</div>
             </div>
         </div>
 
         <div class="stat-card">
             <div class="stat-icon" style="background: rgba(16, 185, 129, 0.15); color: var(--solid-success); border: 2px solid var(--solid-success);"><i class="fas fa-store"></i></div>
             <div>
-                <div style="font-size: 2rem; font-weight: 900; line-height: 1;"><?= $count_shops ?></div>
-                <div style="color: var(--text-muted); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-top: 5px;">ร้านค้า</div>
+                <div style="font-size: 1.8rem; font-weight: 900; line-height: 1;"><?= $count_shops ?></div>
+                <div style="color: var(--text-muted); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; margin-top: 5px;">ร้านค้า</div>
             </div>
         </div>
 
         <div class="stat-card">
             <div class="stat-icon" style="background: rgba(245, 158, 11, 0.15); color: var(--solid-warning); border: 2px solid var(--solid-warning);"><i class="fas fa-bullhorn"></i></div>
             <div>
-                <div style="font-size: 2rem; font-weight: 900; line-height: 1; color: var(--solid-warning);"><?= $count_pending_wtb ?></div>
-                <div style="color: var(--text-muted); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-top: 5px;">WTB รออนุมัติ</div>
+                <div style="font-size: 1.8rem; font-weight: 900; line-height: 1; color: var(--solid-warning);"><?= $count_pending_wtb ?></div>
+                <div style="color: var(--text-muted); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; margin-top: 5px;">WTB รออนุมัติ</div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(139, 92, 246, 0.15); color: var(--solid-purple); border: 2px solid var(--solid-purple);"><i class="fas fa-sync-alt"></i></div>
+            <div>
+                <div style="font-size: 1.8rem; font-weight: 900; line-height: 1; color: var(--solid-purple);"><?= $count_pending_barter ?></div>
+                <div style="color: var(--text-muted); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; margin-top: 5px;">Barter รอตรวจ</div>
             </div>
         </div>
 
         <div class="stat-card" style="border-color: var(--solid-danger);">
             <div class="stat-icon" style="background: rgba(239, 68, 68, 0.15); color: var(--solid-danger); border: 2px solid var(--solid-danger);"><i class="fas fa-trash-alt"></i></div>
             <div>
-                <div style="font-size: 2rem; font-weight: 900; line-height: 1; color: var(--solid-danger);"><?= $count_trashed_products + $count_trashed_comments ?></div>
-                <div style="color: var(--text-muted); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-top: 5px;">ถังขยะ</div>
+                <div style="font-size: 1.8rem; font-weight: 900; line-height: 1; color: var(--solid-danger);"><?= $count_trashed_products + $count_trashed_comments ?></div>
+                <div style="color: var(--text-muted); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; margin-top: 5px;">ถังขยะ</div>
             </div>
         </div>
     </div>
 
     <div class="action-grid stagger-in">
+        
+        <div class="action-card" style="border-left: 6px solid var(--solid-purple);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h3 style="font-size: 1.3rem; margin-bottom: 5px; font-weight: 900;"><i class="fas fa-exchange-alt" style="color: var(--solid-purple);"></i> ระบบแลกเปลี่ยน</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; font-weight: 600; margin: 0;">ตรวจสอบของที่นำมาลงแลก</p>
+                </div>
+                <?php if($count_pending_barter > 0): ?>
+                    <span class="noti-badge" style="background: var(--solid-danger); box-shadow: 0 4px 10px rgba(239,68,68,0.4);"><?= $count_pending_barter ?></span>
+                <?php endif; ?>
+            </div>
+            <a href="approve_barter.php" class="btn-action-solid" style="background: var(--solid-purple); box-shadow: 0 5px 15px rgba(139, 92, 246, 0.3);">ตรวจสอบ Barter</a>
+        </div>
+
         <div class="action-card" style="border-left: 6px solid var(--solid-warning);">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
-                    <h3 style="font-size: 1.3rem; margin-bottom: 5px; font-weight: 900;"><i class="fas fa-magnifying-glass-dollar text-warning"></i> จัดการโพสต์ WTB</h3>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; font-weight: 600; margin: 0;">ตรวจสอบและอนุมัติประกาศตามหาของ</p>
+                    <h3 style="font-size: 1.3rem; margin-bottom: 5px; font-weight: 900;"><i class="fas fa-magnifying-glass-dollar text-warning"></i> โพสต์ WTB</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; font-weight: 600; margin: 0;">ตรวจสอบประกาศตามหาของ</p>
                 </div>
                 <?php if($count_pending_wtb > 0): ?>
                     <span class="noti-badge" style="background: var(--solid-danger); box-shadow: 0 4px 10px rgba(239,68,68,0.4);"><?= $count_pending_wtb ?></span>
@@ -233,6 +262,7 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
             </div>
             <a href="approve_wtb.php" class="btn-action-solid" style="background: var(--solid-warning); color: #000; box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);">จัดการ WTB</a>
         </div>
+        
         <div class="action-card" style="border-left: 6px solid var(--solid-primary);">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
@@ -354,7 +384,6 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
                     <table class="table-solid">
                         <tbody>
                             <?php foreach($trashed_products as $t): 
-                                // 🎯 แก้ไข: ดักค่าว่างไว้กัน Error DateTime
                                 $deleted_date = new DateTime($t['deleted_at'] ?? 'now'); 
                                 $expire_date = clone $deleted_date; 
                                 $expire_date->modify('+30 days'); 
@@ -389,7 +418,6 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
                     <table class="table-solid">
                         <tbody>
                             <?php foreach($trashed_reviews as $tr): 
-                                // 🎯 แก้ไข: ดักค่าว่างไว้กัน Error DateTime
                                 $deleted_date = new DateTime($tr['deleted_at'] ?? 'now'); 
                                 $expire_date = clone $deleted_date; 
                                 $expire_date->modify('+30 days'); 
