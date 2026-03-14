@@ -52,6 +52,8 @@ $hide_auth_list = [
     'register_google.php', 
     'verify_otp.php'
 ];
+$hide_navbar_list = ['login.php', 'register.php', 'register_google.php', 'verify_otp.php', 'appeal_ban.php', 'forgot_password.php'];
+$hide_navbar = in_array($current_page, $hide_navbar_list);
 
 // --------------------------------------------------------------------------------------------
 // 4. USER DATA NORMALIZATION
@@ -2162,7 +2164,7 @@ if (isLoggedIn()) {
     <div class="bg-particle"></div>
     <div class="bg-particle"></div>
 </div>
-
+<?php if (!$hide_navbar): ?>
 <nav id="masterNavbarElement" class="master-header">
     
     <div id="scrollProgressBar" class="header-progress-bar"></div>
@@ -2225,13 +2227,86 @@ if (isLoggedIn()) {
                     <?php endif; ?>
                 </a>
 
-                <a href="<?= $base_path ?>pages/profile.php" class="header-user-card" aria-label="View Profile">
-                    <div class="header-user-details">
-                        <span class="header-user-name"><?= htmlspecialchars($_SESSION['fullname']) ?></span>
-                        <span class="header-user-role"><?= htmlspecialchars($_SESSION['role']) ?></span>
-                    </div>
-                    <img src="<?= $user_avatar ?>" alt="Avatar" class="header-user-avatar">
-                </a>
+                <!-- Profile Dropdown -->
+<div style="position:relative;" id="profileDropdownWrap">
+    <div class="header-user-card" id="profileDropdownTrigger" style="cursor:pointer;">
+        <div class="header-user-details">
+            <span class="header-user-name"><?= htmlspecialchars($_SESSION['fullname']) ?></span>
+            <span class="header-user-role"><?= htmlspecialchars($_SESSION['role']) ?></span>
+        </div>
+        <img src="<?= $user_avatar ?>" alt="Avatar" class="header-user-avatar">
+    </div>
+
+    <div id="profileDropdownMenu" style="
+        position:absolute; top:calc(100% + 12px); right:0;
+        width:220px;
+        background:var(--theme-surface);
+        border:1.5px solid var(--theme-border);
+        border-radius:16px;
+        box-shadow:0 20px 40px rgba(0,0,0,0.12);
+        overflow:hidden;
+        opacity:0; visibility:hidden;
+        transform:translateY(8px) scale(0.97);
+        transform-origin:top right;
+        transition:all 0.25s cubic-bezier(0.16,1,0.3,1);
+        z-index:9999;
+    ">
+        <!-- User info header -->
+        <div style="padding:14px 16px; border-bottom:1px solid var(--theme-border); display:flex; align-items:center; gap:10px;">
+            <img src="<?= $user_avatar ?>" style="width:36px;height:36px;border-radius:10px;object-fit:cover;border:2px solid var(--bncc-primary-500);">
+            <div>
+                <div style="font-weight:800;font-size:0.82rem;color:var(--theme-text-primary);line-height:1.2;"><?= htmlspecialchars($_SESSION['fullname']) ?></div>
+                <div style="font-size:0.68rem;color:var(--bncc-primary-500);font-weight:700;text-transform:uppercase;"><?= htmlspecialchars($_SESSION['role']) ?></div>
+            </div>
+        </div>
+        <!-- Menu items -->
+        <div style="padding:6px;">
+            <a href="<?= $base_path ?>pages/profile.php" style="
+                display:flex; align-items:center; gap:10px;
+                padding:10px 12px; border-radius:10px;
+                text-decoration:none; color:var(--theme-text-primary);
+                font-weight:700; font-size:0.88rem;
+                transition:background 0.15s;
+            " onmouseover="this.style.background='var(--theme-hover-bg)'" onmouseout="this.style.background='transparent'">
+                <i class="fas fa-user-edit" style="width:18px;color:var(--bncc-primary-500);"></i>
+                แก้ไขโปรไฟล์
+            </a>
+            <div style="height:1px;background:var(--theme-border);margin:4px 0;"></div>
+            <a href="<?= $base_path ?>auth/logout.php" style="
+                display:flex; align-items:center; gap:10px;
+                padding:10px 12px; border-radius:10px;
+                text-decoration:none; color:var(--bncc-danger-500);
+                font-weight:700; font-size:0.88rem;
+                transition:background 0.15s;
+            " onmouseover="this.style.background='rgba(239,68,68,0.07)'" onmouseout="this.style.background='transparent'">
+                <i class="fas fa-power-off" style="width:18px;"></i>
+                ออกจากระบบ
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+(function(){
+    const trigger = document.getElementById('profileDropdownTrigger');
+    const menu    = document.getElementById('profileDropdownMenu');
+    if (!trigger || !menu) return;
+
+    trigger.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const isOpen = menu.style.opacity === '1';
+        menu.style.opacity    = isOpen ? '0' : '1';
+        menu.style.visibility = isOpen ? 'hidden' : 'visible';
+        menu.style.transform  = isOpen ? 'translateY(8px) scale(0.97)' : 'translateY(0) scale(1)';
+    });
+
+    document.addEventListener('click', function() {
+        menu.style.opacity    = '0';
+        menu.style.visibility = 'hidden';
+        menu.style.transform  = 'translateY(8px) scale(0.97)';
+    });
+})();
+</script>
 
             <?php else: ?>
                 
@@ -2251,7 +2326,7 @@ if (isLoggedIn()) {
 <div id="globalSidebarOverlay" class="global-overlay" aria-hidden="true"></div>
 
 <aside id="sidebarMasterDrawer" class="sidebar-master-drawer" aria-hidden="true" tabindex="-1">
-    
+    <?php endif; ?>
     <div class="sidebar-top-section">
         <button id="sidebarCloseMasterBtn" class="sidebar-close-action" aria-label="Close Navigation Menu">
             <i class="fas fa-times"></i>
@@ -2391,14 +2466,6 @@ if (isLoggedIn()) {
         
     </nav>
 
-    <?php if (isLoggedIn()): ?>
-    <div class="sidebar-bottom-section">
-        <a href="<?= $base_path ?>auth/logout.php" class="btn-logout-massive">
-            <i class="fas fa-power-off"></i>
-            <span>ออกจากระบบอย่างปลอดภัย</span>
-        </a>
-    </div>
-    <?php endif; ?>
 
 </aside>
 
@@ -2722,4 +2789,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<main class="bncc-master-main-wrapper" style="padding-top: calc(var(--bncc-header-height) + 1.5rem); min-height: calc(100vh - var(--bncc-header-height)); position: relative; z-index: var(--bncc-z-base);">
+<main class="bncc-master-main-wrapper" style="padding-top: <?= $hide_navbar ? '0' : 'calc(var(--bncc-header-height) + 1.5rem)'?>; min-height: calc(100vh - var(--bncc-header-height)); position: relative; z-index: var(--bncc-z-base);">
