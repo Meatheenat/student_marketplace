@@ -2171,10 +2171,10 @@ if (isLoggedIn()) {
         
         <div class="header-left-zone">
             <button id="sidebarToggleMasterBtn" class="sidebar-trigger-btn" aria-label="Open Navigation Menu" aria-expanded="false" aria-controls="sidebarMasterDrawer">
-                <span class="trigger-line"></span>
-                <span class="trigger-line"></span>
-                <span class="trigger-line"></span>
-            </button>
+    <span class="trigger-line"></span>
+    <span class="trigger-line"></span>
+    <span class="trigger-line"></span>
+</button>
 
             <a href="<?= $base_path ?>pages/index.php" class="brand-link-wrapper" aria-label="BNCC Market Home">
                 <div class="brand-logo-icon">
