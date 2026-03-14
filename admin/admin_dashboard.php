@@ -196,8 +196,8 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
 
 <div class="admin-wrapper">
     <div class="dashboard-header">
-        <h1>แผงควบคุมผู้ดูแลระบบ</h1>
-        <p style="color: var(--text-muted); margin-top: 5px; font-weight: 600; font-size: 1.05rem;">จัดการความเรียบร้อยและอนุมัติร้านค้า/สินค้าภายใน BNCC Market</p>
+        <h1>แผงควบคุมผู้ดูแลระบบ (Admin)</h1>
+        <p style="color: var(--text-muted); margin-top: 5px; font-weight: 600; font-size: 1.05rem;">จัดการความเรียบร้อยและอนุมัติร้านค้า/สินค้า/แลกเปลี่ยน ภายใน BNCC Market</p>
     </div>
 
     <div class="stat-grid stagger-in">
