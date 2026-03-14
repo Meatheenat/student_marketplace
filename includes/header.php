@@ -2326,7 +2326,7 @@ if (isLoggedIn()) {
 <div id="globalSidebarOverlay" class="global-overlay" aria-hidden="true"></div>
 
 <aside id="sidebarMasterDrawer" class="sidebar-master-drawer" aria-hidden="true" tabindex="-1">
-    <?php endif; ?>
+    
     <div class="sidebar-top-section">
         <button id="sidebarCloseMasterBtn" class="sidebar-close-action" aria-label="Close Navigation Menu">
             <i class="fas fa-times"></i>
@@ -2468,7 +2468,7 @@ if (isLoggedIn()) {
 
 
 </aside>
-
+<?php endif;
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
