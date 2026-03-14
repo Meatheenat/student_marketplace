@@ -1,74 +1,144 @@
-</main>
-
-<?php
-// 🛠️ ตัวแปร Path อิงจาก URL จริงของเว็บมึง
+</main> <?php
+// 🛠️ ตรวจสอบ Path พื้นฐานเพื่อให้ลิงก์ไม่พัง
 $basePath = defined('BASE_URL') ? BASE_URL : '/s673190104/student_marketplace/';
 ?>
 
 <style>
-    /* 🛠️ สไตล์ Footer 7 องค์ประกอบ (Responsive & High-Contrast) */
+    /* ============================================================
+       💎 MODERN SOLID FOOTER DESIGN SYSTEM
+       ============================================================ */
     .site-footer {
         background: var(--solid-card, #ffffff);
-        border-top: 2px solid var(--solid-border, #cbd5e1);
-        padding: 60px 0 20px;
-        margin-top: 80px;
+        border-top: 2px solid var(--solid-border, #e2e8f0);
+        padding: 80px 0 30px;
+        margin-top: 100px;
         color: var(--solid-text, #0f172a);
         position: relative;
-        z-index: 10;
+        z-index: 50;
         width: 100%;
         clear: both;
     }
+
     .dark-theme .site-footer {
-        background: var(--solid-card, #1e293b);
-        border-top: 2px solid var(--solid-border, #334155);
+        background: #0f172a;
+        border-top: 2px solid #1e293b;
     }
+
     .footer-container {
-        max-width: 1200px;
+        max-width: 1300px;
         margin: 0 auto;
-        padding: 0 20px;
+        padding: 0 25px;
     }
+
     .footer-grid {
         display: grid;
-        grid-template-columns: 2fr 1fr 1fr 1fr;
-        gap: 40px;
-        margin-bottom: 40px;
+        grid-template-columns: 1.5fr 1fr 1fr 1fr;
+        gap: 50px;
+        margin-bottom: 60px;
+    }
+
+    /* --- ส่วน Brand & Social --- */
+    .footer-brand h3 { 
+        font-size: 2rem; 
+        font-weight: 900; 
+        margin-bottom: 20px; 
+        color: var(--solid-primary, #4f46e5); 
+        letter-spacing: -1.5px; 
     }
     
-    /* 1. ข้อมูลเว็บ & 5. ติดต่อ & 6. Social */
-    .footer-brand h3 { font-size: 1.8rem; font-weight: 900; margin-bottom: 15px; color: var(--solid-primary, #4f46e5); letter-spacing: -1px; }
-    .footer-brand p { color: var(--text-muted, #64748b); font-size: 0.95rem; line-height: 1.6; margin-bottom: 20px; }
-    .footer-contact { font-size: 0.9rem; color: var(--text-muted, #64748b); margin-bottom: 20px; }
-    .footer-contact i { color: var(--solid-primary, #4f46e5); width: 20px; }
+    .footer-brand p { 
+        color: var(--text-muted, #64748b); 
+        font-size: 1rem; 
+        line-height: 1.8; 
+        margin-bottom: 25px; 
+        max-width: 350px;
+    }
+
+    .footer-contact-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+        color: var(--text-muted, #64748b);
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+
+    .footer-contact-item i {
+        width: 35px;
+        height: 35px;
+        background: var(--solid-bg, #f1f5f9);
+        color: var(--solid-primary, #4f46e5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        font-size: 1rem;
+    }
+
+    .footer-social { display: flex; gap: 12px; margin-top: 30px; }
     .footer-social a { 
-        display: inline-flex; justify-content: center; align-items: center; 
-        width: 40px; height: 40px; border-radius: 10px; 
-        background: var(--solid-bg, #f1f5f9); color: var(--solid-text, #0f172a); 
-        margin-right: 10px; font-size: 1.2rem; transition: 0.3s; 
+        width: 45px; height: 45px; border-radius: 12px; 
+        background: var(--solid-primary, #4f46e5); color: #fff; 
+        display: flex; justify-content: center; align-items: center; 
+        font-size: 1.2rem; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
     }
-    .footer-social a:hover { background: var(--solid-primary, #4f46e5); color: #fff; transform: translateY(-3px); }
-    .dark-theme .footer-social a { background: var(--solid-border, #334155); }
+    .footer-social a:hover { transform: translateY(-8px) rotate(8deg); box-shadow: 0 15px 25px rgba(79, 70, 229, 0.4); }
 
-    /* 2, 3, 4. เมนูต่างๆ */
-    .footer-links h4 { font-weight: 800; font-size: 1.1rem; margin-bottom: 20px; color: var(--solid-text, #0f172a); }
-    .footer-links ul { list-style: none; padding: 0; margin: 0; }
-    .footer-links ul li { margin-bottom: 12px; }
+    /* --- ส่วน Links --- */
+    .footer-links h4 { 
+        font-weight: 900; 
+        font-size: 1.2rem; 
+        margin-bottom: 25px; 
+        color: var(--solid-text, #0f172a); 
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .footer-links ul { list-style: none; }
+    .footer-links ul li { margin-bottom: 15px; }
     .footer-links ul li a {
-        color: var(--text-muted, #64748b); text-decoration: none; font-size: 0.95rem; font-weight: 600;
-        transition: color 0.2s, padding-left 0.2s; display: inline-block;
+        color: var(--text-muted, #64748b);
+        text-decoration: none;
+        font-size: 1rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
     }
-    .footer-links ul li a:hover { color: var(--solid-primary, #4f46e5); padding-left: 5px; }
 
-    /* 7. Copyright */
+    .footer-links ul li a::before {
+        content: ''; width: 0; height: 2px; background: var(--solid-primary, #4f46e5);
+        transition: width 0.3s ease;
+    }
+
+    .footer-links ul li a:hover { color: var(--solid-primary, #4f46e5); }
+    .footer-links ul li a:hover::before { width: 15px; }
+
+    /* --- ส่วน Bottom --- */
     .footer-bottom {
-        text-align: center; padding-top: 25px; border-top: 1px solid var(--solid-border, #cbd5e1);
-        color: var(--text-muted, #64748b); font-size: 0.85rem; font-weight: 600;
+        padding: 30px 0;
+        border-top: 1px solid var(--solid-border, #e2e8f0);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: var(--text-muted, #64748b);
+        font-size: 0.9rem;
+        font-weight: 700;
     }
 
-    @media (max-width: 992px) {
-        .footer-grid { grid-template-columns: 1fr 1fr; }
+    .footer-bottom-links { display: flex; gap: 25px; }
+    .footer-bottom-links a:hover { color: var(--solid-primary); }
+
+    /* --- Responsive --- */
+    @media (max-width: 1024px) {
+        .footer-grid { grid-template-columns: 1fr 1fr; gap: 40px; }
     }
-    @media (max-width: 576px) {
-        .footer-grid { grid-template-columns: 1fr; gap: 30px; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; }
+        .footer-bottom { flex-direction: column; gap: 20px; text-align: center; }
+        .site-footer { padding: 60px 0 30px; }
     }
 </style>
 
@@ -77,54 +147,69 @@ $basePath = defined('BASE_URL') ? BASE_URL : '/s673190104/student_marketplace/';
         <div class="footer-grid">
             <div class="footer-brand">
                 <h3>BNCC Market</h3>
-                <p>ตลาดนัดออนไลน์สำหรับนักศึกษา พื้นที่ซื้อ-ขาย แลกเปลี่ยนสินค้า สะดวก ปลอดภัย ภายในวิทยาลัย</p>
+                <p>แหล่งรวมสินค้าและบริการที่ดีที่สุดสำหรับชาวพณิชยการบางนา ซื้อขายปลอดภัย นัดรับง่ายในรั้ววิทยาลัย</p>
+                
                 <div class="footer-contact">
-                    <div style="margin-bottom: 8px;"><i class="fas fa-map-marker-alt"></i> วิทยาลัยพณิชยการบางนา</div>
-                    <div style="margin-bottom: 8px;"><i class="fas fa-envelope"></i> support@bncc.ac.th</div>
+                    <div class="footer-contact-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>วิทยาลัยพณิชยการบางนา, กรุงเทพฯ</span>
+                    </div>
+                    <div class="footer-contact-item">
+                        <i class="fas fa-envelope"></i>
+                        <span>support@bnccmarket.com</span>
+                    </div>
                 </div>
+
                 <div class="footer-social">
-                    <a href="#"><i class="fab fa-facebook-f"></i></a>
-                    <a href="#"><i class="fab fa-line"></i></a>
-                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" aria-label="LINE"><i class="fab fa-line"></i></a>
+                    <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
                 </div>
             </div>
 
             <div class="footer-links">
                 <h4>สำรวจตลาด</h4>
                 <ul>
-                    <li><a href="<?= $basePath ?>pages/index.php"><i class="fas fa-angle-right"></i> หน้าแรก</a></li>
-                    <li><a href="<?= $basePath ?>pages/index.php"><i class="fas fa-angle-right"></i> สินค้าทั้งหมด</a></li>
-                    <li><a href="#"><i class="fas fa-angle-right"></i> ร้านค้านักศึกษา</a></li>
-                    <li><a href="#"><i class="fas fa-angle-right"></i> กระดานตามหาของ (WTB)</a></li>
+                    <li><a href="<?= $basePath ?>pages/index.php">สินค้าทั้งหมด</a></li>
+                    <li><a href="<?= $basePath ?>pages/shops.php">ร้านค้านักศึกษา</a></li>
+                    <li><a href="<?= $basePath ?>pages/wtb_board.php">กระดานตามหาของ</a></li>
+                    <li><a href="<?= $basePath ?>pages/barter_board.php">ระบบแลกเปลี่ยน</a></li>
                 </ul>
             </div>
 
             <div class="footer-links">
-                <h4>บัญชีของฉัน</h4>
+                <h4>จัดการบัญชี</h4>
                 <ul>
-                    <?php if(isLoggedIn()): ?>
-                        <li><a href="<?= $basePath ?>pages/profile.php"><i class="fas fa-angle-right"></i> โปรไฟล์ส่วนตัว</a></li>
-                        <li><a href="<?= $basePath ?>pages/my_orders.php"><i class="fas fa-angle-right"></i> การสั่งซื้อของฉัน</a></li>
-                        <li><a href="<?= $basePath ?>seller/dashboard.php"><i class="fas fa-angle-right"></i> จัดการร้านค้า</a></li>
+                    <?php if(isset($_SESSION['user_id'])): ?>
+                        <li><a href="<?= $basePath ?>pages/profile.php">ข้อมูลส่วนตัว</a></li>
+                        <li><a href="<?= $basePath ?>pages/my_orders.php">ประวัติการสั่งซื้อ</a></li>
+                        <li><a href="<?= $basePath ?>seller/dashboard.php">ศูนย์ผู้ขาย (Seller)</a></li>
+                        <li><a href="<?= $basePath ?>auth/logout.php" style="color: var(--adm-danger, #ef4444);">ออกจากระบบ</a></li>
                     <?php else: ?>
-                        <li><a href="<?= $basePath ?>auth/login.php"><i class="fas fa-angle-right"></i> เข้าสู่ระบบ / สมัครสมาชิก</a></li>
+                        <li><a href="<?= $basePath ?>auth/login.php">เข้าสู่ระบบ</a></li>
+                        <li><a href="<?= $basePath ?>auth/register.php">สมัครสมาชิกใหม่</a></li>
                     <?php endif; ?>
                 </ul>
             </div>
 
             <div class="footer-links">
-                <h4>ช่วยเหลือ & นโยบาย</h4>
+                <h4>การสนับสนุน</h4>
                 <ul>
-                    <li><a href="#"><i class="fas fa-angle-right"></i> วิธีการสั่งซื้อและนัดรับ</a></li>
-                    <li><a href="<?= $basePath ?>pages/terms.php"><i class="fas fa-angle-right"></i> ข้อตกลงการใช้งาน (Terms)</a></li>
-                    <li><a href="<?= $basePath ?>pages/privacy.php"><i class="fas fa-angle-right"></i> นโยบายความเป็นส่วนตัว</a></li>
-                    <li><a href="<?= $basePath ?>auth/submit_report.php"><i class="fas fa-angle-right"></i> แจ้งปัญหาสินค้า / รายงานการโกง</a></li>
+                    <li><a href="<?= $basePath ?>pages/how-to.php">คู่มือการซื้อขาย</a></li>
+                    <li><a href="<?= $basePath ?>pages/terms.php">ข้อตกลงและเงื่อนไข</a></li>
+                    <li><a href="<?= $basePath ?>pages/privacy.php">นโยบายข้อมูลส่วนบุคคล</a></li>
+                    <li><a href="<?= $basePath ?>auth/submit_report.php" style="color: var(--adm-warning, #f59e0b);">แจ้งปัญหา/รายงานโกง</a></li>
                 </ul>
             </div>
         </div>
         
         <div class="footer-bottom">
-            &copy; <?= date('Y') ?> BNCC Market. All rights reserved.
+            <div class="copyright">
+                &copy; <?= date('Y') ?> BNCC Market - Project by Student 673190104.
+            </div>
+            <div class="footer-bottom-links">
+                <span>Enterprise v3.5.0</span>
+            </div>
         </div>
     </div>
 </footer>
@@ -133,29 +218,28 @@ $basePath = defined('BASE_URL') ? BASE_URL : '/s673190104/student_marketplace/';
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
+    /* Custom Swal2 for Solid Identity */
     .swal2-popup {
-        background: var(--solid-card, var(--bg-card, #ffffff)) !important;
-        color: var(--solid-text, var(--text-main, #0f172a)) !important;
-        border: 2px solid var(--solid-border, var(--border-color, #cbd5e1)) !important;
-        border-radius: 24px !important;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+        background: var(--solid-card, #ffffff) !important;
+        border: 2px solid var(--solid-border, #cbd5e1) !important;
+        border-radius: 30px !important;
+        padding: 2rem !important;
         font-family: 'Prompt', sans-serif !important;
     }
-    .swal2-title { font-weight: 900 !important; font-size: 1.6rem !important; }
-    .swal2-html-container { font-weight: 500 !important; font-size: 1.05rem !important; color: var(--text-muted, #64748b) !important; }
-    .swal2-confirm, .swal2-cancel { border-radius: 14px !important; font-weight: 800 !important; padding: 12px 30px !important; font-size: 1rem !important; transition: transform 0.2s ease, box-shadow 0.2s ease !important; }
-    .swal2-confirm:hover, .swal2-cancel:hover { transform: translateY(-3px) !important; }
-    .swal2-confirm { background: var(--solid-primary, var(--primary, #4f46e5)) !important; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4) !important; }
-    .swal2-cancel { background: var(--solid-bg, var(--bg-body, #f1f5f9)) !important; border: 2px solid var(--solid-border, var(--border-color, #cbd5e1)) !important; color: var(--solid-text, var(--text-main, #0f172a)) !important; }
+    .swal2-title { font-weight: 900 !important; color: var(--solid-text, #0f172a) !important; }
+    .swal2-confirm { background: var(--solid-primary, #4f46e5) !important; border-radius: 15px !important; font-weight: 800 !important; padding: 12px 35px !important; }
+    .swal2-cancel { background: #f1f5f9 !important; color: #64748b !important; border-radius: 15px !important; font-weight: 800 !important; }
 </style>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // 🎯 1. Auto-convert native confirm() to SweetAlert2
         const confirmElements = document.querySelectorAll('[onclick*="return confirm"]');
         confirmElements.forEach(el => {
-            const onclickText = el.getAttribute('onclick');
-            const match = onclickText.match(/confirm\(['"](.*?)['"]\)/);
+            const originalOnclick = el.getAttribute('onclick');
+            const match = originalOnclick.match(/confirm\(['"](.*?)['"]\)/);
             const msg = match ? match[1] : 'คุณต้องการดำเนินการนี้ใช่หรือไม่?';
+            
             el.removeAttribute('onclick');
             el.addEventListener('click', function(e) {
                 e.preventDefault(); 
@@ -164,52 +248,36 @@ $basePath = defined('BASE_URL') ? BASE_URL : '/s673190104/student_marketplace/';
                     text: msg,
                     icon: 'question',
                     showCancelButton: true,
-                    confirmButtonText: '<i class="fas fa-check-circle"></i> ยืนยัน',
+                    confirmButtonText: 'ใช่, ดำเนินการเลย',
                     cancelButtonText: 'ยกเลิก',
                     reverseButtons: true 
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        if (el.tagName.toUpperCase() === 'A') {
+                        if (el.tagName === 'A') {
                             window.location.href = el.href;
-                        } 
-                        else if (el.closest('form')) {
-                            const form = el.closest('form');
-                            if (el.name) {
-                                const hiddenInput = document.createElement('input');
-                                hiddenInput.type = 'hidden';
-                                hiddenInput.name = el.name;
-                                hiddenInput.value = el.value || '1';
-                                form.appendChild(hiddenInput);
-                            }
-                            form.submit();
+                        } else if (el.type === 'submit' || el.closest('form')) {
+                            el.closest('form').submit();
                         }
                     }
                 });
             });
         });
 
-        const alertElements = document.querySelectorAll('[onclick*="alert("]');
-        alertElements.forEach(el => {
-            const onclickText = el.getAttribute('onclick');
-            if(!onclickText.includes('Swal')) {
-                const match = onclickText.match(/alert\(['"](.*?)['"]\)/);
-                const msg = match ? match[1] : 'มีการแจ้งเตือนจากระบบ';
-                el.removeAttribute('onclick');
-                el.addEventListener('click', function(e) {
-                    if(el.tagName.toUpperCase() === 'A') e.preventDefault();
-                    Swal.fire({
-                        title: 'แจ้งเตือน',
-                        text: msg,
-                        icon: 'warning',
-                        confirmButtonText: 'ตกลง'
-                    }).then(() => {
-                        if (el.tagName.toUpperCase() === 'A' && el.href && !el.href.includes('#')) {
-                            window.location.href = el.href;
-                        }
-                    });
-                });
-            }
-        });
+        // 🎯 2. Flash Message Handler (PHP Session)
+        <?php if(isset($_SESSION['flash_message'])): ?>
+            Swal.fire({
+                title: 'ผลการทำงาน',
+                text: '<?= $_SESSION['flash_message'] ?>',
+                icon: '<?= $_SESSION['flash_type'] ?? 'success' ?>',
+                confirmButtonText: 'ตกลง',
+                timer: 4000,
+                timerProgressBar: true
+            });
+            <?php 
+            unset($_SESSION['flash_message']); 
+            unset($_SESSION['flash_type']); 
+            ?>
+        <?php endif; ?>
     });
 </script>
 
