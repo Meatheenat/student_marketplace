@@ -60,12 +60,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['flash_message'] = "✅ ส่งรายงานเรียบร้อยแล้ว แอดมินจะดำเนินการตรวจสอบโดยเร็วที่สุด";
             $_SESSION['flash_type'] = "success";
             
-            if ($product_id > 0) {
-                redirect("product_detail.php?id=" . $product_id);
-            } else {
-                redirect("index.php");
-            }
-        }
+          if ($product_id > 0) {
+        // ถอยออกจาก auth แล้วเข้า pages ไปหา product_detail
+        redirect("../pages/product_detail.php?id=" . $product_id);
+    } else {
+        // 🎯 ถอยออกจาก auth แล้วเข้า pages ไปหา index.php (ตรงนี้แหละที่กูพาหลง)
+        redirect("../pages/index.php");
+    }
+    exit();
+}
     } else {
         $error = "กรุณาเลือกผู้ใช้งานที่ถูกต้องและระบุรายละเอียดเหตุผล";
     }
