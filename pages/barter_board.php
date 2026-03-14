@@ -11,7 +11,21 @@
  */
 
 require_once '../includes/functions.php';
-
+if (!function_exists('time_elapsed_string')) {
+    function time_elapsed_string($datetime, $full = false) {
+        $now = new DateTime;
+        $ago = new DateTime($datetime);
+        $diff = $now->diff($ago);
+        $diff->w = floor($diff->d / 7);
+        $diff->d -= $diff->w * 7;
+        $string = array('y' => 'ปี','m' => 'เดือน','w' => 'สัปดาห์','d' => 'วัน','h' => 'ชม.','i' => 'นาที','s' => 'วินาที');
+        foreach ($string as $k => &$v) {
+            if ($diff->$k) { $v = $diff->$k . ' ' . $v; } else { unset($string[$k]); }
+        }
+        if (!$full) $string = array_slice($string, 0, 1);
+        return $string ? implode(', ', $string) . 'ที่แล้ว' : 'เมื่อสักครู่';
+    }
+}
 // --------------------------------------------------------------------------------------------
 // [CORE CONTROLLER] 1. ADVANCED DATA ACQUISITION & PROCESSING STREAM
 // --------------------------------------------------------------------------------------------
@@ -84,21 +98,7 @@ $execution_time = microtime(true) - $start_time;
 // --------------------------------------------------------------------------------------------
 // [HELPER LOGIC] TIME ELAPSED CALCULATOR
 // --------------------------------------------------------------------------------------------
-if (!function_exists('time_elapsed_string')) {
-    function time_elapsed_string($datetime, $full = false) {
-        $now = new DateTime;
-        $ago = new DateTime($datetime);
-        $diff = $now->diff($ago);
-        $diff->w = floor($diff->d / 7);
-        $diff->d -= $diff->w * 7;
-        $string = array('y' => 'ปี','m' => 'เดือน','w' => 'สัปดาห์','d' => 'วัน','h' => 'ชม.','i' => 'นาที','s' => 'วินาที');
-        foreach ($string as $k => &$v) {
-            if ($diff->$k) { $v = $diff->$k . ' ' . $v; } else { unset($string[$k]); }
-        }
-        if (!$full) $string = array_slice($string, 0, 1);
-        return $string ? implode(', ', $string) . 'ที่แล้ว' : 'เมื่อสักครู่';
-    }
-}
+
 
 $pageTitle = "ตลาดแลกเปลี่ยนเสรี | BNCC Open Barter Hub";
 require_once '../includes/header.php';
