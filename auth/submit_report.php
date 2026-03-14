@@ -73,6 +73,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 
 <style>
+    /* ============================================================
+       💎 GUARDIAN REPORT UI STYLE (LOCKED BLACK TEXT)
+       ============================================================ */
     .report-main-wrapper {
         max-width: 700px;
         margin: 60px auto;
@@ -104,38 +107,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         letter-spacing: 1px;
     }
 
-    .report-field {
+    /* 🎯 ล็อกสีตัวอักษรดำสนิท + พื้นหลังขาว สำหรับทุกช่องกรอก */
+    .report-field, 
+    #user_search, 
+    textarea.report-field {
         width: 100%;
         padding: 18px 22px;
         border-radius: 18px;
         border: 2px solid var(--border-color, #e2e8f0);
-        background: var(--bg-main, #f8fafc);
-        color: var(--text-main, #0f172a);
         font-family: inherit;
         font-size: 1.05rem;
         font-weight: 600;
         transition: 0.3s;
+        /* บังคับสี */
+        color: #000000 !important;
+        background-color: #ffffff !important;
     }
 
-    /* 🎯 แก้ไข: ล็อกสีตัวอักษรดำสำหรับช่องค้นหา (Autocomplete) */
-    #user_search {
-        color: #000000 !important; /* ล็อกสีตัวอักษรดำ */
-        background-color: #ffffff !important; /* ล็อกพื้นหลังขาวให้ตัดกัน */
+    /* ตกแต่งตอน Focus */
+    .report-field:focus,
+    #user_search:focus {
+        outline: none;
+        border-color: #ef4444;
+        background-color: #ffffff !important;
+        box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
     }
 
-    /* 🎯 แก้ไข: ล็อกสีตัวอักษรในรายการตัวเลือก (Datalist) */
+    /* 🎯 ล็อกสีตัวเลือกใน Dropdown */
     datalist option {
         color: #000000 !important;
         background-color: #ffffff !important;
     }
 
-    .report-field:focus {
-        outline: none;
-        border-color: #ef4444;
-        box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+    /* Placeholder ให้เป็นสีเทาเข้มพอให้อ่านออก */
+    .report-field::placeholder {
+        color: #64748b !important;
+        opacity: 0.8;
     }
 
-    /* ตกแต่ง Autocomplete */
     .search-container { position: relative; }
     .search-icon { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); color: #64748b; }
 
@@ -145,7 +154,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         border-radius: 18px;
         border: none;
         background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
-        color: #ffffff;
+        color: #ffffff !important;
         font-weight: 900;
         font-size: 1.2rem;
         cursor: pointer;
