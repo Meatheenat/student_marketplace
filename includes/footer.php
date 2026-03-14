@@ -163,7 +163,7 @@ $basePath = defined('BASE_URL') ? BASE_URL : '/s673190104/student_marketplace/';
                 <div class="footer-social">
                     <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
                     <a href="#" aria-label="LINE"><i class="fab fa-line"></i></a>
-                    <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                    <a href="https://www.instagram.com/__r._.wang_/" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
                 </div>
             </div>
 
