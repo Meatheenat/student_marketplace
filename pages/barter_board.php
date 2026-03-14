@@ -16,11 +16,26 @@ if (!function_exists('time_elapsed_string')) {
         $now = new DateTime;
         $ago = new DateTime($datetime);
         $diff = $now->diff($ago);
-        $diff->w = floor($diff->d / 7);
-        $diff->d -= $diff->w * 7;
-        $string = array('y' => 'ปี','m' => 'เดือน','w' => 'สัปดาห์','d' => 'วัน','h' => 'ชม.','i' => 'นาที','s' => 'วินาที');
+        
+        // 🎯 แก้ปัญหา PHP 8.2+ โดยการเก็บค่าใส่ Array แทนการยัดใส่ Object
+        $diffArr = [
+            'y' => $diff->y,
+            'm' => $diff->m,
+            'w' => floor($diff->d / 7),
+            'd' => $diff->d - (floor($diff->d / 7) * 7),
+            'h' => $diff->h,
+            'i' => $diff->i,
+            's' => $diff->s,
+        ];
+
+        $string = array('y' => 'ปี', 'm' => 'เดือน', 'w' => 'สัปดาห์', 'd' => 'วัน', 'h' => 'ชม.', 'i' => 'นาที', 's' => 'วินาที');
+        
         foreach ($string as $k => &$v) {
-            if ($diff->$k) { $v = $diff->$k . ' ' . $v; } else { unset($string[$k]); }
+            if ($diffArr[$k]) { 
+                $v = $diffArr[$k] . ' ' . $v; 
+            } else { 
+                unset($string[$k]); 
+            }
         }
         if (!$full) $string = array_slice($string, 0, 1);
         return $string ? implode(', ', $string) . 'ที่แล้ว' : 'เมื่อสักครู่';
