@@ -7,7 +7,13 @@ $pageTitle = "ระบบผู้ดูแล (Admin) - BNCC Market";
 require_once '../includes/header.php';
 
 // 🎯 ปรับให้ 'teacher' เข้าถึงหน้านี้ได้ด้วย
-checkRole(['admin']);
+// 🎯 ตรวจสอบสิทธิ์แบบ Manual รองรับทั้ง admin และ teacher
+if (!isset($_SESSION['user_role']) || !in_array($_SESSION['user_role'], ['admin', 'teacher'])) {
+    $_SESSION['flash_message'] = "คุณไม่มีสิทธิ์เข้าถึงหน้านี้";
+    $_SESSION['flash_type'] = "danger";
+    redirect('../index.php'); // หรือเด้งไปหน้า login
+    exit();
+}
 $db = getDB();
 
 // 🚀 🛠️ [เพิ่มใหม่] ระบบ Auto-Cleanup: ลบสินค้าและคอมเมนต์ที่อยู่ในถังขยะเกิน 30 วันทิ้งแบบถาวร (Hard Delete)
