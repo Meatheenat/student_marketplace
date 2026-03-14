@@ -1231,15 +1231,16 @@ if (isLoggedIn()) {
             border-color: rgba(99, 102, 241, 0.4);
         }
 
-        .trigger-line {
-            display: block;
-            width: 22px;
-            height: 2.5px;
-            background-color: var(--theme-text-primary);
-            border-radius: var(--bncc-radius-full);
-            transition: all var(--bncc-duration-normal) var(--bncc-ease-bounce);
-            transform-origin: center;
-        }
+     .trigger-line {
+    display: block;
+    width: 22px;
+    height: 2.5px;
+    /* 🎯 บังคับให้ใช้สีจากระบบ Variable ที่จะเปลี่ยนตาม Theme (ดำในหน้าสว่าง / ขาวในหน้ามืด) */
+    background-color: var(--theme-text-primary) !important; 
+    border-radius: var(--bncc-radius-full);
+    transition: all var(--bncc-duration-normal) var(--bncc-ease-bounce);
+    transform-origin: center;
+}
 
         .trigger-line:nth-child(1) { transform: translateY(-6px); }
         .trigger-line:nth-child(3) { transform: translateY(6px); }
