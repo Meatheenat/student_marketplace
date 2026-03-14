@@ -272,6 +272,7 @@ ALTER TABLE `messages`
     AFTER `message`;
 ALTER TABLE `messages`
     MODIFY COLUMN `message` TEXT NULL DEFAULT NULL;
+    
     CREATE TABLE barter_posts (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -284,3 +285,9 @@ ALTER TABLE `messages`
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+ALTER TABLE barter_posts MODIFY COLUMN status ENUM('pending', 'open', 'closed', 'rejected') DEFAULT 'pending';
+ALTER TABLE users ADD is_ban TINYINT(1) DEFAULT 0;
+
+
+
+

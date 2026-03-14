@@ -116,6 +116,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         font-weight: 600;
         transition: 0.3s;
     }
+
+    /* 🎯 แก้ไข: ล็อกสีตัวอักษรดำสำหรับช่องค้นหา (Autocomplete) */
+    #user_search {
+        color: #000000 !important; /* ล็อกสีตัวอักษรดำ */
+        background-color: #ffffff !important; /* ล็อกพื้นหลังขาวให้ตัดกัน */
+    }
+
+    /* 🎯 แก้ไข: ล็อกสีตัวอักษรในรายการตัวเลือก (Datalist) */
+    datalist option {
+        color: #000000 !important;
+        background-color: #ffffff !important;
+    }
+
     .report-field:focus {
         outline: none;
         border-color: #ef4444;
@@ -124,7 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     /* ตกแต่ง Autocomplete */
     .search-container { position: relative; }
-    .search-icon { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+    .search-icon { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); color: #64748b; }
 
     .btn-submit-report {
         width: 100%;
