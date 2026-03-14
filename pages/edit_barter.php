@@ -1,7 +1,7 @@
 <?php
 /**
  * ============================================================================================
- * 🔄 BNCC MARKETPLACE - EDIT BARTER POST (TITAN UI)
+ * 🔄 BNCC MARKETPLACE - EDIT BARTER POST (TITAN UI) - RE-APPROVAL VERSION
  * ============================================================================================
  */
 require_once '../includes/functions.php';
@@ -35,6 +35,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $description = trim($_POST['description']);
     $title = "มี " . $item_have . " หาแลกของครับ/ค่ะ"; 
     
+    // 🎯 Logic หัวใจหลัก: แก้เสร็จแล้วต้องส่งกลับไปรออนุมัติ (pending) ใหม่
+    $status = 'pending'; 
     $image_url = $post['image_url']; 
 
     if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
@@ -48,10 +50,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     try {
-        $update_stmt = $db->prepare("UPDATE barter_posts SET title = ?, item_have = ?, description = ?, image_url = ?, updated_at = NOW() WHERE id = ?");
+        // 🎯 อัปเดตข้อมูลและถอยสถานะกลับไปเป็น 'pending' เพื่อให้แอดมินตรวจใหม่
+        $update_stmt = $db->prepare("UPDATE barter_posts SET title = ?, item_have = ?, description = ?, image_url = ?, status = ?, updated_at = NOW() WHERE id = ?");
         
-        if ($update_stmt->execute([$title, $item_have, $description, $image_url, $post_id])) {
-            $_SESSION['flash_message'] = "✅ บันทึกการแก้ไขเรียบร้อยแล้ว!";
+        if ($update_stmt->execute([$title, $item_have, $description, $image_url, $status, $post_id])) {
+            $_SESSION['flash_message'] = "✅ บันทึกการแก้ไขแล้ว! ประกาศของคุณกำลังรอแอดมินตรวจสอบความถูกต้องอีกครั้งครับ";
             $_SESSION['flash_type'] = "success";
             redirect('barter_board.php');
         }
@@ -83,6 +86,18 @@ require_once '../includes/header.php';
         box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1);
     }
 
+    /* 🛡️ บล็อกแจ้งเตือนเรื่องการตรวจสอบใหม่ */
+    .re-approval-notice {
+        background: rgba(79, 70, 229, 0.1);
+        border-left: 5px solid #4f46e5;
+        padding: 15px 20px;
+        margin-bottom: 30px;
+        border-radius: 10px;
+        display: flex;
+        gap: 15px;
+        align-items: center;
+    }
+
     .input-module { margin-bottom: 30px; }
     .input-label { display: block; font-size: 0.85rem; font-weight: 900; text-transform: uppercase; color: var(--theme-text-secondary); margin-bottom: 12px; letter-spacing: 1px; }
     
@@ -108,28 +123,37 @@ require_once '../includes/header.php';
         display: flex; align-items: center; justify-content: center; gap: 10px;
     }
     .btn-save-titan:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(79, 70, 229, 0.5); }
+    .btn-cancel { background: var(--theme-border); color: var(--theme-text-primary); box-shadow: none; }
+    .btn-cancel:hover { background: #cbd5e1; }
 </style>
 
 <div class="titan-edit-wrapper">
     <div class="titan-form-card">
-        <div style="margin-bottom: 40px;">
+        <div style="margin-bottom: 30px;">
             <h1 style="font-size: 2.5rem; font-weight: 900;">แก้ไข <span style="color:#4f46e5;">ประกาศแลกเปลี่ยน</span></h1>
-            <p style="color: var(--theme-text-secondary); font-weight: 600;">ตรวจสอบข้อมูลให้ถูกต้องก่อนบันทึก</p>
+            <p style="color: var(--theme-text-secondary); font-weight: 600;">ปรับปรุงข้อมูลประกาศของคุณ</p>
+        </div>
+
+        <div class="re-approval-notice">
+            <i class="fas fa-user-shield" style="font-size: 1.5rem; color: #4f46e5;"></i>
+            <span style="font-size: 0.95rem; font-weight: 700; color: var(--theme-text-primary);">
+                หมายเหตุ: หลังจากกดบันทึก ประกาศจะถูกส่งไปให้ผู้ดูแลระบบตรวจสอบและอนุมัติใหม่อีกรอบครับ
+            </span>
         </div>
 
         <form method="POST" enctype="multipart/form-data" id="editBarterForm">
             <div class="input-module">
-                <label class="input-label">ของที่พี่มี (I HAVE)</label>
+                <label class="input-label"><i class="fas fa-box-open" style="margin-right:8px;"></i> ของที่พี่มี (I HAVE)</label>
                 <input type="text" name="item_have" class="titan-input" value="<?= e($post['item_have']) ?>" required>
             </div>
 
             <div class="input-module">
-                <label class="input-label">รายละเอียดสินค้า</label>
+                <label class="input-label"><i class="fas fa-align-left" style="margin-right:8px;"></i> รายละเอียดสินค้า</label>
                 <textarea name="description" class="titan-input" style="min-height: 150px; resize: vertical;" required><?= e($post['description']) ?></textarea>
             </div>
 
             <div class="input-module">
-                <label class="input-label">รูปภาพประกอบ (ทิ้งไว้ถ้าไม่ต้องการเปลี่ยน)</label>
+                <label class="input-label"><i class="fas fa-camera" style="margin-right:8px;"></i> รูปภาพสินค้า (คลิกเพื่อเปลี่ยนรูปใหม่)</label>
                 <div class="edit-upload-reactor" id="dropZone">
                     <?php if(!empty($post['image_url'])): ?>
                         <img id="edit-preview-layer" src="../assets/images/barter/<?= e($post['image_url']) ?>">
@@ -142,8 +166,10 @@ require_once '../includes/header.php';
             </div>
 
             <div style="display: flex; gap: 15px;">
-                <a href="barter_board.php" class="btn-save-titan" style="background: var(--theme-border); color: var(--theme-text-primary); box-shadow: none;">ยกเลิก</a>
-                <button type="submit" class="btn-save-titan">บันทึกการแก้ไข</button>
+                <a href="barter_board.php" class="btn-save-titan btn-cancel">ยกเลิก</a>
+                <button type="submit" class="btn-save-titan" id="submitBtn">
+                    <i class="fas fa-paper-plane"></i> บันทึกและส่งอนุมัติ
+                </button>
             </div>
         </form>
     </div>
@@ -166,6 +192,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             reader.readAsDataURL(this.files[0]);
         }
+    });
+
+    document.getElementById('editBarterForm').addEventListener('submit', function() {
+        const btn = document.getElementById('submitBtn');
+        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> กำลังบันทึก...';
+        btn.style.opacity = '0.7';
+        btn.style.pointerEvents = 'none';
     });
 });
 </script>
