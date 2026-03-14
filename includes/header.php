@@ -2164,7 +2164,7 @@ if (isLoggedIn()) {
     <div class="bg-particle"></div>
     <div class="bg-particle"></div>
 </div>
-
+<?php if (!$hide_navbar): ?>
 <nav id="masterNavbarElement" class="master-header">
     
     <div id="scrollProgressBar" class="header-progress-bar"></div>
@@ -2324,9 +2324,9 @@ if (isLoggedIn()) {
 </nav>
 
 <div id="globalSidebarOverlay" class="global-overlay" aria-hidden="true"></div>
-<?php if (!$hide_navbar): ?>
+
 <aside id="sidebarMasterDrawer" class="sidebar-master-drawer" aria-hidden="true" tabindex="-1">
-    
+    <?php endif; ?>
     <div class="sidebar-top-section">
         <button id="sidebarCloseMasterBtn" class="sidebar-close-action" aria-label="Close Navigation Menu">
             <i class="fas fa-times"></i>
@@ -2466,9 +2466,10 @@ if (isLoggedIn()) {
         
     </nav>
 
+ 
 
 </aside>
-<?php endif; ?>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
@@ -2789,4 +2790,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<main class="bncc-master-main-wrapper" style="padding-top: calc(var(--bncc-header-height) + 1.5rem) min-height: calc(100vh - var(--bncc-header-height)); position: relative; z-index: var(--bncc-z-base);">
+<main class="bncc-master-main-wrapper" style="padding-top: <?= $hide_navbar ? '0' : 'calc(var(--bncc-header-height) + 1.5rem)'?>; min-height: calc(100vh - var(--bncc-header-height)); position: relative; z-index: var(--bncc-z-base);">
