@@ -6,14 +6,7 @@
 $pageTitle = "ระบบผู้ดูแล (Admin) - BNCC Market";
 require_once '../includes/header.php';
 
-// 🎯 ปรับให้ 'teacher' เข้าถึงหน้านี้ได้ด้วย
-// 🎯 ตรวจสอบสิทธิ์แบบ Manual รองรับทั้ง admin และ teacher
-if (!isset($_SESSION['user_role']) || !in_array($_SESSION['user_role'], ['admin', 'teacher'])) {
-    $_SESSION['flash_message'] = "คุณไม่มีสิทธิ์เข้าถึงหน้านี้";
-    $_SESSION['flash_type'] = "danger";
-    redirect('../index.php'); // หรือเด้งไปหน้า login
-    exit();
-}
+checkRole('admin');
 $db = getDB();
 
 // 🚀 🛠️ [เพิ่มใหม่] ระบบ Auto-Cleanup: ลบสินค้าและคอมเมนต์ที่อยู่ในถังขยะเกิน 30 วันทิ้งแบบถาวร (Hard Delete)
@@ -36,7 +29,7 @@ $count_comment_reports = $db->query("SELECT COUNT(*) FROM reports WHERE target_t
 // 🎯 วางต่อท้ายจาก $count_comment_reports
 $count_pending_wtb = $db->query("SELECT COUNT(*) FROM wtb_posts WHERE status = 'pending'")->fetchColumn();
 
-// 🎯 เพิ่มดึงสถิติรายการ Barter ที่รออนุมัติ
+// 🎯 เพิ่มดึงสถิติรายการ Barter ที่รออนุมัติ (เพิ่มแค่บรรทัดนี้ในส่วน PHP)
 $count_pending_barters = $db->query("SELECT COUNT(*) FROM barter_posts WHERE status = 'pending'")->fetchColumn();
 
 // ดึงประวัติการทำงาน
@@ -196,8 +189,8 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
 
 <div class="admin-wrapper">
     <div class="dashboard-header">
-        <h1>แผงควบคุมผู้ดูแลระบบ (Admin)</h1>
-        <p style="color: var(--text-muted); margin-top: 5px; font-weight: 600; font-size: 1.05rem;">จัดการความเรียบร้อยและอนุมัติร้านค้า/สินค้า/แลกเปลี่ยน ภายใน BNCC Market</p>
+        <h1>แผงควบคุมแอดมิน</h1>
+        <p style="color: var(--text-muted); margin-top: 5px; font-weight: 600; font-size: 1.05rem;">จัดการความเรียบร้อยและอนุมัติร้านค้า/สินค้าภายใน BNCC Market</p>
     </div>
 
     <div class="stat-grid stagger-in">
@@ -243,7 +236,6 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
     </div>
 
     <div class="action-grid stagger-in">
-        
         <div class="action-card" style="border-left: 6px solid var(--solid-warning);">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
@@ -256,7 +248,7 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
             </div>
             <a href="approve_wtb.php" class="btn-action-solid" style="background: var(--solid-warning); color: #000; box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);">จัดการ WTB</a>
         </div>
-        
+
         <div class="action-card" style="border-left: 6px solid var(--solid-purple);">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
