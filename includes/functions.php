@@ -69,23 +69,27 @@ function isLoggedIn() {
 /**
  * 👑 🛠️ [FIXED] ปลดล็อกสิทธิ์ให้ Teacher และแก้ปัญหา Redirect Path
  */
-function checkRole($role) {
-    if (!isLoggedIn()) {
-        $_SESSION['flash_message'] = "คุณต้องเข้าสู่ระบบก่อน";
-        $_SESSION['flash_type'] = "danger";
-        // 🎯 ใช้ BASE_URL นำหน้าเพื่อให้ Redirect ถูกต้องทุกลำดับโฟลเดอร์
-        redirect(BASE_URL . "auth/login.php");
+function checkRole($allowed_roles) {
+    // สมมติว่าเก็บ role ไว้ใน $_SESSION['user_role']
+    $current_role = $_SESSION['user_role'] ?? ''; 
+    
+    // ถ้าไม่ได้ล็อกอิน หรือไม่มี Role
+    if (empty($current_role)) {
+        redirect('../auth/login.php');
+        exit();
     }
 
-    // ถ้าเป็นครู (Teacher) และพยายามเข้าหน้า Admin ให้ปล่อยผ่านได้เลย
-    if ($_SESSION['role'] === 'teacher' && $role === 'admin') {
-        return; 
-    }
-
-    if ($_SESSION['role'] !== $role) {
-        $_SESSION['flash_message'] = "คุณไม่มีสิทธิ์เข้าถึงหน้านี้";
-        $_SESSION['flash_type'] = "danger";
-        redirect(BASE_URL . "auth/login.php");
+    // ตรวจสอบว่า parameter ที่ส่งมาเป็น Array หรือ String
+    if (is_array($allowed_roles)) {
+        if (!in_array($current_role, $allowed_roles)) {
+            redirect('../index.php'); // ไม่มีสิทธิ์ เด้งกลับหน้าแรก
+            exit();
+        }
+    } else {
+        if ($current_role !== $allowed_roles) {
+            redirect('../index.php'); // ไม่มีสิทธิ์ เด้งกลับหน้าแรก
+            exit();
+        }
     }
 }
 
