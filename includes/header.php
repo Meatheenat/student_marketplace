@@ -2468,7 +2468,7 @@ if (isLoggedIn()) {
 
 
 </aside>
-<?php endif;
+<?php endif; ?>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
