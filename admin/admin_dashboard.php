@@ -6,8 +6,7 @@
 $pageTitle = "ระบบผู้ดูแล (Admin) - BNCC Market";
 require_once '../includes/header.php';
 
-// 🎯 เปลี่ยนจากการจำกัดสิทธิ์แค่ 'admin' เป็น 'admin' และ 'teacher'
-checkRole(['admin', 'teacher']);
+checkRole('admin');
 $db = getDB();
 
 // 🚀 🛠️ [เพิ่มใหม่] ระบบ Auto-Cleanup: ลบสินค้าและคอมเมนต์ที่อยู่ในถังขยะเกิน 30 วันทิ้งแบบถาวร (Hard Delete)
@@ -23,15 +22,12 @@ $count_pending_products = $db->query("SELECT COUNT(*) FROM products WHERE status
 
 // ดึงสถิติถังขยะ
 $count_trashed_products = $db->query("SELECT COUNT(*) FROM products WHERE is_deleted = 1")->fetchColumn();
-$count_trashed_comments = $db->query("SELECT COUNT(*) FROM reviews WHERE is_deleted = 1")->fetchColumn();
+$count_trashed_comments = $db->query("SELECT COUNT(*) FROM reviews WHERE is_deleted = 1")->fetchColumn(); // 🎯 นับคอมเมนต์ที่ถูกลบ
 
 $count_pending_reports = $db->query("SELECT COUNT(*) FROM reports WHERE status = 'pending'")->fetchColumn();
 $count_comment_reports = $db->query("SELECT COUNT(*) FROM reports WHERE target_type = 'comment' AND status = 'pending'")->fetchColumn();
+// 🎯 วางต่อท้ายจาก $count_comment_reports
 $count_pending_wtb = $db->query("SELECT COUNT(*) FROM wtb_posts WHERE status = 'pending'")->fetchColumn();
-
-// 🎯 🆕 ดึงสถิติ Barter ที่รออนุมัติ
-$count_pending_barters = $db->query("SELECT COUNT(*) FROM barter_posts WHERE status = 'pending'")->fetchColumn();
-
 // ดึงประวัติการทำงาน
 $log_stmt = $db->query("SELECT l.*, u.fullname as admin_name FROM admin_logs l JOIN users u ON l.admin_id = u.id ORDER BY l.created_at DESC LIMIT 10");
 $admin_logs = $log_stmt->fetchAll();
@@ -54,7 +50,7 @@ $trash_stmt = $db->query("
 ");
 $trashed_products = $trash_stmt->fetchAll();
 
-// 4. ดึงรายการคอมเมนต์ในถังขยะ
+// 🎯 🛠️ 4. ดึงรายการคอมเมนต์ในถังขยะ
 $trash_rev_stmt = $db->query("
     SELECT r.id, r.comment, r.deleted_at, p.title as product_name, u.fullname as author_name, del_u.fullname as deleter_name 
     FROM reviews r 
@@ -81,7 +77,6 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
         --solid-warning: #f59e0b;
         --solid-danger: #ef4444;
         --solid-info: #0ea5e9;
-        --solid-purple: #8b5cf6; /* สีใหม่สำหรับ Barter */
     }
 
     .dark-theme {
@@ -90,7 +85,6 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
         --solid-text: #ffffff;
         --solid-border: #334155;
         --solid-primary: #6366f1;
-        --solid-purple: #a78bfa;
     }
 
     body { background-color: var(--solid-bg) !important; color: var(--solid-text); }
@@ -107,7 +101,7 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
     .dashboard-header h1 { font-size: 2.2rem; font-weight: 900; margin: 0; color: var(--solid-text); letter-spacing: -1px; }
 
     /* 📊 Stat Cards */
-    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 40px; }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 40px; }
     .stat-card { 
         background: var(--solid-card); 
         padding: 25px; 
@@ -188,8 +182,8 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
 
 <div class="admin-wrapper">
     <div class="dashboard-header">
-        <h1>แผงควบคุมผู้ดูแลระบบ (Admin)</h1>
-        <p style="color: var(--text-muted); margin-top: 5px; font-weight: 600; font-size: 1.05rem;">จัดการความเรียบร้อยและอนุมัติร้านค้า/สินค้า/แลกเปลี่ยน ภายใน BNCC Market</p>
+        <h1>แผงควบคุมแอดมิน</h1>
+        <p style="color: var(--text-muted); margin-top: 5px; font-weight: 600; font-size: 1.05rem;">จัดการความเรียบร้อยและอนุมัติร้านค้า/สินค้าภายใน BNCC Market</p>
     </div>
 
     <div class="stat-grid stagger-in">
@@ -217,14 +211,6 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
             </div>
         </div>
 
-        <div class="stat-card">
-            <div class="stat-icon" style="background: rgba(139, 92, 246, 0.15); color: var(--solid-purple); border: 2px solid var(--solid-purple);"><i class="fas fa-sync-alt"></i></div>
-            <div>
-                <div style="font-size: 2rem; font-weight: 900; line-height: 1; color: var(--solid-purple);"><?= $count_pending_barters ?></div>
-                <div style="color: var(--text-muted); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-top: 5px;">Barter รออนุมัติ</div>
-            </div>
-        </div>
-
         <div class="stat-card" style="border-color: var(--solid-danger);">
             <div class="stat-icon" style="background: rgba(239, 68, 68, 0.15); color: var(--solid-danger); border: 2px solid var(--solid-danger);"><i class="fas fa-trash-alt"></i></div>
             <div>
@@ -235,38 +221,23 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
     </div>
 
     <div class="action-grid stagger-in">
-        
         <div class="action-card" style="border-left: 6px solid var(--solid-warning);">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
-                    <h3 style="font-size: 1.3rem; margin-bottom: 5px; font-weight: 900;"><i class="fas fa-magnifying-glass-dollar text-warning"></i> จัดการ WTB</h3>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; font-weight: 600; margin: 0;">อนุมัติประกาศตามหาของ</p>
+                    <h3 style="font-size: 1.3rem; margin-bottom: 5px; font-weight: 900;"><i class="fas fa-magnifying-glass-dollar text-warning"></i> จัดการโพสต์ WTB</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; font-weight: 600; margin: 0;">ตรวจสอบและอนุมัติประกาศตามหาของ</p>
                 </div>
                 <?php if($count_pending_wtb > 0): ?>
                     <span class="noti-badge" style="background: var(--solid-danger); box-shadow: 0 4px 10px rgba(239,68,68,0.4);"><?= $count_pending_wtb ?></span>
                 <?php endif; ?>
             </div>
-            <a href="approve_wtb.php" class="btn-action-solid" style="background: var(--solid-warning); color: #000; box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);">ตรวจสอบ WTB</a>
+            <a href="approve_wtb.php" class="btn-action-solid" style="background: var(--solid-warning); color: #000; box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);">จัดการ WTB</a>
         </div>
-        
-        <div class="action-card" style="border-left: 6px solid var(--solid-purple);">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                <div>
-                    <h3 style="font-size: 1.3rem; margin-bottom: 5px; font-weight: 900;"><i class="fas fa-exchange-alt" style="color: var(--solid-purple);"></i> จัดการ Barter</h3>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; font-weight: 600; margin: 0;">อนุมัติรายการแลกเปลี่ยน</p>
-                </div>
-                <?php if($count_pending_barters > 0): ?>
-                    <span class="noti-badge" style="background: var(--solid-danger); box-shadow: 0 4px 10px rgba(239,68,68,0.4);"><?= $count_pending_barters ?></span>
-                <?php endif; ?>
-            </div>
-            <a href="approve_barter.php" class="btn-action-solid" style="background: var(--solid-purple); box-shadow: 0 5px 15px rgba(139, 92, 246, 0.3);">ตรวจสอบ Barter</a>
-        </div>
-
         <div class="action-card" style="border-left: 6px solid var(--solid-primary);">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
                     <h3 style="font-size: 1.3rem; margin-bottom: 5px; font-weight: 900;"><i class="fas fa-boxes-stacked text-primary"></i> จัดการสินค้า</h3>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; font-weight: 600; margin: 0;">อนุมัติสินค้าเข้าตลาด</p>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; font-weight: 600; margin: 0;">อนุมัติสินค้าใหม่เข้าระบบ</p>
                 </div>
                 <?php if($count_pending_products > 0): ?>
                     <span class="noti-badge" style="background: var(--solid-danger); box-shadow: 0 4px 10px rgba(239,68,68,0.4);"><?= $count_pending_products ?></span>
@@ -279,7 +250,7 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
                     <h3 style="font-size: 1.3rem; margin-bottom: 5px; font-weight: 900;"><i class="fas fa-shop text-success"></i> จัดการร้านค้า</h3>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; font-weight: 600; margin: 0;">ยืนยันตัวตนแม่ค้า/พ่อค้า</p>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; font-weight: 600; margin: 0;">ตรวจสอบตัวตนเจ้าของร้าน</p>
                 </div>
                 <?php if($count_pending_shops > 0): ?>
                     <span class="noti-badge" style="background: var(--solid-danger); box-shadow: 0 4px 10px rgba(239,68,68,0.4);"><?= $count_pending_shops ?></span>
@@ -292,20 +263,20 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
                     <h3 style="font-size: 1.3rem; margin-bottom: 5px; font-weight: 900;"><i class="fas fa-bullhorn text-danger"></i> คำร้องเรียน</h3>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; font-weight: 600; margin: 0;">จัดการเนื้อหาที่ถูกรีพอร์ต</p>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; font-weight: 600; margin: 0;">จัดการเนื้อหาที่ถูกรายงาน</p>
                 </div>
                 <?php if($count_pending_reports > 0): ?>
                     <span class="noti-badge" style="background: var(--solid-danger); box-shadow: 0 4px 10px rgba(239,68,68,0.4);"><?= $count_pending_reports ?></span>
                 <?php endif; ?>
             </div>
-            <a href="manage_reports.php" class="btn-action-solid" style="background: var(--solid-danger); box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);">ดูรีพอร์ต</a>
+            <a href="manage_reports.php" class="btn-action-solid" style="background: var(--solid-danger); box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);">ดูรีพอร์ตทั่วไป</a>
         </div>
 
         <div class="action-card" style="border-left: 6px solid var(--solid-text);">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
                     <h3 style="font-size: 1.3rem; margin-bottom: 5px; font-weight: 900;"><i class="fas fa-user-shield"></i> จัดการสมาชิก</h3>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; font-weight: 600; margin: 0;">แบนหรือปรับระดับผู้ใช้งาน</p>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; font-weight: 600; margin: 0;">สั่งแบนหรือแต่งตั้งแอดมิน</p>
                 </div>
             </div>
             <a href="manage_members.php" class="btn-action-solid" style="background: var(--solid-text); color: var(--solid-bg);">
@@ -383,6 +354,7 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
                     <table class="table-solid">
                         <tbody>
                             <?php foreach($trashed_products as $t): 
+                                // 🎯 แก้ไข: ดักค่าว่างไว้กัน Error DateTime
                                 $deleted_date = new DateTime($t['deleted_at'] ?? 'now'); 
                                 $expire_date = clone $deleted_date; 
                                 $expire_date->modify('+30 days'); 
@@ -417,6 +389,7 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
                     <table class="table-solid">
                         <tbody>
                             <?php foreach($trashed_reviews as $tr): 
+                                // 🎯 แก้ไข: ดักค่าว่างไว้กัน Error DateTime
                                 $deleted_date = new DateTime($tr['deleted_at'] ?? 'now'); 
                                 $expire_date = clone $deleted_date; 
                                 $expire_date->modify('+30 days'); 
@@ -482,7 +455,6 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
 </div>
 
 <script>
-    // Intersection Observer for staggered animation
     const observer = new IntersectionObserver((entries) => {
         entries.forEach((entry, index) => {
             if (entry.isIntersecting) {
