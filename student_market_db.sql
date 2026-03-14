@@ -270,4 +270,17 @@ WHERE link LIKE '../%';
 ALTER TABLE `messages`
     ADD COLUMN `image_path` VARCHAR(255) NULL DEFAULT NULL
     AFTER `message`;
-
+ALTER TABLE `messages`
+    MODIFY COLUMN `message` TEXT NULL DEFAULT NULL;
+    CREATE TABLE barter_posts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    item_have TEXT NOT NULL,
+    item_want TEXT NOT NULL,
+    description TEXT,
+    image_url VARCHAR(255),
+    status ENUM('open', 'closed') DEFAULT 'open',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);

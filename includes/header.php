@@ -2399,7 +2399,15 @@ if (isLoggedIn()) {
             <i class="fas fa-bullhorn nav-menu-icon"></i>
             <span>กระดานตามหาของ (WTB)</span>
         </a>
+<a href="<?= $base_path ?>pages/barter_board.php" class="nav-menu-item <?= $current_page == 'barter_board.php' ? 'is-active' : '' ?>">
+    <i class="fas fa-sync-alt nav-menu-icon"></i>
+    <span>ระบบแลกเปลี่ยน (Barter)</span>
+</a>
 
+<a href="<?= $base_path ?>pages/barter_board.php" class="nav-menu-item nav-item-success <?= $current_page == 'barter_board.php' ? 'is-active' : '' ?>">
+    <i class="fas fa-exchange-alt nav-menu-icon"></i>
+    <span>กระดานแลกเปลี่ยนของ</span>
+</a>
         <?php if (isLoggedIn()): ?>
             
             <div class="nav-group-label">พื้นที่ส่วนตัว (Personal Space)</div>
