@@ -6,7 +6,8 @@
 $pageTitle = "ระบบผู้ดูแล (Admin) - BNCC Market";
 require_once '../includes/header.php';
 
-checkRole('admin');
+// 🎯 ปรับให้ 'teacher' เข้าถึงหน้านี้ได้ด้วย
+checkRole(['admin', 'teacher']);
 $db = getDB();
 
 // 🚀 🛠️ [เพิ่มใหม่] ระบบ Auto-Cleanup: ลบสินค้าและคอมเมนต์ที่อยู่ในถังขยะเกิน 30 วันทิ้งแบบถาวร (Hard Delete)
@@ -28,6 +29,10 @@ $count_pending_reports = $db->query("SELECT COUNT(*) FROM reports WHERE status =
 $count_comment_reports = $db->query("SELECT COUNT(*) FROM reports WHERE target_type = 'comment' AND status = 'pending'")->fetchColumn();
 // 🎯 วางต่อท้ายจาก $count_comment_reports
 $count_pending_wtb = $db->query("SELECT COUNT(*) FROM wtb_posts WHERE status = 'pending'")->fetchColumn();
+
+// 🎯 เพิ่มดึงสถิติรายการ Barter ที่รออนุมัติ
+$count_pending_barters = $db->query("SELECT COUNT(*) FROM barter_posts WHERE status = 'pending'")->fetchColumn();
+
 // ดึงประวัติการทำงาน
 $log_stmt = $db->query("SELECT l.*, u.fullname as admin_name FROM admin_logs l JOIN users u ON l.admin_id = u.id ORDER BY l.created_at DESC LIMIT 10");
 $admin_logs = $log_stmt->fetchAll();
@@ -77,6 +82,8 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
         --solid-warning: #f59e0b;
         --solid-danger: #ef4444;
         --solid-info: #0ea5e9;
+        /* 🎯 สีใหม่สำหรับ Barter Module */
+        --solid-purple: #8b5cf6; 
     }
 
     .dark-theme {
@@ -85,6 +92,7 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
         --solid-text: #ffffff;
         --solid-border: #334155;
         --solid-primary: #6366f1;
+        --solid-purple: #a78bfa;
     }
 
     body { background-color: var(--solid-bg) !important; color: var(--solid-text); }
@@ -101,7 +109,7 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
     .dashboard-header h1 { font-size: 2.2rem; font-weight: 900; margin: 0; color: var(--solid-text); letter-spacing: -1px; }
 
     /* 📊 Stat Cards */
-    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 40px; }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 40px; }
     .stat-card { 
         background: var(--solid-card); 
         padding: 25px; 
@@ -182,7 +190,7 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
 
 <div class="admin-wrapper">
     <div class="dashboard-header">
-        <h1>แผงควบคุมแอดมิน</h1>
+        <h1>แผงควบคุมผู้ดูแลระบบ</h1>
         <p style="color: var(--text-muted); margin-top: 5px; font-weight: 600; font-size: 1.05rem;">จัดการความเรียบร้อยและอนุมัติร้านค้า/สินค้าภายใน BNCC Market</p>
     </div>
 
@@ -211,6 +219,14 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
             </div>
         </div>
 
+        <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(139, 92, 246, 0.15); color: var(--solid-purple); border: 2px solid var(--solid-purple);"><i class="fas fa-exchange-alt"></i></div>
+            <div>
+                <div style="font-size: 2rem; font-weight: 900; line-height: 1; color: var(--solid-purple);"><?= $count_pending_barters ?></div>
+                <div style="color: var(--text-muted); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-top: 5px;">Barter รออนุมัติ</div>
+            </div>
+        </div>
+
         <div class="stat-card" style="border-color: var(--solid-danger);">
             <div class="stat-icon" style="background: rgba(239, 68, 68, 0.15); color: var(--solid-danger); border: 2px solid var(--solid-danger);"><i class="fas fa-trash-alt"></i></div>
             <div>
@@ -221,6 +237,7 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
     </div>
 
     <div class="action-grid stagger-in">
+        
         <div class="action-card" style="border-left: 6px solid var(--solid-warning);">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
@@ -233,6 +250,20 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
             </div>
             <a href="approve_wtb.php" class="btn-action-solid" style="background: var(--solid-warning); color: #000; box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);">จัดการ WTB</a>
         </div>
+        
+        <div class="action-card" style="border-left: 6px solid var(--solid-purple);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h3 style="font-size: 1.3rem; margin-bottom: 5px; font-weight: 900;"><i class="fas fa-sync text-purple" style="color: var(--solid-purple);"></i> จัดการระบบ Barter</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; font-weight: 600; margin: 0;">อนุมัติการลงประกาศแลกของ</p>
+                </div>
+                <?php if($count_pending_barters > 0): ?>
+                    <span class="noti-badge" style="background: var(--solid-danger); box-shadow: 0 4px 10px rgba(239,68,68,0.4);"><?= $count_pending_barters ?></span>
+                <?php endif; ?>
+            </div>
+            <a href="approve_barter.php" class="btn-action-solid" style="background: var(--solid-purple); color: #fff; box-shadow: 0 5px 15px rgba(139, 92, 246, 0.3);">ตรวจสอบ Barter</a>
+        </div>
+
         <div class="action-card" style="border-left: 6px solid var(--solid-primary);">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
@@ -354,7 +385,6 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
                     <table class="table-solid">
                         <tbody>
                             <?php foreach($trashed_products as $t): 
-                                // 🎯 แก้ไข: ดักค่าว่างไว้กัน Error DateTime
                                 $deleted_date = new DateTime($t['deleted_at'] ?? 'now'); 
                                 $expire_date = clone $deleted_date; 
                                 $expire_date->modify('+30 days'); 
@@ -389,7 +419,6 @@ $trashed_reviews = $trash_rev_stmt->fetchAll();
                     <table class="table-solid">
                         <tbody>
                             <?php foreach($trashed_reviews as $tr): 
-                                // 🎯 แก้ไข: ดักค่าว่างไว้กัน Error DateTime
                                 $deleted_date = new DateTime($tr['deleted_at'] ?? 'now'); 
                                 $expire_date = clone $deleted_date; 
                                 $expire_date->modify('+30 days'); 
