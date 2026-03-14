@@ -160,6 +160,12 @@ $basePath = defined('BASE_URL') ? BASE_URL : '/s673190104/student_marketplace/';
                     </div>
                 </div>
 
+                <div style="margin: 25px 0;">
+                    <a href="<?= $basePath ?>pages/about.php" style="display: inline-flex; align-items: center; gap: 10px; background: var(--solid-primary, #4f46e5); color: #fff; padding: 12px 24px; border-radius: 14px; text-decoration: none; font-weight: 800; font-size: 0.95rem; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 8px 15px rgba(79, 70, 229, 0.25);">
+                        <i class="fas fa-info-circle"></i> เกี่ยวกับเรา (About Us)
+                    </a>
+                </div>
+
                 <div class="footer-social">
                     <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
                     <a href="#" aria-label="LINE"><i class="fab fa-line"></i></a>
