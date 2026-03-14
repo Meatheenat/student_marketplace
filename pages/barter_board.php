@@ -244,36 +244,7 @@ require_once '../includes/header.php';
         </div>
     </div>
 
-    <div class="analytics-grid">
-        <div class="analytic-card">
-            <div class="analytic-icon"><i class="fas fa-sync-alt"></i></div>
-            <div>
-                <div class="ui-text-2xl ui-font-black"><?= number_format($total_posts) ?></div>
-                <div class="ui-text-xs ui-font-bold ui-text-muted ui-uppercase">ประกาศทั้งหมด</div>
-            </div>
-        </div>
-        <div class="analytic-card">
-            <div class="analytic-icon" style="background:var(--bt-success-soft); color:var(--bt-success);"><i class="fas fa-calendar-day"></i></div>
-            <div>
-                <div class="ui-text-2xl ui-font-black"><?= number_format($today_posts) ?></div>
-                <div class="ui-text-xs ui-font-bold ui-text-muted ui-uppercase">ประกาศใหม่วันนี้</div>
-            </div>
-        </div>
-        <div class="analytic-card">
-            <div class="analytic-icon" style="background:var(--bncc-warning-100); color:var(--bt-warning);"><i class="fas fa-users"></i></div>
-            <div>
-                <div class="ui-text-2xl ui-font-black"><?= rand(50, 200) ?>+</div>
-                <div class="ui-text-xs ui-font-bold ui-text-muted ui-uppercase">ผู้ใช้งานที่สนใจ</div>
-            </div>
-        </div>
-        <div class="analytic-card">
-            <div class="analytic-icon" style="background:var(--bncc-danger-50); color:var(--bt-danger);"><i class="fas fa-check-double"></i></div>
-            <div>
-                <div class="ui-text-2xl ui-font-black">95%</div>
-                <div class="ui-text-xs ui-font-bold ui-text-muted ui-uppercase">แลกเปลี่ยนสำเร็จ</div>
-            </div>
-        </div>
-    </div>
+    
 
     <div class="filter-dock">
         <div class="search-input-group">
