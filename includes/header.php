@@ -141,8 +141,8 @@ if (isLoggedIn()) {
     }
     ?>
     
-    <link rel="icon" type="image/png" sizes="32x32" href="<?= $base_path ?>assets/images/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="<?= $base_path ?>assets/images/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="<?= $base_path ?>assets/images/favicon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="<?= $base_path ?>assets/images/favicon.png">
     <link rel="shortcut icon" href="<?= $base_path ?>assets/images/favicon.ico">
     
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
