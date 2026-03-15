@@ -14,7 +14,7 @@ $_is_privileged = in_array($_viewer_role, ['admin', 'teacher']);
 
 if ($_is_privileged) {
     // admin/teacher ดูได้ทุก status (เพื่อ preview ก่อน approve)
-    $stmt = $db->prepare("SELECT p.*, s.shop_name, s.contact_line, s.contact_ig, s.line_user_id, s.user_id as owner_id, u.role as owner_role 
+    $stmt = $db->prepare("SELECT p.*, s.shop_name, s.contact_line, s.contact_ig, s.contact_facebook, s.contact_phone, s.line_user_id, s.user_id as owner_id, u.role as owner_role 
                           FROM products p 
                           JOIN shops s ON p.shop_id = s.id 
                           JOIN users u ON s.user_id = u.id
@@ -22,7 +22,7 @@ if ($_is_privileged) {
 } else {
     // ผู้ใช้ทั่วไปและเจ้าของร้าน: เห็นเฉพาะ approved
     // (เจ้าของจะถูก check อีกครั้งหลัง fetch เพื่อให้ดูสินค้าตัวเองได้)
-    $stmt = $db->prepare("SELECT p.*, s.shop_name, s.contact_line, s.contact_ig, s.line_user_id, s.user_id as owner_id, u.role as owner_role 
+    $stmt = $db->prepare("SELECT p.*, s.shop_name, s.contact_line, s.contact_ig, s.contact_facebook, s.contact_phone, s.line_user_id, s.user_id as owner_id, u.role as owner_role 
                           FROM products p 
                           JOIN shops s ON p.shop_id = s.id 
                           JOIN users u ON s.user_id = u.id
@@ -33,7 +33,7 @@ $product = $stmt->fetch();
 
 // เจ้าของร้านดูสินค้าตัวเองได้แม้ยัง pending/rejected
 if (!$product && isLoggedIn() && !$_is_privileged) {
-    $stmt2 = $db->prepare("SELECT p.*, s.shop_name, s.contact_line, s.contact_ig, s.line_user_id, s.user_id as owner_id, u.role as owner_role FROM products p JOIN shops s ON p.shop_id = s.id JOIN users u ON s.user_id = u.id WHERE p.id = ? AND p.is_deleted = 0 AND s.user_id = ?");
+    $stmt2 = $db->prepare("SELECT p.*, s.shop_name, s.contact_line, s.contact_ig, s.contact_facebook, s.contact_phone, s.line_user_id, s.user_id as owner_id, u.role as owner_role FROM products p JOIN shops s ON p.shop_id = s.id JOIN users u ON s.user_id = u.id WHERE p.id = ? AND p.is_deleted = 0 AND s.user_id = ?");
     $stmt2->execute([$product_id, $_SESSION['user_id']]);
     $product = $stmt2->fetch();
 }
@@ -1222,6 +1222,34 @@ echo str_replace('</head>', $_og_inject . '</head>', $_header_html);
         box-shadow: 0 8px 20px rgba(225,48,108,0.35);
     }
 
+    .pd-contact-fb {
+        background: rgba(24,119,242,0.08);
+        color: #1877f2;
+        border-color: rgba(24,119,242,0.2);
+    }
+
+    .pd-contact-fb:hover {
+        background: #1877f2;
+        color: #fff;
+        border-color: transparent;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(24,119,242,0.35);
+    }
+
+    .pd-contact-phone {
+        background: rgba(16,185,129,0.08);
+        color: #059669;
+        border-color: rgba(16,185,129,0.2);
+    }
+
+    .pd-contact-phone:hover {
+        background: #059669;
+        color: #fff;
+        border-color: transparent;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(16,185,129,0.35);
+    }
+
     .pd-report-btn {
         background: none;
         border: none;
@@ -2239,7 +2267,7 @@ echo str_replace('</head>', $_og_inject . '</head>', $_header_html);
                         <span>แชทผู้ขาย</span>
                     </a>
                 <?php elseif ($user_id == $product['owner_id']): ?>
-                    <a href="../seller/add_product.php?id=<?= $product_id ?>" class="pd-btn-primary">
+                    <a href="../seller/edit_product.php?id=<?= $product_id ?>" class="pd-btn-primary">
                         <i class="fas fa-edit"></i> แก้ไขสินค้า
                     </a>
                 <?php else: ?>
@@ -2272,7 +2300,7 @@ echo str_replace('</head>', $_og_inject . '</head>', $_header_html);
                 </div>
             </a>
 
-            <?php if (!empty($product['contact_line']) || !empty($product['contact_ig'])): ?>
+            <?php if (!empty($product['contact_line']) || !empty($product['contact_ig']) || !empty($product['contact_facebook']) || !empty($product['contact_phone'])): ?>
             <div class="pd-contact-row">
                 <span class="pd-contact-label"><i class="fas fa-address-card"></i> ติดต่อผู้ขาย</span>
                 <div class="pd-contact-btns">
@@ -2286,6 +2314,18 @@ echo str_replace('</head>', $_og_inject . '</head>', $_header_html);
                     <a href="https://www.instagram.com/<?= e($product['contact_ig']) ?>/" target="_blank" class="pd-contact-btn pd-contact-ig">
                         <i class="fab fa-instagram"></i>
                         <span>Instagram</span>
+                    </a>
+                    <?php endif; ?>
+                    <?php if (!empty($product['contact_facebook'])): ?>
+                    <a href="https://www.facebook.com/<?= e($product['contact_facebook']) ?>/" target="_blank" class="pd-contact-btn pd-contact-fb">
+                        <i class="fab fa-facebook"></i>
+                        <span>Facebook</span>
+                    </a>
+                    <?php endif; ?>
+                    <?php if (!empty($product['contact_phone'])): ?>
+                    <a href="tel:<?= e($product['contact_phone']) ?>" class="pd-contact-btn pd-contact-phone">
+                        <i class="fas fa-phone"></i>
+                        <span><?= e($product['contact_phone']) ?></span>
                     </a>
                     <?php endif; ?>
                 </div>
