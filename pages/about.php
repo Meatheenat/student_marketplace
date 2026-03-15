@@ -13,12 +13,12 @@ require_once '../includes/header.php';
 // ============================================================================================
 $developers = [
     [
-        'avatar'      => '../assets/images/dev1.jpg',   // path รูป
+        'avatar'      => '../asset/images/dev1.jpg',   // path รูป
         'name'        => 'Meatheenat khaowketwaranisa',               // ชื่อ-นามสกุล
         'nickname'    => 'Ping',                    // ชื่อเล่น
         'age'         => '20',                           // อายุ
         'education'   => 'ปวส.2 สาขาเทคโนโลยีสารสนเทศ วิทยาลัยพณิชยการบางนา', // การศึกษา
-        'role'        => 'Lead Developer / Full-Stack / System Engine / Back-End',  // บทบาทในโปรเจค
+        'role'        => 'Lead Developer / Full-Stack / System Engine / Back-End / UX UI',  // บทบาทในโปรเจค
         'student_id'  => '67319010004',                     // รหัสนักศึกษา
         'bio'         => '👨‍💻 IT Support | 💻 Coding | 🎬 Multimedia | 🎮 Gaming | 🎌 Anime | 🐺 Silver Wolf Main | 😴 Professional Sleeper',
         'skills'      => ['PHP', 'MySQL', 'UI/UX', 'JavaScript','Security', 'API'],
@@ -27,7 +27,7 @@ $developers = [
         'github'      => 'https://github.com/Meatheenat',   // URL GitHub
     ],
     [
-        'avatar'      => '../assets/images/dev2.jpg',
+        'avatar'      => '../asset/images/dev2.jpg',
         'name'        => 'Kittipat Tunkhan',
         'nickname'    => 'Oven',
         'age'         => '20',
