@@ -346,10 +346,15 @@ require_once '../includes/header.php';
 
                     <div style="text-align: left; padding-top: 30px; border-top: 2px solid var(--solid-border);">
                         
-                        <div class="sidebar-menu-item">
-                            <span><i href="<?= $base_path ?>pages/wishlist.php"class="fas fa-heart" style="width: 25px; color: var(--solid-danger); font-size: 1.2rem;"></i> รายการที่ชอบ</span>
-                            <span class="wishlist-count"><?= $wish_count ?></span>
-                        </div>
+
+
+                    
+                        <a href="<?= $base_path ?>pages/wishlist.php" style="text-decoration:none; color:inherit;">
+    <div class="sidebar-menu-item">
+        <span><i class="fas fa-heart" style="width: 25px; color: var(--solid-danger); font-size: 1.2rem;"></i> รายการที่ชอบ</span>
+        <span class="wishlist-count"><?= $wish_count ?></span>
+    </div>
+</a>
 
                         <?php if (in_array($user['role'], ['admin', 'seller', 'teacher'])): ?>
                         <div style="margin-top: 25px; padding: 25px 20px; background: rgba(6, 199, 85, 0.05); border-radius: 20px; border: 2px solid rgba(6, 199, 85, 0.2); text-align: center;">
