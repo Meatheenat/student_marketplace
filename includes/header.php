@@ -113,6 +113,33 @@ if (isLoggedIn()) {
         }
         ?>
     </title>
+
+    <?php
+    // ── Open Graph / Social Share Meta Tags ──
+    // ถ้าหน้านั้นตั้ง $extra_head ไว้ (เช่น product_detail.php) จะใช้ของหน้านั้นแทน
+    if (isset($extra_head)) {
+        echo $extra_head;
+    } else {
+        // Default OG tags สำหรับหน้าที่ไม่ได้กำหนด
+        $default_og_url   = 'https://hosting.bncc.ac.th/s673190104/student_marketplace/pages/index.php';
+        $default_og_img   = 'https://hosting.bncc.ac.th/s673190104/student_marketplace/assets/images/og-default.png';
+        $default_og_title = 'BNCC Market | ระบบตลาดกลางวิทยาลัย';
+        $default_og_desc  = 'ระบบตลาดกลางสำหรับนักเรียน BNCC ซื้อ-ขาย-แลกเปลี่ยนสินค้าภายในวิทยาลัย';
+        ?>
+    <meta property="og:type"        content="website">
+    <meta property="og:url"         content="<?= htmlspecialchars($default_og_url) ?>">
+    <meta property="og:title"       content="<?= htmlspecialchars($default_og_title) ?>">
+    <meta property="og:description" content="<?= htmlspecialchars($default_og_desc) ?>">
+    <meta property="og:image"       content="<?= htmlspecialchars($default_og_img) ?>">
+    <meta property="og:site_name"   content="BNCC Market">
+    <meta property="og:locale"      content="th_TH">
+    <meta name="twitter:card"       content="summary_large_image">
+    <meta name="twitter:title"      content="<?= htmlspecialchars($default_og_title) ?>">
+    <meta name="twitter:description"content="<?= htmlspecialchars($default_og_desc) ?>">
+    <meta name="twitter:image"      content="<?= htmlspecialchars($default_og_img) ?>">
+        <?php
+    }
+    ?>
     
     <link rel="icon" type="image/png" sizes="32x32" href="<?= $base_path ?>assets/images/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="<?= $base_path ?>assets/images/favicon-16x16.png">
