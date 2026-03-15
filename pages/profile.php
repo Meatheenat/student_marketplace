@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_viewing_other) {
         $new_file_name = "user_" . $session_user_id . "_" . time() . "." . $file_ext;
         $target_file = $target_dir . $new_file_name;
 
-        $allowed = ['jpg', 'jpeg', 'png', 'webp'];
+        $allowed = ['jpg', 'jpeg', 'png', 'webp' ,'gif'];
         if (in_array($file_ext, $allowed)) {
             if (move_uploaded_file($_FILES["avatar"]["tmp_name"], $target_file)) {
                 $profile_img = $new_file_name;
