@@ -2317,7 +2317,8 @@ echo str_replace('</head>', $_og_inject . '</head>', $_header_html);
                     </a>
                     <?php endif; ?>
                     <?php if (!empty($product['contact_facebook'])): ?>
-                    <a href="https://www.facebook.com/<?= e($product['contact_facebook']) ?>/" target="_blank" class="pd-contact-btn pd-contact-fb">
+                    <?php $fb_url = str_replace(' ', '.', trim($product['contact_facebook'])); ?>
+                    <a href="https://www.facebook.com/<?= htmlspecialchars($fb_url) ?>" target="_blank" class="pd-contact-btn pd-contact-fb">
                         <i class="fab fa-facebook"></i>
                         <span>Facebook</span>
                     </a>
