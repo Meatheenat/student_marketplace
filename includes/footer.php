@@ -248,7 +248,7 @@ $basePath = defined('BASE_URL') ? BASE_URL : '/s673190104/student_marketplace/';
             
             el.removeAttribute('onclick');
             el.addEventListener('click', function(e) {
-                e.preventDefault(); 
+                e.preventDefault();
                 Swal.fire({
                     title: 'ยืนยันการทำรายการ',
                     text: msg,
@@ -256,13 +256,25 @@ $basePath = defined('BASE_URL') ? BASE_URL : '/s673190104/student_marketplace/';
                     showCancelButton: true,
                     confirmButtonText: 'ใช่, ดำเนินการเลย',
                     cancelButtonText: 'ยกเลิก',
-                    reverseButtons: true 
+                    reverseButtons: true
                 }).then((result) => {
                     if (result.isConfirmed) {
                         if (el.tagName === 'A') {
+                            // ลิงก์ปกติ
                             window.location.href = el.href;
-                        } else if (el.type === 'submit' || el.closest('form')) {
-                            el.closest('form').submit();
+                        } else if (el.tagName === 'BUTTON' && el.closest('form')) {
+                            // ปุ่ม submit ใน form
+                            // สำคัญ: form.submit() ไม่ส่ง name/value ของปุ่ม
+                            // ต้องสร้าง hidden input แทนก่อน submit
+                            const form = el.closest('form');
+                            if (el.name && el.value) {
+                                const hidden = document.createElement('input');
+                                hidden.type  = 'hidden';
+                                hidden.name  = el.name;
+                                hidden.value = el.value;
+                                form.appendChild(hidden);
+                            }
+                            form.submit();
                         }
                     }
                 });
