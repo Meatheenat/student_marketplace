@@ -346,7 +346,8 @@ $pageTitle = "ร้าน " . $shop['shop_name'];
             <?php endif; ?>
 
             <?php if (!empty($shop['contact_facebook'])): ?>
-                <a href="https://www.facebook.com/<?php echo e($shop['contact_facebook']); ?>/" target="_blank" class="contact-btn-solid btn-fb-solid">
+                <?php $fb_url = str_replace(' ', '.', trim($shop['contact_facebook'])); ?>
+                <a href="https://www.facebook.com/<?php echo htmlspecialchars($fb_url); ?>" target="_blank" class="contact-btn-solid btn-fb-solid">
                     <i class="fab fa-facebook" style="font-size: 1.2rem;"></i> Facebook
                 </a>
             <?php endif; ?>
