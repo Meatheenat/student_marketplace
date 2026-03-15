@@ -32,7 +32,17 @@ $count_pending_products = $db->query("SELECT COUNT(*) FROM products WHERE status
 $count_trashed_products = $db->query("SELECT COUNT(*) FROM products WHERE is_deleted = 1")->fetchColumn();
 $count_trashed_comments = $db->query("SELECT COUNT(*) FROM reviews WHERE is_deleted = 1")->fetchColumn(); // 🎯 นับคอมเมนต์ที่ถูกลบ
 
-$count_pending_reports = $db->query("SELECT COUNT(*) FROM reports WHERE status = 'pending'")->fetchColumn();
+// 👻 🛠️ [แก้บั๊กเลขค้างขั้นเด็ดขาด] นับเฉพาะรีพอร์ตที่เป้าหมายยังมีชีวิตอยู่จริงเท่านั้น!
+$count_pending_reports = $db->query("
+    SELECT COUNT(*) FROM reports r 
+    WHERE r.status = 'pending' 
+    AND (
+        (r.target_type = 'user' AND EXISTS(SELECT 1 FROM users WHERE id = r.target_id)) OR
+        (r.target_type = 'product' AND EXISTS(SELECT 1 FROM products WHERE id = r.target_id AND is_deleted = 0)) OR
+        (r.target_type = 'comment' AND EXISTS(SELECT 1 FROM reviews WHERE id = r.target_id AND is_deleted = 0)) OR
+        (r.target_type = 'shop' AND EXISTS(SELECT 1 FROM shops WHERE id = r.target_id))
+    )
+")->fetchColumn();
 $count_comment_reports = $db->query("SELECT COUNT(*) FROM reports WHERE target_type = 'comment' AND status = 'pending'")->fetchColumn();
 // 🎯 วางต่อท้ายจาก $count_comment_reports
 $count_pending_wtb = $db->query("SELECT COUNT(*) FROM wtb_posts WHERE status = 'pending'")->fetchColumn();
