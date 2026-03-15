@@ -347,7 +347,7 @@ require_once '../includes/header.php';
                     <div style="text-align: left; padding-top: 30px; border-top: 2px solid var(--solid-border);">
                         
                         <div class="sidebar-menu-item">
-                            <span><i class="fas fa-heart" style="width: 25px; color: var(--solid-danger); font-size: 1.2rem;"></i> รายการที่ชอบ</span>
+                            <span><i href="<?= $base_path ?>pages/wishlist.php"class="fas fa-heart" style="width: 25px; color: var(--solid-danger); font-size: 1.2rem;"></i> รายการที่ชอบ</span>
                             <span class="wishlist-count"><?= $wish_count ?></span>
                         </div>
 
