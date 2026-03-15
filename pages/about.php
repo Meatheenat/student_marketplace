@@ -13,8 +13,8 @@ require_once '../includes/header.php';
 // ============================================================================================
 $developers = [
     [
-        'avatar'      => '../assets/images/dev2.jpg',        // ← ใช้รูปที่มีในเซิร์ฟเวอร์
-        'banner_img'  => '../assets/images/dev2.jpg',        // ← ใช้รูปเดียวกันไปก่อน หรืออัปโหลด dev1_banner.jpg แล้วเปลี่ยน
+        'avatar'      => '../assets/images/dev1.gif',        // ← ใช้รูปที่มีในเซิร์ฟเวอร์
+        'banner_img'  => '../assets/images/dev1_banner.jpg',        // ← ใช้รูปเดียวกันไปก่อน หรืออัปโหลด dev1_banner.jpg แล้วเปลี่ยน
         'name'        => 'Meatheenat khaowketwaranisa',
         'nickname'    => 'Ping',
         'age'         => '20',
