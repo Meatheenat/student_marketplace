@@ -395,7 +395,7 @@ $developers = [
             <div class="dev-card-banner">
                 <?php if (!empty($dev['banner_img'])): ?>
                 <img class="banner-bg"
-                     src="<?= htmlspecialchars($dev['banner_img']) ?>"
+                     src="<?= htmlspecialchars($dev['banner_img']) ?>" ?>?v=<?= time() ?>"
                      alt=""
                      onerror="this.style.display='none'">
                 <?php endif; ?>
