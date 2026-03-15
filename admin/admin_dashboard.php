@@ -9,10 +9,18 @@ require_once '../includes/header.php';
 checkRole('admin');
 $db = getDB();
 
-// 🚀 🛠️ [เพิ่มใหม่] ระบบ Auto-Cleanup: ลบสินค้าและคอมเมนต์ที่อยู่ในถังขยะเกิน 30 วันทิ้งแบบถาวร (Hard Delete)
+// 🚀 🛠️ [ของเดิม] ระบบ Auto-Cleanup: ลบสินค้าและคอมเมนต์ที่อยู่ในถังขยะเกิน 30 วันทิ้งแบบถาวร (Hard Delete)
 $db->query("DELETE FROM products WHERE is_deleted = 1 AND deleted_at <= DATE_SUB(NOW(), INTERVAL 30 DAY)");
 $db->query("DELETE FROM reviews WHERE is_deleted = 1 AND deleted_at <= DATE_SUB(NOW(), INTERVAL 30 DAY)");
 
+// 👻 🛠️ [เพิ่มใหม่ แก้บั๊กเลขค้าง] Auto-Resolve: เคลียร์รีพอร์ตที่เป้าหมายถูกลบหรือไม่มีอยู่จริงแล้วให้เป็น 'resolved'
+$db->query("UPDATE reports r LEFT JOIN products p ON r.target_id = p.id AND r.target_type = 'product' SET r.status = 'resolved' WHERE r.status = 'pending' AND r.target_type = 'product' AND (p.id IS NULL OR p.is_deleted = 1)");
+$db->query("UPDATE reports r LEFT JOIN reviews rev ON r.target_id = rev.id AND r.target_type = 'comment' SET r.status = 'resolved' WHERE r.status = 'pending' AND r.target_type = 'comment' AND (rev.id IS NULL OR rev.is_deleted = 1)");
+$db->query("UPDATE reports r LEFT JOIN users u ON r.target_id = u.id AND r.target_type = 'user' SET r.status = 'resolved' WHERE r.status = 'pending' AND r.target_type = 'user' AND u.id IS NULL");
+
+
+// 1. ดึงสถิติภาพรวม
+$count_users = $db->query("SELECT COUNT(*) FROM users")->fetchColumn();
 // 1. ดึงสถิติภาพรวม
 $count_users = $db->query("SELECT COUNT(*) FROM users")->fetchColumn();
 $count_shops = $db->query("SELECT COUNT(*) FROM shops WHERE status = 'approved'")->fetchColumn();
