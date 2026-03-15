@@ -13,13 +13,13 @@ require_once '../includes/header.php';
 // ============================================================================================
 $developers = [
     [
-        'avatar'      => '../assets/images/dev1.jpg',        // path รูป avatar
-        'banner_img'  => '../assets/images/dev1_banner.jpg', // path รูป banner ด้านบน card
+        'avatar'      => '../assets/images/dev2.jpg',        // ← ใช้รูปที่มีในเซิร์ฟเวอร์
+        'banner_img'  => '../assets/images/dev2.jpg',        // ← ใช้รูปเดียวกันไปก่อน หรืออัปโหลด dev1_banner.jpg แล้วเปลี่ยน
         'name'        => 'Meatheenat khaowketwaranisa',
         'nickname'    => 'Ping',
         'age'         => '20',
         'education'   => 'ปวส.2 สาขาเทคโนโลยีสารสนเทศ วิทยาลัยพณิชยการบางนา',
-        'role'        => 'Lead Developer / Full-Stack / System Engine / Back-End / UX UI',
+        'role'        => 'Lead Developer / Full-Stack / System Engine / Back-End',
         'student_id'  => '67319010004',
         'bio'         => '👨‍💻 IT Support | 💻 Coding | 🎬 Multimedia | 🎮 Gaming | 🎌 Anime | 🐺 Silver Wolf Main | 😴 Professional Sleeper',
         'skills'      => ['PHP', 'MySQL', 'UI/UX', 'JavaScript', 'Security', 'API'],
