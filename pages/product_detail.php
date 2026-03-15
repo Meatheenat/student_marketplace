@@ -2267,7 +2267,7 @@ echo str_replace('</head>', $_og_inject . '</head>', $_header_html);
                         <span>แชทผู้ขาย</span>
                     </a>
                 <?php elseif ($user_id == $product['owner_id']): ?>
-                    <a href="../seller/edit_product.php?id=<?= $product_id ?>" class="pd-btn-primary">
+                    <a href="../seller/add_product.php?id=<?= $product_id ?>" class="pd-btn-primary">
                         <i class="fas fa-edit"></i> แก้ไขสินค้า
                     </a>
                 <?php else: ?>
