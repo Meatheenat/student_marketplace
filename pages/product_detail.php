@@ -217,6 +217,39 @@ $rev_stmt = $db->prepare("
 $rev_stmt->execute([$product_id]);
 $all_reviews = $rev_stmt->fetchAll();
 
+// ── Open Graph / Social Share meta tags ──
+// บังคับใช้ HTTPS absolute URL เสมอ (Facebook crawler ต้องการ)
+$_og_base   = 'https://hosting.bncc.ac.th/s673190104/student_marketplace';
+$og_url     = $_og_base . '/pages/product_detail.php?id=' . (int)$product_id;
+$og_title   = htmlspecialchars($product['title'], ENT_QUOTES, 'UTF-8') . ' - BNCC Market';
+$og_desc    = htmlspecialchars(mb_strimwidth(strip_tags($product['description']), 0, 160, '...'), ENT_QUOTES, 'UTF-8');
+$og_price   = number_format($product['price'], 2);
+
+// รูปภาพ: ดึงจาก product_images ของ product_id นั้นโดยตรง
+// $main_image = ชื่อไฟล์รูปหลักจาก product_images table (is_main=1)
+$og_image   = $_og_base . '/assets/images/products/' . $main_image;
+
+$pageTitle  = htmlspecialchars($product['title'], ENT_QUOTES, 'UTF-8') . ' ฿' . $og_price . ' - BNCC Market';
+
+$extra_head = '
+    <meta property="og:type"         content="product">
+    <meta property="og:url"          content="' . $og_url . '">
+    <meta property="og:title"        content="' . $og_title . '">
+    <meta property="og:description"  content="' . $og_desc . '">
+    <meta property="og:image"        content="' . $og_image . '">
+    <meta property="og:image:secure_url" content="' . $og_image . '">
+    <meta property="og:image:type"   content="image/jpeg">
+    <meta property="og:site_name"    content="BNCC Market">
+    <meta property="og:locale"       content="th_TH">
+    <meta property="product:price:amount"   content="' . $og_price . '">
+    <meta property="product:price:currency" content="THB">
+    <meta name="twitter:card"        content="summary_large_image">
+    <meta name="twitter:title"       content="' . $og_title . '">
+    <meta name="twitter:description" content="' . $og_desc . '">
+    <meta name="twitter:image"       content="' . $og_image . '">
+    <meta name="description"         content="' . $og_desc . '">
+';
+
 require_once '../includes/header.php';
 ?>
 
