@@ -58,18 +58,19 @@ function loginWithRMS($username, $password){
 
     $response = iconv("TIS-620", "UTF-8//IGNORE", $response);
     
-    if(strpos($response, "สถานการณ์") !== false){
-        $real_name = "นักศึกษา " . $username;
+    // 🎯 ดักจับคำว่า "ออกจากระบบ" เพิ่มด้วย เผื่อในหน้าของครูไม่มีคำว่า "สถานการณ์"
+    if(strpos($response, "สถานการณ์") !== false || strpos($response, "ออกจากระบบ") !== false){
+        $real_name = "ผู้ใช้งาน " . $username;
         $department = "";
         $class_room = "";
-        $phone = ""; // 🎯 รับเบอร์
+        $phone = ""; 
+        $role = "buyer"; // 🎯 กำหนดให้ทุกคนที่เข้าครั้งแรกเป็น buyer เพื่อความปลอดภัย
 
-        // 🎯 1. เจาะเอาเบอร์โทรจาก Input โดยตรง (ชัวร์สุดๆ)
+        // เจาะเอาเบอร์โทรจาก Input โดยตรง (ถ้ามี)
         if (preg_match('/name="tele_number"[^>]*value="([0-9]{9,10})"/i', $response, $phone_matches)) {
             $phone = trim($phone_matches[1]); 
         }
 
-        // --- เริ่มโค้ดดึงชื่อ/ห้อง ของเก่าที่ถูกเป๊ะ ---
         // เคลียร์แท็ก HTML ให้มีช่องว่าง จะได้ตัดคำง่ายๆ
         $clean_resp = str_replace(['<td', '<th', '</td', '</th', '<tr', '</tr'], ' <', $response);
         $clean_resp = strip_tags($clean_resp);
@@ -77,14 +78,14 @@ function loginWithRMS($username, $password){
         $clean_resp = str_replace(['คำนำหน้าและชื่อ', 'ชื่อ-สกุล', 'รหัสนักศึกษา'], '', $clean_resp);
         $clean_resp = preg_replace('/\s+/u', ' ', $clean_resp);
         
-        // 🎯 2. ดึงชื่อ-นามสกุล
+        // ดึงชื่อ-นามสกุล
         if (preg_match('/(นาย|นางสาว|นาง)\s*([ก-๙]+)\s+([ก-๙]+)/u', $clean_resp, $matches)) {
             $real_name = $matches[1] . $matches[2] . " " . $matches[3]; 
         }
 
-        // 🎯 3. ดึงสาขาและห้องเรียน จากคำว่า "ชื่อกลุ่ม :"
-        // ดักโครงสร้าง: เทคโนโลยีสารสนเทศ เทคโนโลยีสารสนเทศ/1 ปวส.2 | 2567 (สทส.2/1 )
+        // 🎯 เช็คว่าใช่ "นักเรียน" หรือไม่ (ดูจากคำว่า "ชื่อกลุ่ม :")
         if (preg_match('/ชื่อกลุ่ม\s*:\s*([^\(]+)\((.*?)\)/u', $clean_resp, $group_matches)) {
+            // ----- กรณีเป็น นักเรียน -----
             $group_info = trim($group_matches[1]); 
             $class_code = trim($group_matches[2]); 
             
@@ -99,6 +100,17 @@ function loginWithRMS($username, $password){
             $dept_str = preg_replace('/(ปว[ชส]\.\d+).*$/u', '', $group_info);
             $dept_parts = explode(' ', trim($dept_str));
             $department = $dept_parts[0]; 
+
+        } else {
+            // ----- 🎯 กรณีเป็น คุณครู (หาชื่อกลุ่มไม่เจอ) -----
+            // ตัดคำว่า นาย/นาง/นางสาว ทิ้ง แล้วเติมคำว่า "ครู"
+            $real_name = preg_replace('/^(นาย|นางสาว|นาง)\s*/u', '', $real_name);
+            $real_name = "ครู" . trim($real_name);
+            
+            // ไม่ต้องใส่ข้อมูลเบอร์และสาขา (เซ็ตเป็นขีด -)
+            $department = "-";
+            $class_room = "-";
+            $phone = "-";
         }
 
         return [
@@ -106,7 +118,8 @@ function loginWithRMS($username, $password){
             'fullname' => $real_name,
             'department' => $department,
             'class_room' => $class_room,
-            'phone' => $phone // 🎯 คืนค่าเบอร์โทรด้วย
+            'phone' => $phone,
+            'role' => $role // 🎯 คืนค่า role เป็น buyer กลับไปให้ระบบบันทึก
         ];
     }
     return ['success' => false];
@@ -190,25 +203,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $real_name = $rmsResult['fullname']; 
                 $department = $rmsResult['department']; 
                 $class_room = $rmsResult['class_room']; 
-                $phone = $rmsResult['phone']; // 🎯 รับเบอร์โทรมา
+                $phone = $rmsResult['phone']; 
+                $assign_role = $rmsResult['role']; // 🎯 รับ Role จากฟังก์ชันเจาะระบบ
 
                 if (!$user) {
-                    // 🔥 สร้างไอดีใหม่ พร้อมยัด ชื่อ, สาขา, ห้อง, เบอร์โทร ลงไปเลย!
+                    // 🔥 สร้างไอดีใหม่ ยัดข้อมูลทั้งหมดลงไป รวมถึง Role 
                     $student_id = $rms_username; 
                     $student_email = $rms_username . "@bncc.ac.th";
                     $hashed_pass = password_hash($password, PASSWORD_DEFAULT);
                     
-                    $insert = $db->prepare("INSERT INTO users (student_id, email, password, fullname, department, class_room, phone, role) VALUES (?, ?, ?, ?, ?, ?, ?, 'buyer')");
-                    $insert->execute([$student_id, $student_email, $hashed_pass, $real_name, $department, $class_room, $phone]);
+                    // 🎯 เปลี่ยน 'buyer' แบบตายตัว ให้เป็นตัวแปร ? แล้วรับค่า $assign_role แทน
+                    $insert = $db->prepare("INSERT INTO users (student_id, email, password, fullname, department, class_room, phone, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                    $insert->execute([$student_id, $student_email, $hashed_pass, $real_name, $department, $class_room, $phone, $assign_role]);
                     
                     $user_id = $db->lastInsertId();
                     $stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
                     $stmt->execute([$user_id]);
                     $user = $stmt->fetch();
                 } else {
-                    // 🔄 อัปเดตข้อมูลให้เป็นปัจจุบัน
+                    // 🔄 ล็อกอินซ้ำ: อัปเดตข้อมูลให้เป็นปัจจุบัน
                     $hashed_pass = password_hash($password, PASSWORD_DEFAULT);
-                    // อัปเดตข้อมูลทั้งหมดรวมถึงเบอร์โทร
+                    
+                    // 🚨 สำคัญมาก: ไม่มีการแก้ไข Role ในคำสั่ง UPDATE นี้! (รักษาสิทธิ์ Admin/Teacher ไว้)
                     $update = $db->prepare("UPDATE users SET password = ?, fullname = ?, department = ?, class_room = ?, phone = ? WHERE id = ?");
                     $update->execute([$hashed_pass, $real_name, $department, $class_room, $phone, $user['id']]);
                     
