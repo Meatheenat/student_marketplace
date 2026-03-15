@@ -13,7 +13,7 @@ require_once '../includes/header.php';
 // ============================================================================================
 $developers = [
     [
-        'avatar'      => '../asset/images/dev1.jpg',   // path รูป
+        'avatar'      => '../assets/images/dev1.jpg',   // path รูป
         'name'        => 'Meatheenat khaowketwaranisa',               // ชื่อ-นามสกุล
         'nickname'    => 'Ping',                    // ชื่อเล่น
         'age'         => '20',                           // อายุ
@@ -27,7 +27,7 @@ $developers = [
         'github'      => 'https://github.com/Meatheenat',   // URL GitHub
     ],
     [
-        'avatar'      => '../asset/images/dev2.jpg',
+        'avatar'      => '../assets/images/dev2.jpg',
         'name'        => 'Kittipat Tunkhan',
         'nickname'    => 'Oven',
         'age'         => '20',
