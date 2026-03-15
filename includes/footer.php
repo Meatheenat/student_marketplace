@@ -156,7 +156,7 @@ $basePath = defined('BASE_URL') ? BASE_URL : '/s673190104/student_marketplace/';
                     </div>
                     <div class="footer-contact-item">
                         <i class="fas fa-envelope"></i>
-                        <span>support@bnccmarket.com</span>
+                        <span>67319010004@bncc.ac.th</span>
                     </div>
                 </div>
 
@@ -167,8 +167,8 @@ $basePath = defined('BASE_URL') ? BASE_URL : '/s673190104/student_marketplace/';
                 </div>
 
                 <div class="footer-social">
-                    <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
-                    <a href="#" aria-label="LINE"><i class="fab fa-line"></i></a>
+                    <a href="https://www.facebook.com/meatheenat.khaowaranisa" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                    <a href="https://line.me/R/ti/p/@419dbhlc" aria-label="LINE"><i class="fab fa-line"></i></a>
                     <a href="https://www.instagram.com/__r._.wang_/" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
                 </div>
             </div>
