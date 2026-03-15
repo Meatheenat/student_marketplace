@@ -14,31 +14,31 @@ require_once '../includes/header.php';
 $developers = [
     [
         'avatar'      => '../assets/images/dev1.jpg',   // path รูป
-        'name'        => 'ชื่อ นามสกุล',               // ชื่อ-นามสกุล
-        'nickname'    => 'ชื่อเล่น',                    // ชื่อเล่น
-        'age'         => '17',                           // อายุ
-        'education'   => 'ปวช.2 สาขาเทคโนโลยีธุรกิจดิจิทัล วิทยาลัยพณิชยการบางนา', // การศึกษา
-        'role'        => 'Lead Developer / Full-Stack',  // บทบาทในโปรเจค
-        'student_id'  => '67-xxxxx',                     // รหัสนักศึกษา
-        'bio'         => 'ดูแลภาพรวมของโครงสร้างระบบฐานข้อมูล และเน้นการสร้างประสบการณ์ผู้ใช้งาน (UX) ที่ลื่นไหลระดับสากล เพื่อให้ทุกคนใน BNCC ใช้งานได้อย่างง่ายดาย',
-        'skills'      => ['PHP', 'MySQL', 'UI/UX', 'JavaScript'],
-        'facebook'    => '#',   // URL Facebook
-        'instagram'   => '#',   // URL Instagram
-        'github'      => '#',   // URL GitHub
+        'name'        => 'Meatheenat khaowketwaranisa',               // ชื่อ-นามสกุล
+        'nickname'    => 'Ping',                    // ชื่อเล่น
+        'age'         => '20',                           // อายุ
+        'education'   => 'ปวส.2 สาขาเทคโนโลยีสารสนเทศ วิทยาลัยพณิชยการบางนา', // การศึกษา
+        'role'        => 'Lead Developer / Full-Stack / System Engine / Back-End',  // บทบาทในโปรเจค
+        'student_id'  => '67319010004',                     // รหัสนักศึกษา
+        'bio'         => '👨‍💻 IT Support | 💻 Coding | 🎬 Multimedia | 🎮 Gaming | 🎌 Anime | 🐺 Silver Wolf Main | 😴 Professional Sleeper',
+        'skills'      => ['PHP', 'MySQL', 'UI/UX', 'JavaScript','Security', 'API'],
+        'facebook'    => 'https://www.facebook.com/meatheenat.khaowaranisa',   // URL Facebook
+        'instagram'   => 'https://www.instagram.com/__r._.wang_/',   // URL Instagram
+        'github'      => 'https://github.com/Meatheenat',   // URL GitHub
     ],
     [
         'avatar'      => '../assets/images/dev2.jpg',
-        'name'        => 'ชื่อ นามสกุล',
-        'nickname'    => 'ชื่อเล่น',
-        'age'         => '17',
-        'education'   => 'ปวช.2 สาขาเทคโนโลยีธุรกิจดิจิทัล วิทยาลัยพณิชยการบางนา',
-        'role'        => 'System Engine / Back-End',
-        'student_id'  => '67-xxxxx',
-        'bio'         => 'รับผิดชอบความปลอดภัยหลังบ้าน และการประมวลผลคำสั่งซื้อสินค้า เพื่อให้ทุกการทำรายการภายในระบบ BNCC Market มีความแม่นยำและปลอดภัย 100%',
-        'skills'      => ['PHP', 'MySQL', 'Security', 'API'],
-        'facebook'    => '#',
-        'instagram'   => '#',
-        'github'      => '#',
+        'name'        => 'Kittipat Tunkhan',
+        'nickname'    => 'Oven',
+        'age'         => '20',
+        'education'   => 'ปวส.2 สาขาเทคโนโลยีสารสนเทศ วิทยาลัยพณิชยการบางนา',
+        'role'        => 'System Engine / IT Support',
+        'student_id'  => '67319010023',
+        'bio'         => 'นักศึกษาด้าน IT ที่สนใจการพัฒนาโปรแกรม การวิเคราะห์ข้อมูล และ FinTech โดยเฉพาะการสร้างระบบวิเคราะห์การเทรดและเครื่องมืออัตโนมัติสำหรับตลาด Forex และ Binary Options',
+        'skills'      => ['Trader'],
+        'facebook'    => 'https://www.facebook.com/kittipat.oven',
+        'instagram'   => 'https://www.instagram.com/_esp_32_/',
+        'github'      => 'https://github.com/kittipatoven',
     ],
 ];
 // ============================================================================================
