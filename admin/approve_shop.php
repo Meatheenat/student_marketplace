@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['sho
 
         if ($action === 'approve') {
             // อัปเดตสถานะร้านค้าเป็น 'approved'
-            $stmt = $db->prepare("UPDATE shops SET status = 'approved', updated_at = NOW() WHERE id = ?");
+            $stmt = $db->prepare("UPDATE shops SET status = 'approved' WHERE id = ?");
             $stmt->execute([$shop_id]);
             
             // ดึง user_id ของร้านค้านี้เพื่อไปอัปเดต Role เป็น seller
