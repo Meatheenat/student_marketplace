@@ -13,21 +13,23 @@ require_once '../includes/header.php';
 // ============================================================================================
 $developers = [
     [
-        'avatar'      => '../assets/images/dev1.jpg',   // path รูป
-        'name'        => 'Meatheenat khaowketwaranisa',               // ชื่อ-นามสกุล
-        'nickname'    => 'Ping',                    // ชื่อเล่น
-        'age'         => '20',                           // อายุ
-        'education'   => 'ปวส.2 สาขาเทคโนโลยีสารสนเทศ วิทยาลัยพณิชยการบางนา', // การศึกษา
-        'role'        => 'Lead Developer / Full-Stack / System Engine / Back-End / UX UI',  // บทบาทในโปรเจค
-        'student_id'  => '67319010004',                     // รหัสนักศึกษา
+        'avatar'      => '../assets/images/dev1.jpg',        // path รูป avatar
+        'banner_img'  => '../assets/images/dev1_banner.jpg', // path รูป banner ด้านบน card
+        'name'        => 'Meatheenat khaowketwaranisa',
+        'nickname'    => 'Ping',
+        'age'         => '20',
+        'education'   => 'ปวส.2 สาขาเทคโนโลยีสารสนเทศ วิทยาลัยพณิชยการบางนา',
+        'role'        => 'Lead Developer / Full-Stack / System Engine / Back-End / UX UI',
+        'student_id'  => '67319010004',
         'bio'         => '👨‍💻 IT Support | 💻 Coding | 🎬 Multimedia | 🎮 Gaming | 🎌 Anime | 🐺 Silver Wolf Main | 😴 Professional Sleeper',
-        'skills'      => ['PHP', 'MySQL', 'UI/UX', 'JavaScript','Security', 'API'],
-        'facebook'    => 'https://www.facebook.com/meatheenat.khaowaranisa',   // URL Facebook
-        'instagram'   => 'https://www.instagram.com/__r._.wang_/',   // URL Instagram
-        'github'      => 'https://github.com/Meatheenat',   // URL GitHub
+        'skills'      => ['PHP', 'MySQL', 'UI/UX', 'JavaScript', 'Security', 'API'],
+        'facebook'    => 'https://www.facebook.com/meatheenat.khaowaranisa',
+        'instagram'   => 'https://www.instagram.com/__r._.wang_/',
+        'github'      => 'https://github.com/Meatheenat',
     ],
     [
         'avatar'      => '../assets/images/dev2.jpg',
+        'banner_img'  => '../assets/images/dev2_banner.jpg', // path รูป banner ด้านบน card
         'name'        => 'Kittipat Tunkhan',
         'nickname'    => 'Oven',
         'age'         => '20',
@@ -57,7 +59,6 @@ $developers = [
         font-family: 'Prompt', sans-serif;
     }
 
-    /* --- Hero --- */
     .about-header {
         text-align: center;
         margin-bottom: 80px;
@@ -85,14 +86,13 @@ $developers = [
         font-weight: 500;
     }
 
-    /* --- Grid --- */
     .team-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 40px;
     }
 
-    /* --- Card --- */
+    /* ── Card ── */
     .dev-card {
         background: var(--bg-card, #ffffff);
         border: 2px solid var(--border-color, #e2e8f0);
@@ -110,35 +110,68 @@ $developers = [
         box-shadow: 0 40px 80px -15px rgba(79,70,229,0.22);
     }
 
-    /* Card top banner */
+    /* ── Banner ── */
     .dev-card-banner {
-        height: 110px;
-        background: var(--dev-gradient);
+        height: 140px;
         position: relative;
+        overflow: hidden;
+        background: var(--dev-gradient); /* fallback ถ้าไม่มีรูป */
     }
 
+    /* รูป banner จริง */
+    .dev-card-banner .banner-bg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        display: block;
+        transition: transform 0.6s ease;
+    }
+
+    .dev-card:hover .banner-bg {
+        transform: scale(1.08);
+    }
+
+    /* gradient overlay ทับรูป */
     .dev-card-banner::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+            to bottom,
+            rgba(79, 70, 229, 0.3) 0%,
+            rgba(0, 0, 0, 0.6) 100%
+        );
+        z-index: 1;
+    }
+
+    /* pattern texture */
+    .dev-card-banner::before {
         content: '';
         position: absolute;
         inset: 0;
         background: repeating-linear-gradient(
             45deg,
-            rgba(255,255,255,0.03) 0px,
-            rgba(255,255,255,0.03) 2px,
+            rgba(255,255,255,0.04) 0px,
+            rgba(255,255,255,0.04) 2px,
             transparent 2px,
-            transparent 12px
+            transparent 14px
         );
+        z-index: 2;
+        pointer-events: none;
     }
 
+    /* ── Avatar ── */
     .dev-card-body { padding: 0 35px 35px; }
 
-    /* --- Avatar --- */
     .avatar-container {
         position: relative;
         width: 110px;
         height: 110px;
         margin: -55px auto 20px;
-        z-index: 2;
+        z-index: 10;
     }
 
     .avatar-ring {
@@ -168,7 +201,7 @@ $developers = [
 
     .dark-theme .dev-avatar { border-color: #1e293b; }
 
-    /* --- Name & Role --- */
+    /* ── Name & Role ── */
     .dev-name {
         font-size: 1.7rem;
         font-weight: 900;
@@ -200,7 +233,7 @@ $developers = [
         letter-spacing: 1px;
     }
 
-    /* --- Info Grid --- */
+    /* ── Info Grid ── */
     .dev-info-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -236,12 +269,9 @@ $developers = [
         line-height: 1.3;
     }
 
-    /* Education spans full width */
-    .dev-info-item.full {
-        grid-column: 1 / -1;
-    }
+    .dev-info-item.full { grid-column: 1 / -1; }
 
-    /* --- Bio --- */
+    /* ── Bio ── */
     .dev-bio {
         font-size: 0.93rem;
         color: var(--text-muted, #64748b);
@@ -253,7 +283,7 @@ $developers = [
         border-radius: 0 12px 12px 0;
     }
 
-    /* --- Skills --- */
+    /* ── Skills ── */
     .dev-skills {
         display: flex;
         flex-wrap: wrap;
@@ -278,7 +308,7 @@ $developers = [
         border-color: var(--dev-primary);
     }
 
-    /* --- Social --- */
+    /* ── Social ── */
     .dev-divider {
         height: 1px;
         background: var(--border-color, #e2e8f0);
@@ -314,7 +344,7 @@ $developers = [
 
     .social-btn svg { width: 22px; height: 22px; stroke-width: 2.5px; }
 
-    /* --- Project Bar --- */
+    /* ── Project Bar ── */
     .project-status-bar {
         margin-top: 80px;
         padding: 35px 40px;
@@ -361,8 +391,15 @@ $developers = [
         <?php foreach ($developers as $dev): ?>
         <div class="dev-card">
 
-            <!-- Banner -->
-            <div class="dev-card-banner"></div>
+            <!-- Banner: รูปจริงของแต่ละคน + gradient overlay -->
+            <div class="dev-card-banner">
+                <?php if (!empty($dev['banner_img'])): ?>
+                <img class="banner-bg"
+                     src="<?= htmlspecialchars($dev['banner_img']) ?>"
+                     alt=""
+                     onerror="this.style.display='none'">
+                <?php endif; ?>
+            </div>
 
             <div class="dev-card-body">
 
@@ -377,9 +414,7 @@ $developers = [
 
                 <!-- Name & Role -->
                 <h2 class="dev-name"><?= htmlspecialchars($dev['name']) ?></h2>
-                <div class="dev-nickname">
-                    "<?= htmlspecialchars($dev['nickname']) ?>"
-                </div>
+                <div class="dev-nickname">"<?= htmlspecialchars($dev['nickname']) ?>"</div>
                 <span class="dev-role-badge">
                     <i class="fas fa-code" style="margin-right:5px;"></i>
                     <?= htmlspecialchars($dev['role']) ?>
@@ -411,7 +446,6 @@ $developers = [
                     <?php endforeach; ?>
                 </div>
 
-                <!-- Divider -->
                 <div class="dev-divider"></div>
 
                 <!-- Social -->
