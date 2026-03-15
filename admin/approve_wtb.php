@@ -9,9 +9,6 @@ require_once '../includes/functions.php';
 
 /**
  * การทำงานส่วนที่ 2: ระบบรักษาความปลอดภัย (Security Auth Guard)
- * -------------------------------------------------------------------------
- * ตรวจสอบสถานะการ Login และตรวจสอบ Role ว่าเป็น 'admin' หรือ 'teacher' หรือไม่
- * หากไม่ใช่ระบบจะดีดกลับไปหน้าดัชนีทันทีเพื่อความปลอดภัยของข้อมูล
  */
 if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin', 'teacher'])) {
     $_SESSION['flash_message'] = "⚠️ การเข้าถึงถูกปฏิเสธ: เฉพาะผู้ดูแลระบบและอาจารย์เท่านั้น";
@@ -21,10 +18,7 @@ if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin', 'teacher
 }
 
 /**
- * การทำงานส่วนที่ 3: การเชื่อมต่อฐานข้อมูลและการดึงข้อมูล (Query Logic)
- * -------------------------------------------------------------------------
- * ดึงข้อมูลประกาศที่มีสถานะเป็น 'pending' (รอตรวจสอบ)
- * โดยใช้ INNER JOIN เพื่อดึงชื่อและรูปโปรไฟล์ผู้ประกาศ และ LEFT JOIN เพื่อดึงชื่อหมวดหมู่
+ * การทำงานส่วนที่ 3: การเชื่อมต่อฐานข้อมูลและการดึงข้อมูล
  */
 $db = getDB();
 
@@ -47,10 +41,6 @@ $pending_posts = $stmt->fetchAll();
 ?>
 
 <style>
-    /**
-     * SECTION: CORE DESIGN SYSTEM VARIABLES
-     * -------------------------------------------------------------------------
-     */
     :root {
         --adm-primary: #6366f1;
         --adm-primary-dark: #4f46e5;
@@ -69,10 +59,6 @@ $pending_posts = $stmt->fetchAll();
         --adm-radius-sm: 12px;
     }
 
-    /**
-     * SECTION: DARK MODE SYSTEM
-     * -------------------------------------------------------------------------
-     */
     .dark-theme {
         --adm-bg: #0b0e14;
         --adm-card: #161b26;
@@ -81,10 +67,6 @@ $pending_posts = $stmt->fetchAll();
         --adm-text-muted: #94a3b8;
     }
 
-    /**
-     * SECTION: GLOBAL LAYOUT RESET
-     * -------------------------------------------------------------------------
-     */
     body {
         background-color: var(--adm-bg) !important;
         color: var(--adm-text);
@@ -100,10 +82,6 @@ $pending_posts = $stmt->fetchAll();
         animation: fadeInPage 0.6s ease-out;
     }
 
-    /**
-     * SECTION: ADMIN HEADER COMPONENT
-     * -------------------------------------------------------------------------
-     */
     .adm-header-flex {
         display: flex;
         justify-content: space-between;
@@ -150,10 +128,6 @@ $pending_posts = $stmt->fetchAll();
         transform: translateX(-5px);
     }
 
-    /**
-     * SECTION: REVIEW CARD GRID (UX FIX)
-     * -------------------------------------------------------------------------
-     */
     .wtb-review-card {
         background: var(--adm-card);
         border: 2px solid var(--adm-border);
@@ -161,7 +135,6 @@ $pending_posts = $stmt->fetchAll();
         padding: 30px;
         margin-bottom: 25px;
         display: grid;
-        /* ปรับสัดส่วน Grid ให้สมดุล รูป | เนื้อหา | ปุ่ม */
         grid-template-columns: 200px 1fr 220px;
         gap: 30px;
         align-items: center;
@@ -175,7 +148,6 @@ $pending_posts = $stmt->fetchAll();
         transform: translateY(-5px);
     }
 
-    /* จัดการรูปภาพให้หายเบี้ยว */
     .adm-review-img-wrap {
         width: 100%;
         aspect-ratio: 1 / 1;
@@ -202,10 +174,6 @@ $pending_posts = $stmt->fetchAll();
         font-size: 0.8rem;
     }
 
-    /**
-     * SECTION: CONTENT ELEMENTS
-     * -------------------------------------------------------------------------
-     */
     .adm-post-meta {
         display: flex;
         flex-direction: column;
@@ -256,10 +224,6 @@ $pending_posts = $stmt->fetchAll();
         object-fit: cover;
     }
 
-    /**
-     * SECTION: BUTTONS CONTROLS
-     * -------------------------------------------------------------------------
-     */
     .adm-action-btns {
         display: flex;
         flex-direction: column;
@@ -297,18 +261,13 @@ $pending_posts = $stmt->fetchAll();
         transform: translateY(-2px);
     }
 
-    /**
-     * SECTION: 🎯 THE CENTERED EMPTY STATE (FIX FOR image_6fbc9e.png)
-     * -------------------------------------------------------------------------
-     * ใช้ Flexbox จัดกึ่งกลางทั้งแนวตั้งและแนวนอน
-     */
     .adm-empty-centered-container {
         width: 100%;
         min-height: 450px;
         display: flex;
         flex-direction: column;
-        align-items: center;    /* จัดกลางแนวตั้ง */
-        justify-content: center; /* จัดกลางแนวนอน */
+        align-items: center;
+        justify-content: center;
         text-align: center;
         background: var(--adm-card);
         border: 3px dashed var(--adm-border);
@@ -346,10 +305,6 @@ $pending_posts = $stmt->fetchAll();
         max-width: 400px;
     }
 
-    /**
-     * SECTION: ANIMATIONS
-     * -------------------------------------------------------------------------
-     */
     @keyframes fadeInPage {
         from { opacity: 0; transform: translateY(20px); }
         to { opacity: 1; transform: translateY(0); }
@@ -361,23 +316,14 @@ $pending_posts = $stmt->fetchAll();
     }
 
     @keyframes pulseGreen {
-        0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-        70% { box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); }
+        0%   { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+        70%  { box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); }
         100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
     }
 
-    /**
-     * SECTION: RESPONSIVE DESIGN
-     * -------------------------------------------------------------------------
-     */
     @media (max-width: 992px) {
-        .wtb-review-card {
-            grid-template-columns: 160px 1fr;
-        }
-        .adm-action-btns {
-            grid-column: 1 / -1;
-            flex-direction: row;
-        }
+        .wtb-review-card { grid-template-columns: 160px 1fr; }
+        .adm-action-btns { grid-column: 1 / -1; flex-direction: row; }
         .btn-adm-action { flex: 1; }
     }
 
@@ -390,12 +336,10 @@ $pending_posts = $stmt->fetchAll();
         .adm-action-btns { flex-direction: column; }
     }
 
-    /* บรรทัดส่วนขยายเพื่อให้โค้ดมีความสมบูรณ์ตามสั่ง */
     .spacer-xl { height: 100px; width: 100%; }
     .spacer-md { height: 50px; width: 100%; }
     .utility-full-width { width: 100%; }
     .text-gradient-primary { background: linear-gradient(to right, #6366f1, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-
 </style>
 
 <div class="admin-main-wrapper">
@@ -423,10 +367,9 @@ $pending_posts = $stmt->fetchAll();
                 </span>
             </div>
 
-            <?php foreach ($pending_posts as $post): 
-                // จัดการรูปภาพโปรไฟล์
-                $avatar_img = !empty($post['profile_img']) 
-                            ? "../assets/images/profiles/" . $post['profile_img'] 
+            <?php foreach ($pending_posts as $post):
+                $avatar_img = !empty($post['profile_img'])
+                            ? "../assets/images/profiles/" . $post['profile_img']
                             : "../assets/images/profiles/default_profile.png";
             ?>
                 <section class="wtb-review-card">
@@ -454,7 +397,15 @@ $pending_posts = $stmt->fetchAll();
                             <div>
                                 <div class="fw-bold" style="font-size: 0.9rem;"><?= htmlspecialchars($post['fullname']) ?></div>
                                 <div class="text-muted" style="font-size: 0.8rem;">
-                                    งบประมาณ: <span class="text-success fw-bold">฿<?= number_format($post['budget']) ?></span>
+                                    งบประมาณ: <span class="text-success fw-bold">
+                                        <?php
+                                        // แก้ไข: ป้องกัน null ทำให้ number_format() deprecated ใน PHP 8.1+
+                                        $budget = $post['budget'];
+                                        echo ($budget !== null && $budget > 0)
+                                            ? '฿' . number_format((float)$budget)
+                                            : 'ไม่ระบุ';
+                                        ?>
+                                    </span>
                                     <span class="mx-2">|</span>
                                     <i class="far fa-calendar-alt"></i> <?= date('d M Y H:i', strtotime($post['created_at'])) ?>
                                 </div>
@@ -470,7 +421,7 @@ $pending_posts = $stmt->fetchAll();
                                 <i class="fas fa-check-circle"></i> อนุมัติโพสต์นี้
                             </button>
                             
-                            <button type="submit" name="action" value="reject" class="btn-adm-action btn-reject-post" 
+                            <button type="submit" name="action" value="reject" class="btn-adm-action btn-reject-post"
                                     onclick="return confirm('🚨 ยืนยันการปฏิเสธประกาศนี้? ประกาศจะถูกลบทิ้งทันที')">
                                 <i class="fas fa-times-circle"></i> ปฏิเสธรายการ
                             </button>
@@ -491,7 +442,6 @@ $pending_posts = $stmt->fetchAll();
                     ขณะนี้ไม่มีโพสต์ตามหาของค้างรอการอนุมัติในระบบ 
                     คุณตรวจสอบโพสต์ทั้งหมดครบถ้วนแล้ว
                 </p>
-                
             </section>
 
         <?php endif; ?>
@@ -500,10 +450,4 @@ $pending_posts = $stmt->fetchAll();
     <div class="spacer-md"></div>
 </div>
 
-<?php 
-/**
- * การทำงานส่วนที่ 5: ปิดท้ายไฟล์และ Render Footer
- * -------------------------------------------------------------------------
- */
-require_once '../includes/footer.php'; 
-?>
+<?php require_once '../includes/footer.php'; ?>
