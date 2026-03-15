@@ -2926,7 +2926,7 @@ require_once '../includes/header.php';
     }
 
     // ========== SHARE FEATURE ==========
-    const _shareUrl   = window.location.origin + '/pages/product_detail.php?id=<?= (int)$product_id ?>';
+    const _shareUrl   = '<?= BASE_URL ?>/pages/product_detail.php?id=<?= (int)$product_id ?>';
     const _shareTitle = <?= json_encode($product['title']) ?>;
     const _sharePrice = '฿<?= number_format($product['price'], 2) ?>';
     const _sellerId   = <?= (int)$product['owner_id'] ?>;
