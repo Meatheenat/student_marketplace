@@ -75,9 +75,21 @@ if ($action === 'send') {
         // แจ้งเตือน bell (ถ้ามี sendNotification ในระบบ)
         if (function_exists('sendNotification')) {
             $sender_name = $_SESSION['fullname'] ?? 'ผู้ใช้';
-            $notif_msg   = $image_path
-                ? "📷 {$sender_name} ส่งรูปภาพมาให้คุณ"
-                : "💬 {$sender_name}: " . mb_substr($msg, 0, 40) . (mb_strlen($msg) > 40 ? '...' : '');
+
+            // ─── detect product card JSON เพื่อแสดง notification ที่เหมาะสม ───
+            $decoded = null;
+            if ($msg !== '' && $msg[0] === '{') {
+                $decoded = json_decode($msg, true);
+            }
+
+            if ($image_path) {
+                $notif_msg = "📷 {$sender_name} ส่งรูปภาพมาให้คุณ";
+            } elseif ($decoded && isset($decoded['product_id'], $decoded['title'])) {
+                $notif_msg = "🛍️ {$sender_name} ส่งสินค้า \"" . mb_substr($decoded['title'], 0, 30) . "\" มาให้ดู";
+            } else {
+                $notif_msg = "💬 {$sender_name}: " . mb_substr($msg, 0, 40) . (mb_strlen($msg) > 40 ? '...' : '');
+            }
+
             sendNotification($receiver_id, 'message', $notif_msg, "chat.php?user={$user_id}");
         }
 
@@ -123,6 +135,15 @@ if ($action === 'fetch') {
         $m['time']       = date('H:i', strtotime($m['created_at']));
         $m['is_mine']    = ((int)$m['sender_id'] === (int)$user_id);
         $m['image_path'] = $m['image_path'] ?? null;  // null-safe
+
+        // ─── detect product card JSON ให้ frontend รู้ว่า render แบบไหน ───
+        $m['msg_type'] = 'text';
+        if (!empty($m['message']) && $m['message'][0] === '{') {
+            $decoded = json_decode($m['message'], true);
+            if ($decoded && isset($decoded['product_id'], $decoded['title'], $decoded['price'])) {
+                $m['msg_type'] = 'product_card';
+            }
+        }
     }
     unset($m);
 

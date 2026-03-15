@@ -825,6 +825,160 @@ require_once '../includes/header.php';
         100% { transform: scale(1); }
     }
 
+    /* ===== SHARE DROPDOWN ===== */
+    .pd-share-wrap {
+        position: relative;
+    }
+
+    .pd-share-menu {
+        position: absolute;
+        top: calc(100% + 10px);
+        right: 0;
+        background: var(--pd-card);
+        border: 1.5px solid var(--pd-border);
+        border-radius: var(--pd-radius-lg);
+        padding: 6px;
+        min-width: 215px;
+        box-shadow: var(--pd-shadow-lg);
+        z-index: 600;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(-8px) scale(0.96);
+        transition: all 0.22s var(--pd-transition);
+        transform-origin: top right;
+    }
+
+    .pd-share-menu.open {
+        opacity: 1;
+        pointer-events: all;
+        transform: translateY(0) scale(1);
+    }
+
+    .pd-share-section-label {
+        font-size: 0.64rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.9px;
+        color: var(--pd-muted);
+        padding: 8px 12px 4px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .pd-share-section-label::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--pd-border);
+    }
+
+    .pd-share-item {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 9px 12px;
+        border-radius: 12px;
+        font-size: 0.87rem;
+        font-weight: 700;
+        color: var(--pd-text);
+        cursor: pointer;
+        transition: background 0.18s;
+        text-decoration: none;
+        border: none;
+        background: none;
+        width: 100%;
+        text-align: left;
+    }
+
+    .pd-share-item:hover {
+        background: var(--pd-primary-light);
+        color: var(--pd-primary);
+    }
+
+    .pd-share-item-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+    }
+
+    .pd-share-divider {
+        height: 1px;
+        background: var(--pd-border);
+        margin: 5px 6px;
+    }
+
+    /* ===== PRODUCT CARD PREVIEW (modal) ===== */
+    .pd-product-card-preview {
+        border: 1.5px solid var(--pd-border);
+        border-radius: var(--pd-radius-lg);
+        overflow: hidden;
+        background: var(--pd-bg);
+        margin-bottom: 20px;
+        transition: box-shadow 0.2s;
+    }
+
+    .pd-product-card-preview:hover {
+        box-shadow: var(--pd-shadow-md);
+    }
+
+    .pd-product-card-img {
+        width: 100%;
+        aspect-ratio: 16/9;
+        object-fit: cover;
+        display: block;
+    }
+
+    .pd-product-card-body {
+        padding: 14px 16px;
+    }
+
+    .pd-product-card-badge {
+        font-size: 0.65rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--pd-primary);
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .pd-product-card-title {
+        font-weight: 800;
+        font-size: 0.98rem;
+        color: var(--pd-text);
+        margin-bottom: 5px;
+        line-height: 1.35;
+    }
+
+    .pd-product-card-price {
+        font-weight: 900;
+        font-size: 1.15rem;
+        color: var(--pd-primary);
+        margin-bottom: 8px;
+    }
+
+    .pd-product-card-url {
+        font-size: 0.7rem;
+        color: var(--pd-muted);
+        font-weight: 600;
+        opacity: 0.55;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    /* ===== END SHARE ===== */
+
     .pd-shop-card {
         background: var(--pd-card);
         border: 1.5px solid var(--pd-border);
@@ -1872,16 +2026,78 @@ require_once '../includes/header.php';
                 BNCC Student Marketplace
             </div>
 
+            <!-- pd-info-header: title + share + wishlist -->
             <div class="pd-info-header">
                 <div style="flex:1; min-width:0;">
                     <h1 class="pd-product-title"><?= e($product['title']) ?></h1>
                 </div>
-                <button id="wishBtn"
-                        data-id="<?= $product['id'] ?>"
-                        class="pd-btn-icon <?= $is_wishlisted ? 'wishlisted' : '' ?>"
-                        title="<?= $is_wishlisted ? 'ลบออกจาก Wishlist' : 'เพิ่มใน Wishlist' ?>">
-                    <i class="<?= $is_wishlisted ? 'fas' : 'far' ?> fa-heart"></i>
-                </button>
+                <div style="display:flex; gap:8px; align-items:center; flex-shrink:0;">
+
+                    <!-- ปุ่ม Share -->
+                    <div class="pd-share-wrap">
+                        <button id="shareToggleBtn"
+                                class="pd-btn-icon"
+                                title="แชร์สินค้า"
+                                onclick="toggleShareMenu(event)"
+                                style="font-size:1.1rem;">
+                            <i class="fas fa-share-nodes"></i>
+                        </button>
+
+                        <div class="pd-share-menu" id="pdShareMenu">
+
+                            <div class="pd-share-section-label">แชร์ภายนอก</div>
+
+                            <button class="pd-share-item" onclick="doShare('copy')">
+                                <span class="pd-share-item-icon" style="background:rgba(99,102,241,0.1); color:var(--pd-primary);">
+                                    <i class="fas fa-link"></i>
+                                </span>
+                                คัดลอกลิงก์
+                            </button>
+
+                            <a id="shareLineSocial" class="pd-share-item" href="#" target="_blank" rel="noopener">
+                                <span class="pd-share-item-icon" style="background:rgba(6,199,85,0.1); color:#06c755;">
+                                    <i class="fab fa-line"></i>
+                                </span>
+                                แชร์ LINE
+                            </a>
+
+                            <a id="shareFbSocial" class="pd-share-item" href="#" target="_blank" rel="noopener">
+                                <span class="pd-share-item-icon" style="background:rgba(24,119,242,0.1); color:#1877f2;">
+                                    <i class="fab fa-facebook"></i>
+                                </span>
+                                แชร์ Facebook
+                            </a>
+
+                            <a id="shareXSocial" class="pd-share-item" href="#" target="_blank" rel="noopener">
+                                <span class="pd-share-item-icon" style="background:rgba(15,15,15,0.07); color:var(--pd-text);">
+                                    <i class="fab fa-x-twitter"></i>
+                                </span>
+                                แชร์ Twitter / X
+                            </a>
+
+                            <?php if ($user_id && $user_id != $product['owner_id']): ?>
+                            <div class="pd-share-divider"></div>
+                            <div class="pd-share-section-label">ส่งในแชท</div>
+                            <button class="pd-share-item" onclick="openShareChatModal()">
+                                <span class="pd-share-item-icon" style="background:rgba(16,185,129,0.1); color:#10b981;">
+                                    <i class="fas fa-comment-dots"></i>
+                                </span>
+                                ส่งให้ผู้ขาย
+                            </button>
+                            <?php endif; ?>
+
+                        </div>
+                    </div>
+
+                    <!-- ปุ่ม Wishlist -->
+                    <button id="wishBtn"
+                            data-id="<?= $product['id'] ?>"
+                            class="pd-btn-icon <?= $is_wishlisted ? 'wishlisted' : '' ?>"
+                            title="<?= $is_wishlisted ? 'ลบออกจาก Wishlist' : 'เพิ่มใน Wishlist' ?>">
+                        <i class="<?= $is_wishlisted ? 'fas' : 'far' ?> fa-heart"></i>
+                    </button>
+
+                </div>
             </div>
 
             <div class="pd-meta-row">
@@ -2237,6 +2453,7 @@ require_once '../includes/header.php';
     <div class="pd-zoom-close-hint"><i class="fas fa-times" style="margin-right:6px;"></i> คลิกเพื่อปิด</div>
 </div>
 
+<!-- Modal: รายงาน -->
 <div class="pd-modal-overlay" id="reportModal">
     <div class="pd-modal-box">
         <button class="pd-modal-close" onclick="closeModal('reportModal')">
@@ -2261,6 +2478,7 @@ require_once '../includes/header.php';
     </div>
 </div>
 
+<!-- Modal: ลบ comment (admin) -->
 <div class="pd-modal-overlay" id="deleteCommentModal">
     <div class="pd-modal-box">
         <button class="pd-modal-close" onclick="closeModal('deleteCommentModal')">
@@ -2284,6 +2502,7 @@ require_once '../includes/header.php';
     </div>
 </div>
 
+<!-- Modal: ระงับสินค้า (admin) -->
 <div class="pd-modal-overlay" id="deleteProductModal">
     <div class="pd-modal-box">
         <button class="pd-modal-close" onclick="closeModal('deleteProductModal')">
@@ -2306,6 +2525,7 @@ require_once '../includes/header.php';
     </div>
 </div>
 
+<!-- Modal: แก้ไขรีวิว -->
 <div class="pd-modal-overlay" id="editReviewModal">
     <div class="pd-modal-box">
         <button class="pd-modal-close" onclick="closeModal('editReviewModal')">
@@ -2339,6 +2559,58 @@ require_once '../includes/header.php';
                 </button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- Modal: ส่งสินค้าในแชท -->
+<div class="pd-modal-overlay" id="shareChatModal">
+    <div class="pd-modal-box" style="max-width:420px;">
+        <button class="pd-modal-close" onclick="closeModal('shareChatModal')">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="pd-modal-title" style="text-align:left; font-size:1.2rem; margin-bottom:4px;">
+            <i class="fas fa-paper-plane" style="color:var(--pd-primary); margin-right:8px;"></i>
+            ส่งสินค้าให้ผู้ขาย
+        </div>
+        <div class="pd-modal-sub" style="text-align:left; margin-bottom:18px; font-size:0.83rem;">
+            Preview ที่ผู้ขายจะเห็นในแชท
+        </div>
+
+        <!-- Product Card Preview -->
+        <div class="pd-product-card-preview">
+            <img class="pd-product-card-img"
+                 src="../assets/images/products/<?= e($main_image) ?>"
+                 alt="<?= e($product['title']) ?>">
+            <div class="pd-product-card-body">
+                <div class="pd-product-card-badge">
+                    <i class="fas fa-tag"></i> สินค้า
+                </div>
+                <div class="pd-product-card-title"><?= e($product['title']) ?></div>
+                <div class="pd-product-card-price">฿<?= number_format($product['price'], 2) ?></div>
+                <div class="pd-product-card-url">
+                    <i class="fas fa-link"></i>
+                    <?= BASE_URL ?>/pages/product_detail.php?id=<?= $product_id ?>
+                </div>
+            </div>
+        </div>
+
+        <label class="pd-form-label">
+            ข้อความเพิ่มเติม
+            <span style="opacity:.45; font-weight:600; text-transform:none; letter-spacing:0;">(ไม่บังคับ)</span>
+        </label>
+        <textarea id="shareChatExtraMsg"
+                  class="pd-form-textarea"
+                  placeholder="เช่น อยากสอบถามรายละเอียดเพิ่มเติมครับ..."
+                  style="min-height:72px;"></textarea>
+
+        <div class="pd-modal-actions" style="margin-top:18px;">
+            <button type="button" class="pd-modal-btn-cancel" onclick="closeModal('shareChatModal')">
+                ยกเลิก
+            </button>
+            <button type="button" class="pd-modal-btn-submit" id="sendProductChatBtn" onclick="confirmSendToChat()">
+                <i class="fas fa-paper-plane"></i> ส่งเลย
+            </button>
+        </div>
     </div>
 </div>
 
@@ -2518,6 +2790,8 @@ require_once '../includes/header.php';
         }, 2800);
     }
 
+    window.showToast = showToast;
+
     const descText = document.getElementById('descText');
     const descFade = document.getElementById('descFade');
     const descToggle = document.getElementById('descToggle');
@@ -2650,6 +2924,139 @@ require_once '../includes/header.php';
             }
         }, { passive: true });
     }
+
+    // ========== SHARE FEATURE ==========
+    const _shareUrl   = window.location.origin + '/pages/product_detail.php?id=<?= (int)$product_id ?>';
+    const _shareTitle = <?= json_encode($product['title']) ?>;
+    const _sharePrice = '฿<?= number_format($product['price'], 2) ?>';
+    const _sellerId   = <?= (int)$product['owner_id'] ?>;
+    const _productId  = <?= (int)$product_id ?>;
+
+    // ตั้งค่า href ของปุ่ม social share
+    (function initShareLinks() {
+        const encodedUrl  = encodeURIComponent(_shareUrl);
+        const lineText    = encodeURIComponent('🛍️ ' + _shareTitle + '\n💰 ' + _sharePrice + '\n🔗 ' + _shareUrl);
+        const xText       = encodeURIComponent('🛍️ ' + _shareTitle + ' ' + _sharePrice + ' ' + _shareUrl);
+
+        const elLine = document.getElementById('shareLineSocial');
+        const elFb   = document.getElementById('shareFbSocial');
+        const elX    = document.getElementById('shareXSocial');
+
+        if (elLine) elLine.href = 'https://social-plugins.line.me/lineit/share?url=' + encodedUrl + '&text=' + lineText;
+        if (elFb)   elFb.href   = 'https://www.facebook.com/sharer/sharer.php?u=' + encodedUrl;
+        if (elX)    elX.href    = 'https://twitter.com/intent/tweet?text=' + xText;
+    })();
+
+    // toggle dropdown
+    function toggleShareMenu(e) {
+        e.stopPropagation();
+        const menu = document.getElementById('pdShareMenu');
+        if (menu) menu.classList.toggle('open');
+    }
+    window.toggleShareMenu = toggleShareMenu;
+
+    // ปิด dropdown เมื่อคลิกที่อื่น
+    document.addEventListener('click', function(e) {
+        const menu = document.getElementById('pdShareMenu');
+        const btn  = document.getElementById('shareToggleBtn');
+        if (menu && btn && !menu.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
+            menu.classList.remove('open');
+        }
+    });
+
+    // copy link / ปิด dropdown
+    function doShare(type) {
+        const menu = document.getElementById('pdShareMenu');
+        if (menu) menu.classList.remove('open');
+
+        if (type === 'copy') {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(_shareUrl)
+                    .then(() => showToast('📋 คัดลอกลิงก์แล้ว!', 'success'))
+                    .catch(() => fallbackCopy(_shareUrl));
+            } else {
+                fallbackCopy(_shareUrl);
+            }
+        }
+    }
+    window.doShare = doShare;
+
+    function fallbackCopy(text) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0;';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        try {
+            document.execCommand('copy');
+            showToast('📋 คัดลอกลิงก์แล้ว!', 'success');
+        } catch(err) {
+            showToast('ไม่สามารถคัดลอกได้ กรุณาคัดลอกเอง', 'error');
+        }
+        document.body.removeChild(ta);
+    }
+
+    // เปิด modal ส่งสินค้าในแชท
+    function openShareChatModal() {
+        const menu = document.getElementById('pdShareMenu');
+        if (menu) menu.classList.remove('open');
+        const extra = document.getElementById('shareChatExtraMsg');
+        if (extra) extra.value = '';
+        openModal('shareChatModal');
+    }
+    window.openShareChatModal = openShareChatModal;
+
+    // ยืนยันส่งสินค้าในแชท → POST ไป chat_api.php (send action เดิม)
+    function confirmSendToChat() {
+        const btn      = document.getElementById('sendProductChatBtn');
+        const extraMsg = (document.getElementById('shareChatExtraMsg')?.value || '').trim();
+
+        // สร้าง JSON payload เหมือน product card
+        const payload = JSON.stringify({
+            product_id: _productId,
+            title:      _shareTitle,
+            price:      _sharePrice,
+            image:      '<?= BASE_URL ?>/assets/images/products/<?= e($main_image) ?>',
+            url:        _shareUrl,
+            extra:      extraMsg
+        });
+
+        btn.disabled  = true;
+        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> กำลังส่ง...';
+
+        // ใช้ FormData ส่งผ่าน chat_api.php → action=send
+        // message = JSON payload, ไม่มี image file
+        // frontend ของ chat.php จะ detect JSON แล้ว render เป็น product card
+        const fd = new FormData();
+        fd.append('action',      'send');
+        fd.append('receiver_id', _sellerId);
+        fd.append('message',     payload);
+
+        fetch('../ajax/chat_api.php', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(data => {
+                btn.disabled  = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> ส่งเลย';
+
+                if (data.status === 'success') {
+                    closeModal('shareChatModal');
+                    showToast('✅ ส่งสินค้าในแชทแล้ว!', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'chat.php?user=' + _sellerId;
+                    }, 1400);
+                } else {
+                    showToast('❌ ' + (data.msg || 'เกิดข้อผิดพลาด'), 'error');
+                }
+            })
+            .catch(() => {
+                btn.disabled  = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> ส่งเลย';
+                showToast('❌ เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
+            });
+    }
+    window.confirmSendToChat = confirmSendToChat;
+    // ========== END SHARE ==========
 
 })();
 </script>

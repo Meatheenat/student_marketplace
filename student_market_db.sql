@@ -287,7 +287,9 @@ ALTER TABLE `messages`
 );
 ALTER TABLE barter_posts MODIFY COLUMN status ENUM('pending', 'open', 'closed', 'rejected') DEFAULT 'pending';
 ALTER TABLE users ADD is_ban TINYINT(1) DEFAULT 0;
-
+ALTER TABLE messages 
+ADD COLUMN msg_type VARCHAR(20) NOT NULL DEFAULT 'text' 
+AFTER message;
 
 
 

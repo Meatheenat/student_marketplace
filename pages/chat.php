@@ -880,6 +880,105 @@ if ($target_id) {
         transition: width 0.3s ease;
         width: 0%;
     }
+
+    /* ===== PRODUCT CARD BUBBLE ===== */
+    .cht-product-card-label {
+        font-size: 0.65rem;
+        font-weight: 800;
+        color: var(--cht-muted);
+        opacity: 0.65;
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .cht-product-card {
+        max-width: 260px;
+        border: 1.5px solid rgba(79,70,229,0.2);
+        border-radius: 18px;
+        overflow: hidden;
+        cursor: pointer;
+        background: var(--cht-surface);
+        transition: all 0.28s var(--cht-ease);
+        text-decoration: none;
+        display: block;
+    }
+
+    .cht-product-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 28px rgba(79,70,229,0.18);
+        border-color: rgba(79,70,229,0.4);
+    }
+
+    .cht-product-card-img {
+        width: 100%;
+        aspect-ratio: 16/9;
+        object-fit: cover;
+        display: block;
+        background: var(--cht-border);
+    }
+
+    .cht-product-card-body {
+        padding: 12px 14px 14px;
+    }
+
+    .cht-product-card-badge {
+        font-size: 0.62rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--cht-primary);
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .cht-product-card-title {
+        font-weight: 800;
+        font-size: 0.9rem;
+        color: var(--cht-text);
+        margin-bottom: 4px;
+        line-height: 1.35;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .cht-product-card-price {
+        font-weight: 900;
+        font-size: 1.05rem;
+        color: var(--cht-primary);
+        margin-bottom: 8px;
+    }
+
+    .cht-product-card-extra {
+        font-size: 0.78rem;
+        color: var(--cht-muted);
+        font-weight: 600;
+        padding-top: 8px;
+        border-top: 1px solid var(--cht-border);
+        margin-top: 2px;
+        line-height: 1.45;
+        font-style: italic;
+    }
+
+    .cht-product-card-cta {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.75rem;
+        font-weight: 800;
+        color: var(--cht-primary);
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid var(--cht-border);
+    }
+    /* ===== END PRODUCT CARD BUBBLE ===== */
 </style>
 
 <div class="cht-page">
@@ -1116,26 +1215,67 @@ if ($target_id) {
 
                         // ── Build message row ──
                         function buildMsgRow(msg) {
-                            const isMine = msg.is_mine;
-                            const row    = document.createElement('div');
-                            row.className = 'cht-msg-row' + (isMine ? ' mine' : '');
-
+                            const isMine      = msg.is_mine;
+                            const row         = document.createElement('div');
+                            row.className     = 'cht-msg-row' + (isMine ? ' mine' : '');
                             const avatarSrc   = isMine ? MY_IMG : TARGET_IMG;
                             const bubbleClass = isMine ? 'mine' : 'other';
 
                             let contentHtml = '';
 
-                            if (msg.image_path) {
-                                const imgSrc = '../assets/images/chat/' + msg.image_path;
-                                contentHtml += `
-                                    <div class="cht-img-bubble" onclick="openLightbox('${imgSrc}')">
-                                        <img src="${imgSrc}" alt="รูปภาพ" loading="lazy">
-                                    </div>`;
-                            }
+                            // ── product card ──
+                            if (msg.msg_type === 'product_card') {
+                                let card = {};
+                                try { card = JSON.parse(msg.message); } catch(e) {}
 
-                            if (msg.message && msg.message.trim()) {
-                                const safeText = msg.message.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-                                contentHtml += `<div class="cht-bubble ${bubbleClass}">${safeText}</div>`;
+                                const safeTitle = (card.title  || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                                const safePrice = (card.price  || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                                const safeExtra = (card.extra  || '').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+                                const safeImg   = (card.image  || '').replace(/"/g,'&quot;');
+                                const safeUrl   = (card.url    || '#').replace(/"/g,'&quot;');
+
+                                const extraHtml = safeExtra
+                                    ? `<div class="cht-product-card-extra">"${safeExtra}"</div>`
+                                    : '';
+
+                                contentHtml += `
+                                    <div class="cht-product-card-label">
+                                        <i class="fas fa-tag"></i> ส่งสินค้ามาให้ดู
+                                    </div>
+                                    <a href="${safeUrl}" target="_blank" rel="noopener" class="cht-product-card">
+                                        <img src="${safeImg}"
+                                             alt="${safeTitle}"
+                                             class="cht-product-card-img"
+                                             loading="lazy"
+                                             onerror="this.style.display='none'">
+                                        <div class="cht-product-card-body">
+                                            <div class="cht-product-card-badge">
+                                                <i class="fas fa-tag"></i> สินค้า
+                                            </div>
+                                            <div class="cht-product-card-title">${safeTitle}</div>
+                                            <div class="cht-product-card-price">฿${safePrice}</div>
+                                            ${extraHtml}
+                                            <div class="cht-product-card-cta">
+                                                ดูสินค้า <i class="fas fa-arrow-right" style="font-size:0.65rem;"></i>
+                                            </div>
+                                        </div>
+                                    </a>`;
+
+                            } else {
+                                // ── image bubble (เดิม) ──
+                                if (msg.image_path) {
+                                    const imgSrc = '../assets/images/chat/' + msg.image_path;
+                                    contentHtml += `
+                                        <div class="cht-img-bubble" onclick="openLightbox('${imgSrc}')">
+                                            <img src="${imgSrc}" alt="รูปภาพ" loading="lazy">
+                                        </div>`;
+                                }
+
+                                // ── text bubble (เดิม) ──
+                                if (msg.message && msg.message.trim()) {
+                                    const safeText = msg.message.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+                                    contentHtml += `<div class="cht-bubble ${bubbleClass}">${safeText}</div>`;
+                                }
                             }
 
                             row.innerHTML = `
