@@ -7,13 +7,36 @@ if (!$product_id) redirect('index.php');
 $db = getDB();
 $user_id = $_SESSION['user_id'] ?? null;
 
-$stmt = $db->prepare("SELECT p.*, s.shop_name, s.contact_line, s.contact_ig, s.line_user_id, s.user_id as owner_id, u.role as owner_role 
-                      FROM products p 
-                      JOIN shops s ON p.shop_id = s.id 
-                      JOIN users u ON s.user_id = u.id
-                      WHERE p.id = ? AND p.is_deleted = 0");
+// เจ้าของสินค้า + admin + teacher ดูได้ทุก status
+// คนทั่วไปเห็นเฉพาะ approved เท่านั้น
+$_viewer_role = $_SESSION['role'] ?? '';
+$_is_privileged = in_array($_viewer_role, ['admin', 'teacher']);
+
+if ($_is_privileged) {
+    // admin/teacher ดูได้ทุก status (เพื่อ preview ก่อน approve)
+    $stmt = $db->prepare("SELECT p.*, s.shop_name, s.contact_line, s.contact_ig, s.line_user_id, s.user_id as owner_id, u.role as owner_role 
+                          FROM products p 
+                          JOIN shops s ON p.shop_id = s.id 
+                          JOIN users u ON s.user_id = u.id
+                          WHERE p.id = ? AND p.is_deleted = 0");
+} else {
+    // ผู้ใช้ทั่วไปและเจ้าของร้าน: เห็นเฉพาะ approved
+    // (เจ้าของจะถูก check อีกครั้งหลัง fetch เพื่อให้ดูสินค้าตัวเองได้)
+    $stmt = $db->prepare("SELECT p.*, s.shop_name, s.contact_line, s.contact_ig, s.line_user_id, s.user_id as owner_id, u.role as owner_role 
+                          FROM products p 
+                          JOIN shops s ON p.shop_id = s.id 
+                          JOIN users u ON s.user_id = u.id
+                          WHERE p.id = ? AND p.is_deleted = 0 AND p.status = 'approved'");
+}
 $stmt->execute([$product_id]);
 $product = $stmt->fetch();
+
+// เจ้าของร้านดูสินค้าตัวเองได้แม้ยัง pending/rejected
+if (!$product && isLoggedIn() && !$_is_privileged) {
+    $stmt2 = $db->prepare("SELECT p.*, s.shop_name, s.contact_line, s.contact_ig, s.line_user_id, s.user_id as owner_id, u.role as owner_role FROM products p JOIN shops s ON p.shop_id = s.id JOIN users u ON s.user_id = u.id WHERE p.id = ? AND p.is_deleted = 0 AND s.user_id = ?");
+    $stmt2->execute([$product_id, $_SESSION['user_id']]);
+    $product = $stmt2->fetch();
+}
 
 if (!$product) {
     require_once '../includes/header.php';
@@ -129,7 +152,7 @@ if (isLoggedIn()) {
     $is_wishlisted = $check_wish->fetch() ? true : false;
 }
 
-$related_stmt = $db->prepare("SELECT p.id, p.title, p.price, p.image_url, p.views FROM products p WHERE p.shop_id = ? AND p.id != ? AND p.is_deleted = 0 ORDER BY p.views DESC LIMIT 4");
+$related_stmt = $db->prepare("SELECT p.id, p.title, p.price, p.image_url, p.views FROM products p WHERE p.shop_id = ? AND p.id != ? AND p.is_deleted = 0 AND p.status = 'approved' ORDER BY p.views DESC LIMIT 4");
 $related_stmt->execute([$product['shop_id'], $product_id]);
 $related_products = $related_stmt->fetchAll();
 
@@ -230,27 +253,35 @@ $og_price   = number_format($product['price'], 2);
 $og_image   = $_og_base . '/assets/images/products/' . $main_image;
 
 $pageTitle  = htmlspecialchars($product['title'], ENT_QUOTES, 'UTF-8') . ' ฿' . $og_price . ' - BNCC Market';
+$extra_head = '<!-- og set below via injection -->';
 
-$extra_head = '
-    <meta property="og:type"         content="product">
-    <meta property="og:url"          content="' . $og_url . '">
-    <meta property="og:title"        content="' . $og_title . '">
-    <meta property="og:description"  content="' . $og_desc . '">
-    <meta property="og:image"        content="' . $og_image . '">
+// ── Capture header.php แล้ว inject OG tags เข้าก่อน </head> เสมอ ──
+// วิธีนี้ทำงานได้แม้ header.php เก่าที่ไม่รองรับ $extra_head
+$_og_inject = '
+    <meta property="fb:app_id"            content="">
+    <meta property="og:type"             content="product">
+    <meta property="og:url"              content="' . $og_url . '">
+    <meta property="og:title"            content="' . $og_title . '">
+    <meta property="og:description"      content="' . $og_desc . '">
+    <meta property="og:image"            content="' . $og_image . '">
     <meta property="og:image:secure_url" content="' . $og_image . '">
-    <meta property="og:image:type"   content="image/jpeg">
-    <meta property="og:site_name"    content="BNCC Market">
-    <meta property="og:locale"       content="th_TH">
+    <meta property="og:image:type"       content="image/jpeg">
+    <meta property="og:site_name"        content="BNCC Market">
+    <meta property="og:locale"           content="th_TH">
     <meta property="product:price:amount"   content="' . $og_price . '">
     <meta property="product:price:currency" content="THB">
-    <meta name="twitter:card"        content="summary_large_image">
-    <meta name="twitter:title"       content="' . $og_title . '">
-    <meta name="twitter:description" content="' . $og_desc . '">
-    <meta name="twitter:image"       content="' . $og_image . '">
-    <meta name="description"         content="' . $og_desc . '">
+    <meta name="twitter:card"            content="summary_large_image">
+    <meta name="twitter:title"           content="' . $og_title . '">
+    <meta name="twitter:description"     content="' . $og_desc . '">
+    <meta name="twitter:image"           content="' . $og_image . '">
+    <meta name="description"             content="' . $og_desc . '">
 ';
 
+ob_start();
 require_once '../includes/header.php';
+$_header_html = ob_get_clean();
+// แทรก OG tags ก่อน </head> — รับประกันว่า inject เข้าไปเสมอ
+echo str_replace('</head>', $_og_inject . '</head>', $_header_html);
 ?>
 
 <style>
@@ -1994,6 +2025,29 @@ require_once '../includes/header.php';
     <div class="pd-flash-banner pd-flash-<?= $flash_type ?>">
         <i class="fas <?= $flash_type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle' ?>"></i>
         <?= e($flash_msg) ?>
+    </div>
+    <?php endif; ?>
+
+    <?php
+    // แสดง banner สถานะให้เจ้าของและ admin/teacher เห็น
+    if (isset($product['status']) && $product['status'] !== 'approved'):
+        $status_map = [
+            'pending'  => ['color' => '#f59e0b', 'bg' => 'rgba(245,158,11,0.1)',  'border' => 'rgba(245,158,11,0.3)',  'icon' => 'fa-clock',        'text' => 'สินค้านี้รออนุมัติจาก Admin อยู่ จะยังไม่แสดงในหน้าร้านจนกว่าจะได้รับการอนุมัติ'],
+            'rejected' => ['color' => '#ef4444', 'bg' => 'rgba(239,68,68,0.08)',  'border' => 'rgba(239,68,68,0.25)', 'icon' => 'fa-times-circle', 'text' => 'สินค้านี้ถูกปฏิเสธ กรุณาตรวจสอบและแก้ไขข้อมูลสินค้า'],
+        ];
+        $s = $status_map[$product['status']] ?? $status_map['pending'];
+    ?>
+    <div style="padding:16px 22px; border-radius:16px; margin-bottom:24px;
+                background:<?= $s['bg'] ?>; border:1.5px solid <?= $s['border'] ?>;
+                color:<?= $s['color'] ?>; display:flex; align-items:center; gap:14px;
+                font-weight:700; font-size:0.95rem;">
+        <i class="fas <?= $s['icon'] ?>" style="font-size:1.3rem; flex-shrink:0;"></i>
+        <div>
+            <span style="font-weight:900; text-transform:uppercase; letter-spacing:0.5px; font-size:0.75rem; opacity:0.75;">
+                สถานะ: <?= strtoupper($product['status']) ?>
+            </span><br>
+            <?= $s['text'] ?>
+        </div>
     </div>
     <?php endif; ?>
 
