@@ -32,10 +32,12 @@ $count_pending_products = $db->query("SELECT COUNT(*) FROM products WHERE status
 $count_trashed_products = $db->query("SELECT COUNT(*) FROM products WHERE is_deleted = 1")->fetchColumn();
 $count_trashed_comments = $db->query("SELECT COUNT(*) FROM reviews WHERE is_deleted = 1")->fetchColumn(); // 🎯 นับคอมเมนต์ที่ถูกลบ
 
-// 👻 🛠️ [แก้บั๊กเลขค้างขั้นเด็ดขาด] นับเฉพาะรีพอร์ตที่เป้าหมายยังมีชีวิตอยู่จริงเท่านั้น!
+// 👻 🛠️ นับเฉพาะรีพอร์ตที่ยังไม่ถูกลบ (is_deleted = 0) และเป้าหมายยังมีชีวิตอยู่
+// 👻 🛠️ นับเฉพาะรีพอร์ตที่ยังไม่ถูกลบ (is_deleted = 0) และเป้าหมายยังมีชีวิตอยู่
 $count_pending_reports = $db->query("
     SELECT COUNT(*) FROM reports r 
     WHERE r.status = 'pending' 
+    AND r.is_deleted = 0 
     AND (
         (r.target_type = 'user' AND EXISTS(SELECT 1 FROM users WHERE id = r.target_id)) OR
         (r.target_type = 'product' AND EXISTS(SELECT 1 FROM products WHERE id = r.target_id AND is_deleted = 0)) OR
@@ -43,7 +45,9 @@ $count_pending_reports = $db->query("
         (r.target_type = 'shop' AND EXISTS(SELECT 1 FROM shops WHERE id = r.target_id))
     )
 ")->fetchColumn();
-$count_comment_reports = $db->query("SELECT COUNT(*) FROM reports WHERE target_type = 'comment' AND status = 'pending'")->fetchColumn();
+
+// แก้ตัวนับคอมเมนต์ด้วยเลย จะได้ไม่หลอน
+$count_comment_reports = $db->query("SELECT COUNT(*) FROM reports WHERE target_type = 'comment' AND status = 'pending' AND is_deleted = 0")->fetchColumn();
 // 🎯 วางต่อท้ายจาก $count_comment_reports
 $count_pending_wtb = $db->query("SELECT COUNT(*) FROM wtb_posts WHERE status = 'pending'")->fetchColumn();
 
@@ -58,7 +62,7 @@ $admin_logs = $log_stmt->fetchAll();
 $pending_stmt = $db->query("SELECT s.*, u.fullname FROM shops s JOIN users u ON s.user_id = u.id WHERE s.status = 'pending' ORDER BY s.created_at DESC LIMIT 5");
 $pending_shops = $pending_stmt->fetchAll();
 
-$report_stmt = $db->query("SELECT r.*, u.fullname as reporter_name FROM reports r JOIN users u ON r.reporter_id = u.id WHERE r.status = 'pending' ORDER BY r.created_at DESC LIMIT 5");
+$report_stmt = $db->query("SELECT r.*, u.fullname as reporter_name FROM reports r JOIN users u ON r.reporter_id = u.id WHERE r.status = 'pending' AND r.is_deleted = 0 ORDER BY r.created_at DESC LIMIT 5");
 $pending_reports = $report_stmt->fetchAll();
 
 // 3. ดึงรายการสินค้าในถังขยะ
