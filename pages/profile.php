@@ -369,7 +369,7 @@ require_once '../includes/header.php';
                                     $state = $_SESSION['user_id'];
                                     
                                     // 🎯 ไฮไลท์: เติม &bot_prompt=aggressive ต่อท้ายตรงนี้! ระบบจะเด้งถามให้เพิ่มเพื่อนอัตโนมัติเลย
-                                    $line_auth_url = "https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=$client_id&redirect_uri=$redirect_uri&state=$state&scope=profile%20openid&bot_prompt=aggressive";
+                                    $line_auth_url = "https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=$client_id&redirect_uri=$redirect_uri&state=$state&scope=profile%20openid&bot_prompt=aggressive&prompt=consent";
                                     ?>
                                     <a href="<?= $line_auth_url ?>" class="btn-line-connect">
                                         เชื่อมต่อ LINE
