@@ -290,6 +290,8 @@ ALTER TABLE users ADD is_ban TINYINT(1) DEFAULT 0;
 ALTER TABLE messages 
 ADD COLUMN msg_type VARCHAR(20) NOT NULL DEFAULT 'text' 
 AFTER message;
-
+ALTER TABLE shops 
+ADD COLUMN contact_facebook VARCHAR(100) NULL AFTER contact_ig,
+ADD COLUMN contact_phone VARCHAR(20) NULL AFTER contact_facebook;
 
 

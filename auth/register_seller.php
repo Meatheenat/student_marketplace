@@ -3,9 +3,6 @@
  * =========================================================================
  * BNCC MARKETPLACE: SELLER REGISTRATION MODULE
  * =========================================================================
- * Description: ระบบลงทะเบียนเปิดร้านค้าสำหรับผู้ซื้อทั่วไป (Buyer) 
- * พร้อมระบบแจ้งเตือนแอดมินผ่าน Web Notification และ LINE Notify แบบเจาะจง
- * =========================================================================
  */
 require_once '../includes/functions.php';
 
@@ -47,38 +44,22 @@ $form_errors = [];
 // ---------------------------------------------------------
 // 3. TARGETED LINE NOTIFY FUNCTION (The Engine)
 // ---------------------------------------------------------
-/**
- * ส่งแจ้งเตือนผ่าน LINE Bot ไปยังแอดมินที่มี line_user_id (อิงจากภาพ Screenshot)
- * @param PDO $db Connection ของฐานข้อมูล
- * @param string $message ข้อความที่จะส่ง
- */
 function notifyAdminsViaLineTargeted($db, $message) {
-    // ⚠️ ต้องใช้ Channel Access Token ของ Messaging API (ไม่ใช่ Notify Token ธรรมดา) หากต้องการ Push Message รายบุคคล
-    // หรือถ้าพี่ใช้ LINE Notify Token เดียวกันสำหรับกลุ่มแอดมิน ให้ใช้ฟังก์ชันเดิมแบบยิงเข้ากลุ่มได้เลย
-    // โค้ดนี้เขียนเผื่อรองรับโครงสร้างตาราง `users` ที่มี `line_user_id`
-    
-    // ตั้งค่า Token ของ LINE Messaging API
     $line_bot_token = "YOUR_LINE_MESSAGING_API_TOKEN"; 
     
     if (empty($line_bot_token) || $line_bot_token === "YOUR_LINE_MESSAGING_API_TOKEN") {
-        return; // ข้ามถ้ายังไม่ตั้งค่า
+        return;
     }
 
     try {
-        // ดึงเฉพาะแอดมินที่มี line_user_id ไม่เป็นค่าว่างหรือ NULL
         $stmt = $db->query("SELECT line_user_id FROM users WHERE role IN ('admin', 'teacher') AND line_user_id IS NOT NULL AND line_user_id != ''");
         $admin_lines = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
         if (count($admin_lines) > 0) {
             $url = 'https://api.line.me/v2/bot/message/multicast';
             $data = [
-                'to' => $admin_lines, // ส่งไปยัง array ของ line_user_id
-                'messages' => [
-                    [
-                        'type' => 'text',
-                        'text' => $message
-                    ]
-                ]
+                'to' => $admin_lines,
+                'messages' => [['type' => 'text', 'text' => $message]]
             ];
 
             $ch = curl_init($url);
@@ -90,12 +71,10 @@ function notifyAdminsViaLineTargeted($db, $message) {
                 'Content-Type: application/json',
                 'Authorization: Bearer ' . $line_bot_token
             ]);
-            
-            $result = curl_exec($ch);
+            curl_exec($ch);
             curl_close($ch);
         }
     } catch (Exception $e) {
-        // ล้มเหลวเงียบๆ ไม่ให้กระทบการทำงานหลักของเว็บ
         error_log("LINE Notify Error: " . $e->getMessage());
     }
 }
@@ -104,11 +83,15 @@ function notifyAdminsViaLineTargeted($db, $message) {
 // 4. FORM PROCESSING & NOTIFICATION LOGIC
 // ---------------------------------------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_pending) {
-    $shop_name = isset($_POST['shop_name']) ? trim($_POST['shop_name']) : '';
-    $shop_desc = isset($_POST['shop_description']) ? trim($_POST['shop_description']) : '';
-    $accept_terms = isset($_POST['accept_terms']) ? true : false;
+    $shop_name        = trim($_POST['shop_name']        ?? '');
+    $shop_desc        = trim($_POST['shop_description'] ?? '');
+    $contact_ig       = trim($_POST['contact_ig']       ?? '');
+    $contact_line     = trim($_POST['contact_line']     ?? '');
+    $contact_facebook = trim($_POST['contact_facebook'] ?? '');
+    $contact_phone    = trim($_POST['contact_phone']    ?? '');
+    $accept_terms     = isset($_POST['accept_terms']);
 
-    // แก้ไข Validation ให้รับตั้งแต่ 1 ตัวอักษรขึ้นไป
+    // Validation
     if (empty($shop_name)) {
         $form_errors[] = "กรุณาระบุชื่อร้านค้าของคุณ";
     } elseif (mb_strlen($shop_name) > 50) {
@@ -125,41 +108,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_pending) {
         $form_errors[] = "คุณต้องกดยอมรับเงื่อนไขการให้บริการก่อนส่งคำขอ";
     }
 
-    // ผ่านการเช็คฟอร์ม -> ดำเนินการบันทึก
     if (empty($form_errors)) {
         try {
             $db->beginTransaction();
             
-            // 4.1 INSERT SHOP DATA
-            // 🎯 แก้ไขเผื่อตาราง shops ของพี่บังคับใส่ type (เช่น ประเภทของร้าน) กูใส่ค่า 'general' นำร่องไปให้
-            // ถ้า Database พี่ไม่มี type ในตาราง shops ให้ใช้บรรทัดเดิม: $stmt = $db->prepare("INSERT INTO shops (user_id, shop_name, description, status, created_at) VALUES (?, ?, ?, 'pending', NOW())");
-            $stmt = $db->prepare("INSERT INTO shops (user_id, shop_name, description, status, created_at) VALUES (?, ?, ?, 'pending', NOW())");
-            $stmt->execute([$user_id, $shop_name, $shop_desc]);
+            // INSERT พร้อม contact fields ทั้ง 4
+            $stmt = $db->prepare("
+                INSERT INTO shops 
+                    (user_id, shop_name, description, contact_ig, contact_line, contact_facebook, contact_phone, status, created_at) 
+                VALUES 
+                    (?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
+            ");
+            $stmt->execute([
+                $user_id,
+                $shop_name,
+                $shop_desc,
+                $contact_ig       ?: null,
+                $contact_line     ?: null,
+                $contact_facebook ?: null,
+                $contact_phone    ?: null,
+            ]);
             
-            // 4.2 INTERNAL WEB NOTIFICATION (SYSTEM BELL)
+            // Internal web notification
             $admin_stmt = $db->query("SELECT id FROM users WHERE role IN ('admin', 'teacher')");
             $admins = $admin_stmt->fetchAll(PDO::FETCH_ASSOC);
             
             if ($admins && count($admins) > 0) {
-                $notif_msg = "🔥 คำร้องขอเปิดร้านใหม่!\nผู้สมัคร: " . $user_fullname . "\nชื่อร้าน: " . $shop_name;
+                $notif_msg  = "🔥 คำร้องขอเปิดร้านใหม่!\nผู้สมัคร: " . $user_fullname . "\nชื่อร้าน: " . $shop_name;
                 $notif_link = "admin/approve_shop.php"; 
-                
-                // 🎯 จุดที่แก้ไขหลัก: เพิ่มคอลัมน์ `type` ลงไป และส่งค่า 'system' เข้าไปให้ Database มันยอมรับ
                 $notif_insert = $db->prepare("INSERT INTO notifications (user_id, type, message, link, is_read, created_at) VALUES (?, 'system', ?, ?, 0, NOW())");
                 foreach ($admins as $adm) {
                     $notif_insert->execute([$adm['id'], $notif_msg, $notif_link]);
                 }
             }
 
-            // 4.3 LINE NOTIFICATION TO ADMINS
+            // LINE notification
             $line_msg = "🔔 แจ้งเตือนจากระบบ BNCC Market\n\n"
                       . "มีนักศึกษาส่งคำร้องขอเปิดร้านค้าใหม่\n"
                       . "👤 ผู้สมัคร: " . $user_fullname . "\n"
                       . "🏪 ชื่อร้าน: " . $shop_name . "\n"
                       . "📝 รายละเอียด: " . mb_strimwidth($shop_desc, 0, 50, "...") . "\n\n"
                       . "👉 โปรดตรวจสอบและอนุมัติในระบบหลังบ้าน";
-                      
-            // รันฟังก์ชันส่งไลน์หาแอดมินที่มี line_user_id
             notifyAdminsViaLineTargeted($db, $line_msg);
 
             $db->commit();
@@ -221,17 +210,14 @@ require_once '../includes/header.php';
         --seller-surface-bg: #111827;
         --seller-surface-alt: #0b0f19;
         --seller-border-color: #1f2937;
-        
         --seller-text-main: #f8fafc;
         --seller-text-muted: #94a3b8;
         --seller-text-light: #475569;
-        
         --seller-color-primary-light: rgba(79, 70, 229, 0.15);
         --seller-color-primary-soft: rgba(79, 70, 229, 0.1);
         --seller-shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
     }
 
-    /* Container System */
     .onboarding-container {
         max-width: 1100px;
         margin: 60px auto;
@@ -255,7 +241,6 @@ require_once '../includes/header.php';
         position: relative;
     }
 
-    /* Left side presentation */
     .onboarding-presentation {
         padding: 60px 45px;
         background: linear-gradient(145deg, var(--seller-color-primary-light) 0%, var(--seller-surface-alt) 100%);
@@ -270,10 +255,8 @@ require_once '../includes/header.php';
     .onboarding-presentation::before {
         content: '';
         position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
+        top: -50%; left: -50%;
+        width: 200%; height: 200%;
         background: radial-gradient(circle, var(--seller-color-primary-soft) 10%, transparent 10%);
         background-size: 20px 20px;
         opacity: 0.3;
@@ -282,10 +265,7 @@ require_once '../includes/header.php';
         pointer-events: none;
     }
 
-    .presentation-content-wrapper {
-        position: relative;
-        z-index: 1;
-    }
+    .presentation-content-wrapper { position: relative; z-index: 1; }
 
     .presentation-badge {
         display: inline-flex;
@@ -322,11 +302,7 @@ require_once '../includes/header.php';
         font-weight: 500;
     }
 
-    .feature-list-group {
-        display: flex;
-        flex-direction: column;
-        gap: 28px;
-    }
+    .feature-list-group { display: flex; flex-direction: column; gap: 28px; }
 
     .feature-list-item {
         display: flex;
@@ -343,8 +319,7 @@ require_once '../includes/header.php';
     }
 
     .feature-icon-wrapper {
-        width: 52px;
-        height: 52px;
+        width: 52px; height: 52px;
         border-radius: var(--seller-radius-md);
         background: var(--seller-surface-bg);
         border: 2px solid var(--seller-color-primary-light);
@@ -365,87 +340,54 @@ require_once '../includes/header.php';
         border-color: var(--seller-color-primary);
     }
 
-    .feature-text-content h4 {
-        font-size: 1.1rem;
-        font-weight: 800;
-        color: var(--seller-text-main);
-        margin: 0 0 6px 0;
-    }
+    .feature-text-content h4 { font-size: 1.1rem; font-weight: 800; color: var(--seller-text-main); margin: 0 0 6px 0; }
+    .feature-text-content p  { font-size: 0.95rem; color: var(--seller-text-muted); margin: 0; line-height: 1.5; }
 
-    .feature-text-content p {
-        font-size: 0.95rem;
-        color: var(--seller-text-muted);
-        margin: 0;
-        line-height: 1.5;
-    }
-
-    /* Right side interaction */
     .onboarding-interaction {
-        padding: 60px 50px;
+        padding: 50px 50px;
         display: flex;
         flex-direction: column;
         justify-content: center;
         background: var(--seller-surface-bg);
+        overflow-y: auto;
+        max-height: 100vh;
     }
 
-    .interaction-header {
-        margin-bottom: 35px;
-    }
-
-    .interaction-header h2 {
-        font-weight: 900;
-        color: var(--seller-text-main);
-        margin-bottom: 10px;
-        font-size: 1.9rem;
-    }
-
-    .interaction-header p {
-        color: var(--seller-text-muted);
-        font-size: 1rem;
-        margin: 0;
-        line-height: 1.5;
-    }
+    .interaction-header { margin-bottom: 28px; }
+    .interaction-header h2 { font-weight: 900; color: var(--seller-text-main); margin-bottom: 8px; font-size: 1.7rem; }
+    .interaction-header p  { color: var(--seller-text-muted); font-size: 0.95rem; margin: 0; line-height: 1.5; }
 
     .validation-alert-box {
         background: rgba(239, 68, 68, 0.08);
         border-left: 4px solid var(--seller-color-danger);
         padding: 16px 20px;
         border-radius: 0 var(--seller-radius-sm) var(--seller-radius-sm) 0;
-        margin-bottom: 25px;
+        margin-bottom: 22px;
         animation: shakeError 0.5s cubic-bezier(.36,.07,.19,.97) both;
     }
 
     .validation-alert-list {
-        margin: 0;
-        padding-left: 20px;
+        margin: 0; padding-left: 20px;
         color: var(--seller-color-danger);
-        font-size: 0.95rem;
-        font-weight: 600;
-        line-height: 1.6;
+        font-size: 0.95rem; font-weight: 600; line-height: 1.6;
     }
 
-    .input-field-group {
-        margin-bottom: 25px;
-        position: relative;
-    }
+    .input-field-group { margin-bottom: 20px; position: relative; }
 
     .input-field-label {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font-size: 1rem;
+        font-size: 0.95rem;
         font-weight: 800;
         color: var(--seller-text-main);
-        margin-bottom: 10px;
+        margin-bottom: 8px;
     }
 
-    .input-required-mark {
-        color: var(--seller-color-danger);
-        margin-left: 4px;
-    }
+    .input-required-mark { color: var(--seller-color-danger); margin-left: 4px; }
 
     .input-character-count {
-        font-size: 0.8rem;
+        font-size: 0.78rem;
         font-weight: 600;
         color: var(--seller-text-light);
         transition: color 0.3s;
@@ -454,21 +396,19 @@ require_once '../includes/header.php';
         border-radius: var(--seller-radius-pill);
     }
 
-    .input-character-count.limit-reached {
-        color: #ffffff;
-        background: var(--seller-color-danger);
-    }
+    .input-character-count.limit-reached { color: #ffffff; background: var(--seller-color-danger); }
 
     .form-input-element {
         width: 100%;
-        padding: 16px 20px;
+        padding: 13px 18px;
         border-radius: var(--seller-radius-md);
         border: 2px solid var(--seller-border-color);
         background: var(--seller-surface-alt);
         color: var(--seller-text-main);
-        font-size: 1.05rem;
+        font-size: 1rem;
         font-family: inherit;
         transition: var(--seller-transition);
+        outline: none;
     }
 
     .form-input-element:focus {
@@ -477,36 +417,76 @@ require_once '../includes/header.php';
         background: var(--seller-surface-bg);
     }
 
-    .form-input-element::placeholder {
+    .form-input-element::placeholder { color: var(--seller-text-light); font-weight: 400; }
+    .form-input-element.is-valid { border-color: var(--seller-color-success); background: rgba(16, 185, 129, 0.02); }
+
+    /* ── Contact Fields Section ── */
+    .contact-section-label {
+        font-size: 0.72rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 1px;
         color: var(--seller-text-light);
-        font-weight: 400;
+        margin-bottom: 14px;
+        margin-top: 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 
-    .form-input-element.is-valid {
-        border-color: var(--seller-color-success);
-        background: rgba(16, 185, 129, 0.02);
+    .contact-section-label::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--seller-border-color);
     }
+
+    .contact-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+
+    @media (max-width: 576px) {
+        .contact-grid { grid-template-columns: 1fr; }
+    }
+
+    .contact-input-wrap { position: relative; }
+
+    .contact-input-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 1rem;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .contact-input-icon.ig       { color: #e1306c; }
+    .contact-input-icon.line     { color: #06c755; }
+    .contact-input-icon.facebook { color: #1877f2; }
+    .contact-input-icon.phone    { color: var(--seller-color-primary); }
+
+    .form-input-element.with-icon { padding-left: 42px; }
 
     .terms-agreement-wrapper {
         display: flex;
         align-items: flex-start;
         gap: 15px;
-        margin-bottom: 35px;
-        padding: 20px;
+        margin-bottom: 28px;
+        padding: 18px;
         background: var(--seller-color-primary-light);
         border-radius: var(--seller-radius-md);
         border: 1px dashed rgba(79, 70, 229, 0.3);
         transition: var(--seller-transition);
     }
 
-    .terms-agreement-wrapper:hover {
-        background: rgba(79, 70, 229, 0.1);
-        border-style: solid;
-    }
+    .terms-agreement-wrapper:hover { background: rgba(79, 70, 229, 0.1); border-style: solid; }
 
     .custom-check-element {
-        width: 26px;
-        height: 26px;
+        width: 26px; height: 26px;
         border-radius: 6px;
         border: 2px solid var(--seller-color-primary);
         appearance: none;
@@ -518,11 +498,7 @@ require_once '../includes/header.php';
         background: var(--seller-surface-bg);
     }
 
-    .custom-check-element:checked {
-        background: var(--seller-color-primary);
-        border-color: var(--seller-color-primary);
-        transform: scale(1.05);
-    }
+    .custom-check-element:checked { background: var(--seller-color-primary); border-color: var(--seller-color-primary); transform: scale(1.05); }
 
     .custom-check-element:checked::after {
         content: '\f00c';
@@ -530,40 +506,23 @@ require_once '../includes/header.php';
         font-weight: 900;
         color: #ffffff;
         position: absolute;
-        top: 50%;
-        left: 50%;
+        top: 50%; left: 50%;
         transform: translate(-50%, -50%);
         font-size: 0.9rem;
     }
 
-    .custom-check-label {
-        font-size: 0.95rem;
-        color: var(--seller-text-muted);
-        line-height: 1.6;
-        cursor: pointer;
-        user-select: none;
-    }
-
-    .custom-check-label strong {
-        color: var(--seller-color-primary);
-        font-weight: 800;
-        text-decoration: underline;
-        text-decoration-color: transparent;
-        transition: 0.3s;
-    }
-
-    .custom-check-label strong:hover {
-        text-decoration-color: var(--seller-color-primary);
-    }
+    .custom-check-label { font-size: 0.95rem; color: var(--seller-text-muted); line-height: 1.6; cursor: pointer; user-select: none; }
+    .custom-check-label strong { color: var(--seller-color-primary); font-weight: 800; text-decoration: underline; text-decoration-color: transparent; transition: 0.3s; }
+    .custom-check-label strong:hover { text-decoration-color: var(--seller-color-primary); }
 
     .action-submit-btn {
         width: 100%;
-        padding: 20px;
+        padding: 18px;
         background: linear-gradient(135deg, var(--seller-color-primary), var(--seller-color-primary-dark));
         color: #ffffff;
         border: none;
         border-radius: var(--seller-radius-md);
-        font-size: 1.15rem;
+        font-size: 1.1rem;
         font-weight: 800;
         cursor: pointer;
         transition: var(--seller-bounce);
@@ -585,19 +544,9 @@ require_once '../includes/header.php';
         transition: 0.5s;
     }
 
-    .action-submit-btn:not(:disabled):hover {
-        transform: translateY(-4px);
-        box-shadow: var(--seller-shadow-glow);
-    }
-
-    .action-submit-btn:not(:disabled):hover::before {
-        left: 100%;
-    }
-
-    .action-submit-btn:not(:disabled):active {
-        transform: translateY(0) scale(0.98);
-    }
-
+    .action-submit-btn:not(:disabled):hover { transform: translateY(-4px); box-shadow: var(--seller-shadow-glow); }
+    .action-submit-btn:not(:disabled):hover::before { left: 100%; }
+    .action-submit-btn:not(:disabled):active { transform: translateY(0) scale(0.98); }
     .action-submit-btn:disabled {
         background: var(--seller-surface-alt);
         color: var(--seller-text-light);
@@ -607,21 +556,14 @@ require_once '../includes/header.php';
     }
 
     /* PENDING STATE */
-    .pending-review-state {
-        text-align: center;
-        padding: 40px 20px;
-        animation: scaleFadeIn 0.5s ease;
-    }
+    .pending-review-state { text-align: center; padding: 40px 20px; animation: scaleFadeIn 0.5s ease; }
 
     .pending-anim-icon {
-        width: 130px;
-        height: 130px;
+        width: 130px; height: 130px;
         background: rgba(245, 158, 11, 0.1);
         color: var(--seller-color-warning);
         border-radius: 50%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+        display: flex; justify-content: center; align-items: center;
         font-size: 4.5rem;
         margin: 0 auto 35px auto;
         position: relative;
@@ -637,21 +579,8 @@ require_once '../includes/header.php';
         opacity: 0.4;
     }
 
-    .pending-review-title {
-        font-size: 2.2rem;
-        font-weight: 900;
-        color: var(--seller-text-main);
-        margin-bottom: 18px;
-        letter-spacing: -0.5px;
-    }
-
-    .pending-review-desc {
-        color: var(--seller-text-muted);
-        font-size: 1.1rem;
-        line-height: 1.6;
-        max-width: 400px;
-        margin: 0 auto 35px auto;
-    }
+    .pending-review-title  { font-size: 2.2rem; font-weight: 900; color: var(--seller-text-main); margin-bottom: 18px; letter-spacing: -0.5px; }
+    .pending-review-desc   { color: var(--seller-text-muted); font-size: 1.1rem; line-height: 1.6; max-width: 400px; margin: 0 auto 35px auto; }
 
     .pending-shop-preview {
         background: var(--seller-surface-alt);
@@ -660,49 +589,27 @@ require_once '../includes/header.php';
         padding: 25px;
         text-align: left;
         margin-bottom: 35px;
-        display: flex;
-        align-items: center;
-        gap: 20px;
+        display: flex; align-items: center; gap: 20px;
         box-shadow: var(--seller-shadow-sm);
     }
 
     .preview-shop-icon {
-        width: 60px;
-        height: 60px;
+        width: 60px; height: 60px;
         background: var(--seller-surface-bg);
         border-radius: var(--seller-radius-sm);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.8rem;
-        color: var(--seller-color-primary);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.8rem; color: var(--seller-color-primary);
         border: 1px solid var(--seller-border-color);
     }
 
-    .preview-meta-label {
-        font-size: 0.85rem;
-        color: var(--seller-text-light);
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 4px;
-    }
-
-    .preview-meta-value {
-        font-size: 1.4rem;
-        font-weight: 900;
-        color: var(--seller-text-main);
-    }
+    .preview-meta-label { font-size: 0.85rem; color: var(--seller-text-light); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+    .preview-meta-value { font-size: 1.4rem; font-weight: 900; color: var(--seller-text-main); }
 
     .btn-return-profile {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
+        display: inline-flex; align-items: center; justify-content: center; gap: 10px;
         padding: 16px 30px;
         border-radius: var(--seller-radius-md);
-        font-weight: 800;
-        font-size: 1.05rem;
+        font-weight: 800; font-size: 1.05rem;
         background: var(--seller-surface-alt);
         color: var(--seller-text-main);
         border: 2px solid var(--seller-border-color);
@@ -710,18 +617,14 @@ require_once '../includes/header.php';
         transition: var(--seller-transition);
         width: 100%;
     }
-
-    .btn-return-profile:hover {
-        background: var(--seller-border-color);
-        color: var(--seller-text-main);
-    }
+    .btn-return-profile:hover { background: var(--seller-border-color); color: var(--seller-text-main); }
 
     /* KEYFRAMES */
-    @keyframes scaleFadeIn { 0% { opacity: 0; transform: scale(0.96) translateY(20px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
-    @keyframes slowDrift { 0% { transform: rotate(0deg) translate(0, 0); } 100% { transform: rotate(360deg) translate(-50px, -50px); } }
-    @keyframes floatUpDown { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-    @keyframes spinnerBorder { 100% { transform: rotate(360deg); } }
-    @keyframes shakeError { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+    @keyframes scaleFadeIn    { 0%   { opacity: 0; transform: scale(0.96) translateY(20px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+    @keyframes slowDrift      { 0%   { transform: rotate(0deg) translate(0, 0); } 100% { transform: rotate(360deg) translate(-50px, -50px); } }
+    @keyframes floatUpDown    { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    @keyframes spinnerBorder  { 100% { transform: rotate(360deg); } }
+    @keyframes shakeError     { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
 
     /* RESPONSIVE */
     @media (max-width: 992px) {
@@ -729,10 +632,10 @@ require_once '../includes/header.php';
         .onboarding-presentation { border-right: none; border-bottom: 1px solid var(--seller-border-color); padding: 50px 30px; text-align: center; }
         .presentation-content-wrapper { display: flex; flex-direction: column; align-items: center; }
         .feature-list-item { text-align: left; }
-        .onboarding-interaction { padding: 50px 30px; }
+        .onboarding-interaction { padding: 40px 30px; max-height: none; }
     }
     @media (max-width: 576px) {
-        .onboarding-presentation, .onboarding-interaction { padding: 40px 20px; }
+        .onboarding-presentation, .onboarding-interaction { padding: 35px 20px; }
         .presentation-headline { font-size: 2rem; }
         .feature-list-item { flex-direction: column; align-items: center; text-align: center; }
         .pending-review-title { font-size: 1.8rem; }
@@ -742,6 +645,7 @@ require_once '../includes/header.php';
 <div class="onboarding-container">
     <div class="onboarding-layout">
         
+        <!-- Left: Presentation -->
         <div class="onboarding-presentation">
             <div class="presentation-content-wrapper">
                 <div class="presentation-badge">
@@ -778,31 +682,24 @@ require_once '../includes/header.php';
             </div>
         </div>
 
+        <!-- Right: Form -->
         <div class="onboarding-interaction">
             
             <?php if ($is_pending): ?>
                 
                 <div class="pending-review-state">
-                    <div class="pending-anim-icon">
-                        <i class="fas fa-hourglass-half"></i>
-                    </div>
+                    <div class="pending-anim-icon"><i class="fas fa-hourglass-half"></i></div>
                     <h2 class="pending-review-title">คำขออยู่ระหว่างพิจารณา</h2>
                     <p class="pending-review-desc">
                         ระบบได้รับข้อมูลการขอเปิดร้านค้าของคุณเรียบร้อยแล้ว ระบบได้แจ้งเตือนผู้ดูแลให้ทราบแล้ว โปรดรอการพิจารณาประมาณ 1-2 วันทำการ
                     </p>
-                    
                     <div class="pending-shop-preview">
-                        <div class="preview-shop-icon">
-                            <i class="fas fa-store"></i>
-                        </div>
+                        <div class="preview-shop-icon"><i class="fas fa-store"></i></div>
                         <div>
                             <div class="preview-meta-label">ชื่อร้านค้าที่เสนอ</div>
-                            <div class="preview-meta-value">
-                                <?= htmlspecialchars($existing_shop['shop_name']) ?>
-                            </div>
+                            <div class="preview-meta-value"><?= htmlspecialchars($existing_shop['shop_name']) ?></div>
                         </div>
                     </div>
-                    
                     <a href="../pages/profile.php" class="btn-return-profile">
                         <i class="fas fa-arrow-left"></i> กลับไปหน้าโปรไฟล์
                     </a>
@@ -827,29 +724,101 @@ require_once '../includes/header.php';
 
                 <form action="register_seller.php" method="POST" id="sellerRegistrationForm">
                     
+                    <!-- ชื่อร้านค้า -->
                     <div class="input-field-group">
                         <div class="input-field-label">
                             <label for="inputShopName">ชื่อร้านค้า <span class="input-required-mark">*</span></label>
                             <span class="input-character-count" id="counterShopName">0 / 50</span>
                         </div>
-                        <input type="text" name="shop_name" id="inputShopName" class="form-input-element" 
-                               placeholder="เช่น BNCC Stationery" 
-                               value="<?= htmlspecialchars($_POST['shop_name'] ?? '') ?>" 
+                        <input type="text" name="shop_name" id="inputShopName" class="form-input-element"
+                               placeholder="เช่น BNCC Stationery"
+                               value="<?= htmlspecialchars($_POST['shop_name'] ?? '') ?>"
                                maxlength="50" autocomplete="off" autofocus>
                     </div>
 
+                    <!-- รายละเอียดร้าน -->
                     <div class="input-field-group">
                         <div class="input-field-label">
                             <label for="inputShopDesc">รายละเอียดและจุดเด่นของร้าน <span class="input-required-mark">*</span></label>
                             <span class="input-character-count" id="counterShopDesc">0 / 500</span>
                         </div>
-                        <textarea name="shop_description" id="inputShopDesc" class="form-input-element" rows="4" 
-                                  placeholder="อธิบายสั้นๆ ว่าร้านของคุณขายอะไร มีสินค้าประเภทไหน หรือมีจุดเด่นบริการอะไรให้ลูกค้ารู้จัก..." 
+                        <textarea name="shop_description" id="inputShopDesc" class="form-input-element" rows="3"
+                                  placeholder="อธิบายสั้นๆ ว่าร้านของคุณขายอะไร มีสินค้าประเภทไหน..."
                                   maxlength="500"><?= htmlspecialchars($_POST['shop_description'] ?? '') ?></textarea>
                     </div>
 
+                    <!-- ── ช่องทางติดต่อ ── -->
+                    <div class="contact-section-label">
+                        <i class="fas fa-address-card"></i> ช่องทางติดต่อร้าน (ไม่บังคับ)
+                    </div>
+
+                    <div class="contact-grid">
+
+                        <!-- Instagram -->
+                        <div class="input-field-group" style="margin-bottom:0;">
+                            <div class="input-field-label">
+                                <label for="inputContactIg"><i class="fab fa-instagram" style="color:#e1306c;"></i> Instagram</label>
+                            </div>
+                            <div class="contact-input-wrap">
+                                <i class="fab fa-instagram contact-input-icon ig"></i>
+                                <input type="text" name="contact_ig" id="inputContactIg"
+                                       class="form-input-element with-icon"
+                                       placeholder="username (ไม่ใส่ @)"
+                                       value="<?= htmlspecialchars($_POST['contact_ig'] ?? '') ?>"
+                                       maxlength="100">
+                            </div>
+                        </div>
+
+                        <!-- LINE -->
+                        <div class="input-field-group" style="margin-bottom:0;">
+                            <div class="input-field-label">
+                                <label for="inputContactLine"><i class="fab fa-line" style="color:#06c755;"></i> LINE ID</label>
+                            </div>
+                            <div class="contact-input-wrap">
+                                <i class="fab fa-line contact-input-icon line"></i>
+                                <input type="text" name="contact_line" id="inputContactLine"
+                                       class="form-input-element with-icon"
+                                       placeholder="LINE ID ของคุณ"
+                                       value="<?= htmlspecialchars($_POST['contact_line'] ?? '') ?>"
+                                       maxlength="100">
+                            </div>
+                        </div>
+
+                        <!-- Facebook -->
+                        <div class="input-field-group" style="margin-bottom:0;">
+                            <div class="input-field-label">
+                                <label for="inputContactFb"><i class="fab fa-facebook" style="color:#1877f2;"></i> Facebook</label>
+                            </div>
+                            <div class="contact-input-wrap">
+                                <i class="fab fa-facebook contact-input-icon facebook"></i>
+                                <input type="text" name="contact_facebook" id="inputContactFb"
+                                       class="form-input-element with-icon"
+                                       placeholder="ชื่อ Facebook หรือ URL"
+                                       value="<?= htmlspecialchars($_POST['contact_facebook'] ?? '') ?>"
+                                       maxlength="100">
+                            </div>
+                        </div>
+
+                        <!-- เบอร์โทร -->
+                        <div class="input-field-group" style="margin-bottom:0;">
+                            <div class="input-field-label">
+                                <label for="inputContactPhone"><i class="fas fa-phone" style="color:var(--seller-color-primary);"></i> เบอร์โทร</label>
+                            </div>
+                            <div class="contact-input-wrap">
+                                <i class="fas fa-phone contact-input-icon phone"></i>
+                                <input type="tel" name="contact_phone" id="inputContactPhone"
+                                       class="form-input-element with-icon"
+                                       placeholder="0XX-XXX-XXXX"
+                                       value="<?= htmlspecialchars($_POST['contact_phone'] ?? '') ?>"
+                                       maxlength="20">
+                            </div>
+                        </div>
+
+                    </div><!-- /.contact-grid -->
+
+                    <!-- ยอมรับเงื่อนไข -->
                     <div class="terms-agreement-wrapper">
-                        <input type="checkbox" name="accept_terms" id="inputAcceptTerms" class="custom-check-element" 
+                        <input type="checkbox" name="accept_terms" id="inputAcceptTerms" class="custom-check-element"
                                <?= isset($_POST['accept_terms']) ? 'checked' : '' ?>>
                         <label for="inputAcceptTerms" class="custom-check-label">
                             ข้าพเจ้ายืนยันว่าข้อมูลถูกต้อง และยอมรับ <strong>กฎระเบียบการซื้อขาย</strong> ภายในวิทยาลัย หากมีการฉ้อโกงหรือละเมิดกฎ ยินยอมให้ระงับบัญชีถาวร
@@ -872,13 +841,13 @@ require_once '../includes/header.php';
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
 
-    const elShopName = document.getElementById('inputShopName');
-    const elShopDesc = document.getElementById('inputShopDesc');
-    const elTerms = document.getElementById('inputAcceptTerms');
+    const elShopName  = document.getElementById('inputShopName');
+    const elShopDesc  = document.getElementById('inputShopDesc');
+    const elTerms     = document.getElementById('inputAcceptTerms');
     const elBtnSubmit = document.getElementById('btnSubmitRequest');
-    const cntName = document.getElementById('counterShopName');
-    const cntDesc = document.getElementById('counterShopDesc');
-    const regForm = document.getElementById('sellerRegistrationForm');
+    const cntName     = document.getElementById('counterShopName');
+    const cntDesc     = document.getElementById('counterShopDesc');
+    const regForm     = document.getElementById('sellerRegistrationForm');
 
     if (!regForm) return;
 
@@ -886,9 +855,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const valName = elShopName.value.trim();
         const valDesc = elShopDesc.value.trim();
         
-        // อนุญาตให้ผ่านถ้ามีอย่างน้อย 1 ตัวอักษรขึ้นไป
-        const isNameValid = valName.length >= 1 && valName.length <= 50;
-        const isDescValid = valDesc.length >= 1 && valDesc.length <= 500;
+        const isNameValid    = valName.length >= 1 && valName.length <= 50;
+        const isDescValid    = valDesc.length >= 1 && valDesc.length <= 500;
         const isTermsChecked = elTerms.checked;
 
         isNameValid ? elShopName.classList.add('is-valid') : elShopName.classList.remove('is-valid');
@@ -904,10 +872,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateCharCounters() {
         const lenName = elShopName.value.length;
         const lenDesc = elShopDesc.value.length;
-
         cntName.textContent = `${lenName} / 50`;
         cntDesc.textContent = `${lenDesc} / 500`;
-
         cntName.classList.toggle('limit-reached', lenName >= 50);
         cntDesc.classList.toggle('limit-reached', lenDesc >= 500);
     }
@@ -915,29 +881,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const trackingEvents = ['input', 'keyup', 'change', 'paste', 'cut'];
     
     trackingEvents.forEach(evt => {
-        if(elShopName) {
-            elShopName.addEventListener(evt, () => {
-                updateCharCounters();
-                evaluateFormValidity();
-            });
-        }
-        if(elShopDesc) {
-            elShopDesc.addEventListener(evt, () => {
-                updateCharCounters();
-                evaluateFormValidity();
-            });
-        }
+        elShopName?.addEventListener(evt, () => { updateCharCounters(); evaluateFormValidity(); });
+        elShopDesc?.addEventListener(evt, () => { updateCharCounters(); evaluateFormValidity(); });
     });
 
-    if(elTerms) {
-        elTerms.addEventListener('change', evaluateFormValidity);
-    }
+    elTerms?.addEventListener('change', evaluateFormValidity);
 
-    regForm.addEventListener('submit', function(e) {
+    regForm.addEventListener('submit', function() {
         if (!elBtnSubmit.disabled) {
             elBtnSubmit.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i><span>กำลังส่งข้อมูลและแจ้งแอดมิน...</span>';
             elBtnSubmit.style.opacity = '0.9';
-            elBtnSubmit.style.cursor = 'wait';
+            elBtnSubmit.style.cursor  = 'wait';
         }
     });
 
