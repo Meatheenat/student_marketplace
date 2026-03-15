@@ -26,6 +26,7 @@ if (isset($_GET['code'])) {
         $_SESSION['flash_message'] = "ขออภัย ระบบอนุญาตให้เข้าใช้งานเฉพาะอีเมลวิทยาลัย (@bncc.ac.th) เท่านั้น";
         $_SESSION['flash_type'] = "danger";
         redirect('login.php');
+        exit(); // ใส่ exit กันโค้ดรันต่อ
     }
 
     $db = getDB();
@@ -34,7 +35,7 @@ if (isset($_GET['code'])) {
     $user = $stmt->fetch();
 
     if ($user) {
-        // 🚫 🛠️ [แก้ไขใหม่] ตรวจสอบสถานะการโดนแบนสำหรับผู้ใช้ Google พร้อมปุ่มพรีเมียม
+        // 🚫 🛠️ ตรวจสอบสถานะการโดนแบนสำหรับผู้ใช้ Google พร้อมปุ่มพรีเมียม
         if (isset($user['is_banned']) && $user['is_banned'] == 1) {
             $_SESSION['flash_message'] = "🚫 บัญชีของคุณถูกระงับการใช้งานชั่วคราว <br>
                 <a href='appeal_ban.php' style='
@@ -54,6 +55,7 @@ if (isset($_GET['code'])) {
                 </a>";
             $_SESSION['flash_type'] = "danger";
             redirect('login.php'); // ดีดกลับไปหน้า Login เพื่อโชว์ปุ่ม
+            exit();
         }
 
         // บันทึกสถานะการเข้าสู่ระบบ
@@ -61,13 +63,21 @@ if (isset($_GET['code'])) {
         $_SESSION['fullname']   = $user['fullname'];
         $_SESSION['role']       = $user['role'];
         $_SESSION['student_id'] = $user['student_id'];
-        $_SESSION['profile_img'] = $user['profile_img'] ?? 'default_profile.png'; // ← เพิ่มบรรทัดนี้
+        $_SESSION['profile_img'] = $user['profile_img'] ?? 'default_profile.png';
+        
         redirect('../pages/index.php');
+        exit();
+
     } else {
-        // หากยังไม่มีข้อมูลสมาชิก ให้ไปหน้าลงทะเบียนเพิ่มเติม
-        $_SESSION['temp_email'] = $email;
-        redirect('register_google.php');
+        // 🎯 🛠️ [แก้ไขใหม่] ถ้าเข้าใช้งานครั้งแรก (ไม่มีข้อมูลในระบบ) ให้เตะกลับไปหน้า Login และบอกให้ใช้ RMS
+        $_SESSION['flash_message'] = "<b>พบการเข้าใช้งานครั้งแรก!</b><br>กรุณาเข้าสู่ระบบด้วย <b>รหัสนักศึกษา (RMS)</b> ในครั้งแรก<br>เพื่อดึงข้อมูล ชื่อ, สาขา และเบอร์โทรให้อัตโนมัติครับ";
+        $_SESSION['flash_type'] = "warning"; // ใช้สีเหลืองเตือน
+        
+        redirect('login.php');
+        exit();
     }
 } else {
     redirect('login.php');
+    exit();
 }
+?>
