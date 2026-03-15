@@ -361,15 +361,19 @@ require_once '../includes/header.php';
                             $line_id = (in_array($user['role'], ['admin', 'teacher'])) ? ($user['line_user_id'] ?? '') : ($shop_info['line_user_id'] ?? '');
                             if (empty($line_id)): 
                             ?>
-                                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px; font-weight: 600;">ผู้ใช้นี้ยังไม่ได้เชื่อมต่อ LINE</p>
+                                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px; font-weight: 600;">ผู้ใช้นี้ยังไม่ได้เชื่อมต่อระบบแจ้งเตือน</p>
                                 <?php if (!$is_viewing_other): ?>
                                     <?php
                                     $client_id = "2009322126"; 
                                     $redirect_uri = urlencode("https://hosting.bncc.ac.th/s673190104/student_marketplace/auth/line_login_callback.php");
                                     $state = $_SESSION['user_id'];
-                                    $line_auth_url = "https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=$client_id&redirect_uri=$redirect_uri&state=$state&scope=profile%20openid";
+                                    
+                                    // 🎯 ไฮไลท์: เติม &bot_prompt=aggressive ต่อท้ายตรงนี้! ระบบจะเด้งถามให้เพิ่มเพื่อนอัตโนมัติเลย
+                                    $line_auth_url = "https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=$client_id&redirect_uri=$redirect_uri&state=$state&scope=profile%20openid&bot_prompt=aggressive";
                                     ?>
-                                    <a href="<?= $line_auth_url ?>" class="btn-line-connect">เชื่อมต่อ LINE</a>
+                                    <a href="<?= $line_auth_url ?>" class="btn-line-connect">
+                                        เชื่อมต่อ LINE
+                                    </a>
                                 <?php endif; ?>
                             <?php else: ?>
                                 <div style="display: flex; justify-content: center; align-items: center; gap: 8px; color: #06c755; font-size: 0.95rem; font-weight: 800; margin-bottom: 10px;">
