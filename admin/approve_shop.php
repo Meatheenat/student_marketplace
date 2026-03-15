@@ -1,15 +1,16 @@
 <?php
 /**
- * -------------------------------------------------------------------------
- * 1. CORE INITIALIZATION & LOGIC PROCESSING (MUST BE AT THE VERY TOP)
- * -------------------------------------------------------------------------
- * คำเตือน: ห้ามมีเว้นวรรค, บรรทัดว่าง หรือ HTML ใดๆ ก่อนเปิด tag <?php 
- * เพื่อป้องกัน Error: Cannot modify header information
+ * BNCC Market - Admin Shop Approval
  */
+
+// 🚀 1. โหลด Functions มาก่อนเสมอ!
 require_once '../includes/functions.php';
 
-// 🛡️ Security Check: ตรวจสอบสิทธิ์ว่าต้องเป็น Admin เท่านั้น
-checkRole('admin');
+// 🎯 🛠️ 2. เช็คสิทธิ์: อนุญาตให้ทั้ง admin และ teacher เข้าได้
+// แก้ไข: เปลี่ยนจาก checkRole('admin') เป็นเช็คเอง เพื่อรองรับทั้ง admin และ teacher
+if (!isLoggedIn() || ($_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'teacher')) {
+    redirect('../pages/index.php');
+}
 
 $db = getDB();
 
@@ -49,15 +50,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['sho
         }
 
         $db->commit();
+
+        // 🎯 แก้ไข: ย้าย redirect เข้ามาใน try block หลัง commit สำเร็จ
+        header("Location: approve_shop.php");
+        exit();
+
     } catch (PDOException $e) {
         $db->rollBack();
         $_SESSION['flash_message'] = "เกิดข้อผิดพลาดของระบบ: " . $e->getMessage();
         $_SESSION['flash_type'] = "danger";
-    }
 
-    // 🎯 Redirect กลับไปหน้าเดิมเพื่อล้างค่า POST (นี่คือจุดที่แก้ Headers already sent)
-    header("Location: approve_shop.php");
-    exit();
+        // redirect กลับแม้เกิด error
+        header("Location: approve_shop.php");
+        exit();
+    }
 }
 
 /**
