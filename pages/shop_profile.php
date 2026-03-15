@@ -8,7 +8,7 @@ require_once '../includes/header.php';
 require_once '../includes/functions.php';
 
 $db = getDB();
-$current_user_id = $_SESSION['user_id'] ?? 0; // 🎯 รับค่า User ID ของคนที่กำลังดูเว็บอยู่
+$current_user_id = $_SESSION['user_id'] ?? 0;
 
 // 1. รับ ID ร้านค้า
 $shop_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -17,7 +17,7 @@ if ($shop_id <= 0) {
     redirect('index.php');
 }
 
-// 2. ดึงข้อมูลร้านค้าและเจ้าของร้าน (🎯 เพิ่ม u.role เข้ามาใน Query เพื่อใช้ดึง Badge)
+// 2. ดึงข้อมูลร้านค้าและเจ้าของร้าน (เพิ่ม contact_facebook, contact_phone)
 $shop_sql = "SELECT s.*, u.fullname, u.class_room, u.role 
              FROM shops s 
              JOIN users u ON s.user_id = u.id 
@@ -35,7 +35,7 @@ if (!$shop) {
     exit;
 }
 
-// 🎯 🛠️ [เพิ่มใหม่] เช็กสถานะการติดตามร้านค้าจากตาราง follows
+// เช็กสถานะการติดตามร้านค้า
 $is_following = false;
 if ($current_user_id > 0) {
     $follow_check = $db->prepare("SELECT id FROM follows WHERE user_id = ? AND shop_id = ?");
@@ -43,12 +43,12 @@ if ($current_user_id > 0) {
     $is_following = $follow_check->fetch() ? true : false;
 }
 
-// 🎯 🛠️ [เพิ่มใหม่] ดึงจำนวนผู้ติดตามทั้งหมดของร้านนี้
+// ดึงจำนวนผู้ติดตามทั้งหมด
 $follower_count_stmt = $db->prepare("SELECT COUNT(*) FROM follows WHERE shop_id = ?");
 $follower_count_stmt->execute([$shop_id]);
 $total_followers = $follower_count_stmt->fetchColumn();
 
-// 3. ดึงสินค้าทั้งหมดของร้านนี้ (ซ่อนอันที่โดน Soft Delete)
+// 3. ดึงสินค้าทั้งหมด (ซ่อน soft delete)
 $prod_sql = "SELECT p.*, c.category_name 
              FROM products p 
              JOIN categories c ON p.category_id = c.id 
@@ -184,11 +184,13 @@ $pageTitle = "ร้าน " . $shop['shop_name'];
     }
     .contact-btn-solid:hover { transform: translateY(-3px) scale(1.02); }
     
-    .btn-line-solid { background: #06c755; color: white !important; }
-    .btn-ig-solid { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); color: white !important; }
-    .btn-chat-solid { background: var(--solid-primary); color: white !important; box-shadow: 0 5px 15px rgba(79, 70, 229, 0.3); }
+    .btn-line-solid     { background: #06c755; color: white !important; }
+    .btn-ig-solid       { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); color: white !important; }
+    .btn-chat-solid     { background: var(--solid-primary); color: white !important; box-shadow: 0 5px 15px rgba(79, 70, 229, 0.3); }
+    .btn-fb-solid       { background: #1877f2; color: white !important; box-shadow: 0 5px 15px rgba(24,119,242,0.3); }
+    .btn-phone-solid    { background: #059669; color: white !important; box-shadow: 0 5px 15px rgba(5,150,105,0.3); }
 
-    /* 🎯 🛠️ ปุ่มติดตามแบบใหม่ (Follow Button) */
+    /* ปุ่มติดตาม */
     .btn-follow-solid {
         background: var(--solid-card);
         border: 2px solid var(--solid-primary);
@@ -202,7 +204,7 @@ $pageTitle = "ร้าน " . $shop['shop_name'];
     }
     .btn-follow-solid:hover { transform: scale(1.05); }
 
-    /* 🧱 Product Card */
+    /* 🧱 Product section */
     .section-title {
         font-size: 1.8rem;
         font-weight: 900;
@@ -238,24 +240,21 @@ $pageTitle = "ร้าน " . $shop['shop_name'];
 
     .price-badge {
         position: absolute;
-        top: 15px; 
-        left: 15px; 
-        background: #0f172a; 
-        color: #ffffff;
+        top: 15px; left: 15px;
+        background: #0f172a; color: #ffffff;
         padding: 8px 18px;
         border-radius: 12px;
-        font-weight: 900;
-        font-size: 1.4rem; 
+        font-weight: 900; font-size: 1.4rem;
         letter-spacing: -0.5px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.4); 
-        border: 2px solid rgba(255,255,255,0.1); 
-        animation: subtlePulse 2s infinite alternate; 
+        box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+        border: 2px solid rgba(255,255,255,0.1);
+        animation: subtlePulse 2s infinite alternate;
         z-index: 10;
     }
 
     @keyframes subtlePulse {
         from { transform: scale(1); }
-        to { transform: scale(1.05); }
+        to   { transform: scale(1.05); }
     }
 
     .status-badge-top {
@@ -334,14 +333,27 @@ $pageTitle = "ร้าน " . $shop['shop_name'];
                 </a>
             <?php endif; ?>
 
-            <?php if(!empty($shop['contact_line'])): ?>
+            <?php if (!empty($shop['contact_line'])): ?>
                 <a href="<?php echo getContactLink('line', $shop['contact_line']); ?>" target="_blank" class="contact-btn-solid btn-line-solid">
                     <i class="fab fa-line" style="font-size: 1.2rem;"></i> LINE ติดต่อ
                 </a>
             <?php endif; ?>
-            <?php if(!empty($shop['contact_ig'])): ?>
+
+            <?php if (!empty($shop['contact_ig'])): ?>
                 <a href="<?php echo getContactLink('ig', $shop['contact_ig']); ?>" target="_blank" class="contact-btn-solid btn-ig-solid">
                     <i class="fab fa-instagram" style="font-size: 1.2rem;"></i> Instagram
+                </a>
+            <?php endif; ?>
+
+            <?php if (!empty($shop['contact_facebook'])): ?>
+                <a href="https://www.facebook.com/<?php echo e($shop['contact_facebook']); ?>/" target="_blank" class="contact-btn-solid btn-fb-solid">
+                    <i class="fab fa-facebook" style="font-size: 1.2rem;"></i> Facebook
+                </a>
+            <?php endif; ?>
+
+            <?php if (!empty($shop['contact_phone'])): ?>
+                <a href="tel:<?php echo e($shop['contact_phone']); ?>" class="contact-btn-solid btn-phone-solid">
+                    <i class="fas fa-phone" style="font-size: 1.2rem;"></i> <?php echo e($shop['contact_phone']); ?>
                 </a>
             <?php endif; ?>
         </div>
@@ -392,20 +404,20 @@ $pageTitle = "ร้าน " . $shop['shop_name'];
             if (entry.isIntersecting) {
                 setTimeout(() => {
                     entry.target.classList.add('show');
-                }, index * 50); 
+                }, index * 50);
             }
         });
     }, { threshold: 0.1 });
 
     document.querySelectorAll('.product-box').forEach(box => observer.observe(box));
 
-    // 🎯 🛠️ [เพิ่มใหม่] JavaScript สำหรับปุ่มติดตามร้านค้า (AJAX)
+    // JavaScript สำหรับปุ่มติดตามร้านค้า (AJAX)
     const followBtn = document.getElementById('followBtn');
     if (followBtn) {
         followBtn.addEventListener('click', function() {
             const shopId = this.dataset.shop;
             const btn = this;
-            const countEl = document.getElementById('follower_count'); // 🎯 🛠️ ตัวนับจำนวนคนติดตาม
+            const countEl = document.getElementById('follower_count');
             
             btn.disabled = true;
             btn.style.opacity = '0.7';
@@ -424,21 +436,16 @@ $pageTitle = "ร้าน " . $shop['shop_name'];
 
                 let currentCount = parseInt(countEl.innerText.replace(/,/g, ''));
 
-                if(data.status === 'followed') {
+                if (data.status === 'followed') {
                     btn.classList.add('following');
                     btn.innerHTML = '<i class="fas fa-check"></i> กำลังติดตาม';
-                    
-                    // 🎯 🛠️ อัปเดตตัวเลขสดๆ
                     countEl.innerText = (currentCount + 1).toLocaleString();
-
-                    if(typeof showToast === 'function') {
+                    if (typeof showToast === 'function') {
                         showToast('สำเร็จ!', 'คุณเริ่มติดตามร้านค้านี้แล้ว');
                     }
-                } else if(data.status === 'unfollowed') {
+                } else if (data.status === 'unfollowed') {
                     btn.classList.remove('following');
                     btn.innerHTML = '<i class="fas fa-plus"></i> ติดตามร้านนี้';
-                    
-                    // 🎯 🛠️ อัปเดตตัวเลขสดๆ
                     countEl.innerText = (currentCount - 1).toLocaleString();
                 } else {
                     alert(data.message || 'เกิดข้อผิดพลาด');
