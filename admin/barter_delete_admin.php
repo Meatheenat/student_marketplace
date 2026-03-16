@@ -9,7 +9,7 @@ require_once '../includes/functions.php';
 
 // 2. เช็กสิทธิ์ความปลอดภัย (Security Gate)
 // บังคับว่าต้องล็อกอิน และต้องมี Role เป็น 'admin' เท่านั้นถึงจะทำได้!
-if (!isLoggedIn() || $_SESSION['role'] !== 'admin') {
+if (!isLoggedIn() || !in_array($_SESSION['role'], ['admin', 'teacher'])) {
     $_SESSION['flash_message'] = "คุณไม่มีสิทธิ์เข้าถึงระบบนี้ครับ!";
     $_SESSION['flash_type'] = "danger";
     
