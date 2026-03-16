@@ -39,7 +39,10 @@ Options -Indexes
 # ----------------------------------------------------------------------
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    
+    # ดักจับถ้าคนพิมพ์ไฟล์ .php มั่วๆ แล้วไม่มีอยู่จริง ให้บังคับโชว์ 404 ไปเลย
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_URI} \.php$
+    RewriteRule .* - [R=404,L]
     # 🚀 บังคับใช้ HTTPS เสมอ (ถ้าเซิร์ฟเวอร์พี่มี SSL แล้ว ให้เอาเครื่องหมาย # ออก 2 บรรทัดล่าง)
     # RewriteCond %{HTTPS} off
     # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
@@ -89,6 +92,5 @@ AddDefaultCharset UTF-8
 # ----------------------------------------------------------------------
 # 6. CUSTOM ERROR PAGES (หน้าแจ้งเตือนเวลาคนเข้าลิงก์ผิด)
 # ----------------------------------------------------------------------
-# สร้างไฟล์ 404.php สวยๆ มารองรับ แล้วเอาเครื่องหมาย # ออกเพื่อใช้งานได้เลย
- ErrorDocument 403 /student_marketplace/pages/403.php
- ErrorDocument 404 /student_marketplace/pages/404.php
+ErrorDocument 403 https://hosting.bncc.ac.th/s673190104/student_marketplace/pages/403.php
+ErrorDocument 404 https://hosting.bncc.ac.th/s673190104/student_marketplace/pages/404.php
