@@ -506,16 +506,18 @@ $posts = $stmt->fetchAll();
                 <article class="btr-card-item">
                     
                     <div class="btr-media-frame">
-                        <?php if (!empty($post['image_url'])): ?>
-                            <img src="../assets/images/barter/<?= htmlspecialchars($post['image_url']) ?>" 
-                                 alt="แลกเปลี่ยน: <?= htmlspecialchars($post['title']) ?>"
-                                 loading="lazy">
-                        <?php else: ?>
-                            <div class="btr-no-img-state">
-                                <i class="fas fa-camera-retro fa-3x mb-2"></i>
-                                <span class="fw-bold small">ไม่มีรูปภาพอ้างอิง</span>
-                            </div>
-                        <?php endif; ?>
+                        <a href="barter_detail.php?id=<?= $post['id'] ?>" style="display: block; width: 100%; height: 100%; text-decoration: none;">
+                            <?php if (!empty($post['image_url'])): ?>
+                                <img src="../assets/images/barter/<?= htmlspecialchars($post['image_url']) ?>" 
+                                     alt="แลกเปลี่ยน: <?= htmlspecialchars($post['title']) ?>"
+                                     loading="lazy">
+                            <?php else: ?>
+                                <div class="btr-no-img-state">
+                                    <i class="fas fa-camera-retro fa-3x mb-2"></i>
+                                    <span class="fw-bold small">ไม่มีรูปภาพอ้างอิง</span>
+                                </div>
+                            <?php endif; ?>
+                        </a>
                     </div>
 
                     <div class="btr-card-meta">
@@ -530,7 +532,11 @@ $posts = $stmt->fetchAll();
                     </div>
 
                     <div class="btr-card-body-box">
-                        <h2 class="btr-product-title"><?= htmlspecialchars($post['title']) ?></h2>
+                        <a href="barter_detail.php?id=<?= $post['id'] ?>" style="text-decoration: none; color: inherit;">
+                            <h2 class="btr-product-title" style="transition: color 0.3s; cursor: pointer;" onmouseover="this.style.color='var(--btr-primary)'" onmouseout="this.style.color=''">
+                                <?= htmlspecialchars($post['title']) ?>
+                            </h2>
+                        </a>
                         
                         <div class="btr-tags-container">
                             <div class="btr-badge-pill badge-category">
