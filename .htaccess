@@ -39,18 +39,24 @@ Options -Indexes
 # ----------------------------------------------------------------------
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    # ดักจับถ้าคนพิมพ์ไฟล์ .php มั่วๆ แล้วไม่มีอยู่จริง ให้บังคับโชว์ 404 ไปเลย
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_URI} \.php$
-    RewriteRule .* - [R=404,L]
+
     # 🚀 บังคับใช้ HTTPS เสมอ (ถ้าเซิร์ฟเวอร์พี่มี SSL แล้ว ให้เอาเครื่องหมาย # ออก 2 บรรทัดล่าง)
     # RewriteCond %{HTTPS} off
     # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-    # ซ่อนนามสกุล .php (เช่น เข้าเว็บ.com/about แทน about.php)
+    # 🎯 สเต็ป 1: ดักจับถ้าคนพิมพ์ไฟล์ .php มั่วๆ แล้วไม่มีอยู่จริง ให้บังคับโชว์ 404
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_URI} \.php$
+    RewriteRule .* - [R=404,L]
+
+    # 🎯 สเต็ป 2: บังคับลบ .php ออกจากเบราว์เซอร์ (ใครพิมพ์ login.php ให้เด้งเปลี่ยนเป็น login)
+    RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /+(.*)\.php($|\ |\?) [NC]
+    RewriteRule ^ /%1 [R=301,L]
+
+    # 🎯 สเต็ป 3: ซ่อนนามสกุล .php (เวลาคนเข้าเว็บแบบไม่มี .php ให้ระบบแอบดึงไฟล์จริงมาแสดง)
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME}\.php -f
-    RewriteRule ^(.*)$ $1.php [NC,L]
+    RewriteRule ^(.*)$ $1.php [L]
 </IfModule>
 
 # ----------------------------------------------------------------------
