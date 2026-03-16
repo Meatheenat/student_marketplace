@@ -6,7 +6,7 @@ session_start();
 require_once '../includes/functions.php';
 
 // 🛡️ เช็คสิทธิ์ Admin เท่านั้น
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin', 'teacher') {
     die("⚠️ Access Denied: คุณไม่มีสิทธิ์เข้าถึงส่วนนี้");
 }
 
