@@ -295,4 +295,9 @@ ADD COLUMN contact_facebook VARCHAR(100) NULL AFTER contact_ig,
 ADD COLUMN contact_phone VARCHAR(20) NULL AFTER contact_facebook;
 ALTER TABLE `barter_posts` 
 MODIFY COLUMN `status` ENUM('open', 'closed', 'deleted') NOT NULL DEFAULT 'open';
+ALTER TABLE `barter_posts` 
+MODIFY COLUMN `status` ENUM('pending', 'open', 'closed', 'deleted') NOT NULL DEFAULT 'pending';
+
+
+
 
