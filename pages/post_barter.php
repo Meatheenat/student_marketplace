@@ -42,8 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     try {
-        $stmt = $db->prepare("INSERT INTO barter_posts (user_id, title, item_have, item_want, description, image_url, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
-        
+        $stmt = $db->prepare("INSERT INTO barter_posts (user_id, title, item_have, item_want, description, image_url, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");$stmt = $db->prepare("INSERT INTO barter_posts (user_id, title, item_want, description, image_url, status) VALUES (?, ?, ?, ?, ?, 'open')");        
         if ($stmt->execute([$_SESSION['user_id'], $title, $item_have, $item_want, $description, $image, $status])) {
             
             // 🔔 แจ้งเตือนแอดมิน/ครู
