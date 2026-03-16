@@ -38,5 +38,5 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     $_SESSION['flash_type'] = "danger";
 }
 
-redirect('barter_manage.php');
+redirect('pages/barter_board');
 ?>
