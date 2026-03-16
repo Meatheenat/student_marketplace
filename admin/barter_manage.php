@@ -1,11 +1,9 @@
 <?php
 /**
  * 🛡️ BNCC Market - Barter Management Dashboard
- * หน้าจัดการระบบแลกเปลี่ยนสินค้า สำหรับ Admin และ Teacher
  */
 require_once '../includes/functions.php';
 
-// 1. 🚨 Security Gate: เช็กสิทธิ์ (อนุญาตแค่ admin และ teacher)
 if (!isLoggedIn() || !in_array($_SESSION['role'], ['admin', 'teacher'])) {
     $_SESSION['flash_message'] = "คุณไม่มีสิทธิ์เข้าถึงหน้านี้ครับ!";
     $_SESSION['flash_type'] = "danger";
@@ -14,11 +12,10 @@ if (!isLoggedIn() || !in_array($_SESSION['role'], ['admin', 'teacher'])) {
 
 $db = getDB();
 
-// 2. 📦 ดึงข้อมูลรายการ Barter ทั้งหมด (ที่ยังไม่ถูกลบ Soft Delete)
-// JOIN กับตาราง users เพื่อเอาชื่อคนโพสต์มาโชว์ด้วย
+// 🎯 ไฮไลท์: เปลี่ยนชื่อตารางเป็น barter_posts แล้ว
 $stmt = $db->query("
     SELECT b.*, u.fullname, u.student_id 
-    FROM barters b 
+    FROM barter_posts b 
     LEFT JOIN users u ON b.user_id = u.id 
     WHERE b.status != 'deleted' 
     ORDER BY b.created_at DESC
@@ -30,9 +27,6 @@ require_once '../includes/header.php';
 ?>
 
 <style>
-    /* ============================================================
-       🛠️ SOLID DESIGN SYSTEM - ADMIN TABLE
-       ============================================================ */
     :root {
         --admin-bg: #f8fafc;
         --admin-card: #ffffff;
@@ -42,7 +36,6 @@ require_once '../includes/header.php';
         --admin-danger: #ef4444;
         --admin-hover: #f1f5f9;
     }
-
     .dark-theme {
         --admin-bg: #0b0f19;
         --admin-card: #161b26;
@@ -50,7 +43,6 @@ require_once '../includes/header.php';
         --admin-border: #334155;
         --admin-hover: #1e293b;
     }
-
     .admin-wrapper {
         padding: 40px 20px;
         background-color: var(--admin-bg);
@@ -58,14 +50,12 @@ require_once '../includes/header.php';
         font-family: 'Prompt', sans-serif;
         transition: background-color 0.4s ease;
     }
-
     .admin-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 30px;
     }
-
     .admin-title {
         font-size: 2rem;
         font-weight: 900;
@@ -75,7 +65,6 @@ require_once '../includes/header.php';
         align-items: center;
         gap: 15px;
     }
-
     .admin-card {
         background: var(--admin-card);
         border: 2px solid var(--admin-border);
@@ -85,14 +74,11 @@ require_once '../includes/header.php';
         overflow-x: auto;
         transition: all 0.4s ease;
     }
-
-    /* --- Table Styles --- */
     .solid-table {
         width: 100%;
         border-collapse: separate;
         border-spacing: 0;
     }
-
     .solid-table th {
         background: var(--admin-hover);
         color: var(--text-muted);
@@ -104,10 +90,8 @@ require_once '../includes/header.php';
         letter-spacing: 1px;
         border-bottom: 2px solid var(--admin-border);
     }
-
     .solid-table th:first-child { border-top-left-radius: 16px; border-bottom-left-radius: 16px; }
     .solid-table th:last-child { border-top-right-radius: 16px; border-bottom-right-radius: 16px; }
-
     .solid-table td {
         padding: 20px;
         color: var(--admin-text);
@@ -116,16 +100,8 @@ require_once '../includes/header.php';
         border-bottom: 1px solid var(--admin-border);
         transition: background 0.2s;
     }
-
-    .solid-table tbody tr:hover td {
-        background: var(--admin-hover);
-    }
-
-    .solid-table tbody tr:last-child td {
-        border-bottom: none;
-    }
-
-    /* --- Elements --- */
+    .solid-table tbody tr:hover td { background: var(--admin-hover); }
+    .solid-table tbody tr:last-child td { border-bottom: none; }
     .item-img-thumb {
         width: 60px;
         height: 60px;
@@ -133,7 +109,6 @@ require_once '../includes/header.php';
         object-fit: cover;
         border: 2px solid var(--admin-border);
     }
-
     .badge-status {
         padding: 6px 14px;
         border-radius: 50px;
@@ -145,7 +120,6 @@ require_once '../includes/header.php';
     }
     .badge-active { background: rgba(16, 185, 129, 0.1); color: #10b981; }
     .badge-traded { background: rgba(99, 102, 241, 0.1); color: var(--admin-primary); }
-
     .btn-action {
         width: 40px; height: 40px;
         border-radius: 12px;
@@ -160,18 +134,10 @@ require_once '../includes/header.php';
     }
     .btn-view { background: rgba(99, 102, 241, 0.1); color: var(--admin-primary); }
     .btn-view:hover { background: var(--admin-primary); color: #fff; transform: translateY(-3px); }
-    
     .btn-delete { background: rgba(239, 68, 68, 0.1); color: var(--admin-danger); margin-left: 8px; }
     .btn-delete:hover { background: var(--admin-danger); color: #fff; transform: translateY(-3px); }
-
-    /* Empty State */
-    .empty-state {
-        text-align: center;
-        padding: 60px 20px;
-        color: var(--text-muted);
-    }
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
     .empty-state i { font-size: 4rem; color: var(--admin-border); margin-bottom: 15px; }
-
 </style>
 
 <div class="admin-wrapper">
@@ -193,7 +159,7 @@ require_once '../includes/header.php';
                         <tr>
                             <th width="80">ID</th>
                             <th width="90">รูปภาพ</th>
-                            <th>ชื่อของแลกเปลี่ยน</th>
+                            <th>หัวข้อประกาศ</th>
                             <th>ผู้ลงประกาศ</th>
                             <th width="150">สถานะ</th>
                             <th width="180">วันที่ลง</th>
@@ -206,16 +172,16 @@ require_once '../includes/header.php';
                             <td style="color: var(--text-muted);">#<?= htmlspecialchars($item['id']) ?></td>
                             <td>
                                 <?php 
-                                    $img = !empty($item['item_image']) ? "../assets/images/barters/" . $item['item_image'] : "../assets/images/no_image.png";
+                                    $img = !empty($item['image_url']) ? "../assets/images/barters/" . $item['image_url'] : "../assets/images/no_image.png";
                                 ?>
                                 <img src="<?= $img ?>" class="item-img-thumb" alt="Item">
                             </td>
                             <td>
                                 <div style="font-size: 1.05rem; font-weight: 800; color: var(--admin-text); margin-bottom: 4px;">
-                                    <?= htmlspecialchars($item['item_name'] ?? 'ไม่มีชื่อสินค้า') ?>
+                                    <?= htmlspecialchars($item['title'] ?? 'ไม่มีชื่อประกาศ') ?>
                                 </div>
                                 <div style="font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;">
-                                    ต้องการแลกกับ: <?= htmlspecialchars($item['target_item'] ?? '-') ?>
+                                    ต้องการแลก: <?= htmlspecialchars($item['item_want'] ?? '-') ?>
                                 </div>
                             </td>
                             <td>
@@ -223,10 +189,10 @@ require_once '../includes/header.php';
                                 <div style="font-size: 0.8rem; color: var(--text-muted);">รหัส: <?= htmlspecialchars($item['student_id'] ?? '-') ?></div>
                             </td>
                             <td>
-                                <?php if (($item['status'] ?? 'active') === 'active'): ?>
+                                <?php if (($item['status'] ?? 'open') === 'open'): ?>
                                     <span class="badge-status badge-active"><i class="fas fa-circle" style="font-size: 8px;"></i> กำลังหาแลก</span>
                                 <?php else: ?>
-                                    <span class="badge-status badge-traded"><i class="fas fa-check-circle"></i> แลกเปลี่ยนแล้ว</span>
+                                    <span class="badge-status badge-traded"><i class="fas fa-check-circle"></i> ปิดรับแลกแล้ว</span>
                                 <?php endif; ?>
                             </td>
                             <td style="font-size: 0.9rem; color: var(--text-muted);">
