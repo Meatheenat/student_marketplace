@@ -9,28 +9,23 @@
 Options -Indexes
 
 # 🚨 ไฮไลท์: บล็อกการเข้าถึงไฟล์ซ่อน (เช่น .env, .git, .htaccess) และไฟล์ระบบ
+# อัปเดตใช้ Require all denied สำหรับ Apache 2.4+
 <FilesMatch "^\.|\.(env|ini|log|sh|inc|bak)$">
-    Order allow,deny
-    Deny from all
+    Require all denied
 </FilesMatch>
 
-# บล็อกการเข้าถึงไฟล์เชื่อมต่อ DB และ Functions โดยตรง
-<FilesMatch "^(database\.php|functions\.php|config\.php|register\.php)$">
-    Order Allow,Deny
-    Deny from all
+# บล็อกการเข้าถึงไฟล์เชื่อมต่อ DB และ Functions โดยตรง (เอา register.php ออกแล้ว!)
+<FilesMatch "^(database\.php|functions\.php|config\.php)$">
+    Require all denied
 </FilesMatch>
 
 # ----------------------------------------------------------------------
 # 2. SECURITY HEADERS (เกราะป้องกันแฮกเกอร์ฝั่งเบราว์เซอร์)
 # ----------------------------------------------------------------------
 <IfModule mod_headers.c>
-    # ป้องกัน Clickjacking (ห้ามคนเอาเว็บเราไปแปะใน iframe ซ้อนเว็บอื่น)
     Header set X-Frame-Options "SAMEORIGIN"
-    # เปิดใช้งานตัวกรอง XSS ของเบราว์เซอร์
     Header set X-XSS-Protection "1; mode=block"
-    # ป้องกันเบราว์เซอร์เดาประเภทไฟล์ (MIME-type sniffing)
     Header set X-Content-Type-Options "nosniff"
-    # ไม่ส่งข้อมูล Referrer กลับไปหาเว็บอื่นถ้าไม่ได้ใช้ HTTPS
     Header set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
 
@@ -39,10 +34,6 @@ Options -Indexes
 # ----------------------------------------------------------------------
 <IfModule mod_rewrite.c>
     RewriteEngine On
-
-    # 🚀 บังคับใช้ HTTPS เสมอ (ถ้าเซิร์ฟเวอร์พี่มี SSL แล้ว ให้เอาเครื่องหมาย # ออก 2 บรรทัดล่าง)
-    # RewriteCond %{HTTPS} off
-    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
     # 🎯 สเต็ป 1: ดักจับถ้าคนพิมพ์ไฟล์ .php มั่วๆ แล้วไม่มีอยู่จริง ให้บังคับโชว์ 404
     RewriteCond %{REQUEST_FILENAME} !-f
@@ -62,10 +53,8 @@ Options -Indexes
 # ----------------------------------------------------------------------
 # 4. PERFORMANCE & COMPRESSION (บีบอัดให้เว็บโหลดไวจัดๆ)
 # ----------------------------------------------------------------------
-# ตั้งค่าภาษาเริ่มต้น
 AddDefaultCharset UTF-8
 
-# บีบอัดไฟล์ (Gzip/Deflate)
 <IfModule mod_deflate.c>
     AddOutputFilterByType DEFLATE text/plain text/html text/xml text/css
     AddOutputFilterByType DEFLATE application/xml application/xhtml+xml application/rss+xml
@@ -73,7 +62,7 @@ AddDefaultCharset UTF-8
     AddOutputFilterByType DEFLATE image/svg+xml
 </IfModule>
 
- ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # 6. CUSTOM ERROR PAGES (หน้าแจ้งเตือนเวลาคนเข้าลิงก์ผิด)
 # ----------------------------------------------------------------------
 ErrorDocument 403 https://hosting.bncc.ac.th/s673190104/student_marketplace/pages/403.php
