@@ -98,5 +98,5 @@ AddDefaultCharset UTF-8
 # ----------------------------------------------------------------------
 # 6. CUSTOM ERROR PAGES (หน้าแจ้งเตือนเวลาคนเข้าลิงก์ผิด)
 # ----------------------------------------------------------------------
-ErrorDocument 403 https://hosting.bncc.ac.th/s673190104/student_marketplace/pages/403.php
-ErrorDocument 404 https://hosting.bncc.ac.th/s673190104/student_marketplace/pages/404.php
+# ErrorDocument 403 https://hosting.bncc.ac.th/s673190104/student_marketplace/pages/403.php
+# ErrorDocument 404 https://hosting.bncc.ac.th/s673190104/student_marketplace/pages/404.php
