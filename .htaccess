@@ -73,29 +73,7 @@ AddDefaultCharset UTF-8
     AddOutputFilterByType DEFLATE image/svg+xml
 </IfModule>
 
-# ----------------------------------------------------------------------
-# 5. BROWSER CACHING (แคชไฟล์รูปลดภาระเซิร์ฟเวอร์)
-# ----------------------------------------------------------------------
-<IfModule mod_expires.c>
-    ExpiresActive On
-    
-    # แคชไฟล์รูปภาพ (เบราว์เซอร์จะจำไว้ 1 เดือน ไม่ต้องโหลดซ้ำ)
-    ExpiresByType image/jpg "access plus 1 month"
-    ExpiresByType image/jpeg "access plus 1 month"
-    ExpiresByType image/gif "access plus 1 month"
-    ExpiresByType image/png "access plus 1 month"
-    ExpiresByType image/webp "access plus 1 month"
-    
-    # แคช CSS/JS (1 สัปดาห์)
-    ExpiresByType text/css "access plus 1 week"
-    ExpiresByType application/javascript "access plus 1 week"
-    
-    # แคชไอคอนและฟอนต์ (1 ปี)
-    ExpiresByType image/x-icon "access plus 1 year"
-    ExpiresByType application/x-font-woff "access plus 1 year"
-</IfModule>
-
-# ----------------------------------------------------------------------
+ ----------------------------------------------------------------------
 # 6. CUSTOM ERROR PAGES (หน้าแจ้งเตือนเวลาคนเข้าลิงก์ผิด)
 # ----------------------------------------------------------------------
 ErrorDocument 403 https://hosting.bncc.ac.th/s673190104/student_marketplace/pages/403.php
