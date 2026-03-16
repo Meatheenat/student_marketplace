@@ -8,19 +8,38 @@ require_once '../includes/header.php';
 ?>
 
 <style>
+    /* ตั้งค่าตัวแปรสีเริ่มต้น (โหมดสว่าง) */
+    :root {
+        --err-bg: #f8fafc;
+        --err-card: #ffffff;
+        --err-title: #0f172a;
+        --err-desc: #64748b;
+        --err-border: #e2e8f0;
+    }
+
+    /* 🎯 โค้ดตัวเปลี่ยนสีสำหรับโหมดมืด (Dark Mode) */
+    .dark-theme {
+        --err-bg: #0b0f19;
+        --err-card: #161b26;
+        --err-title: #f8fafc;
+        --err-desc: #cbd5e1;
+        --err-border: #334155;
+    }
+
     .error-page-wrapper {
         min-height: calc(100vh - 200px);
         display: flex;
         align-items: center;
         justify-content: center;
         padding: 40px 20px;
-        background-color: var(--solid-bg, #f8fafc);
+        background-color: var(--err-bg);
         font-family: 'Prompt', sans-serif;
+        transition: background-color 0.4s ease;
     }
 
     .error-card {
-        background: var(--solid-card, #ffffff);
-        border: 2px solid #e2e8f0;
+        background: var(--err-card);
+        border: 2px solid var(--err-border);
         border-radius: 32px;
         padding: 60px 40px;
         text-align: center;
@@ -30,12 +49,11 @@ require_once '../includes/header.php';
         animation: slideUpFade 0.6s ease-out forwards;
         position: relative;
         overflow: hidden;
+        transition: all 0.4s ease;
     }
 
     .dark-theme .error-card {
-        background: #161b26;
-        border-color: #334155;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
     }
 
     .error-code {
@@ -62,20 +80,22 @@ require_once '../includes/header.php';
     .error-title {
         font-size: 1.8rem;
         font-weight: 800;
-        color: var(--solid-text, #0f172a);
+        color: var(--err-title);
         margin-bottom: 15px;
         letter-spacing: -0.5px;
+        transition: color 0.4s ease;
     }
 
     .error-desc {
         font-size: 1.05rem;
-        color: var(--text-muted, #64748b);
+        color: var(--err-desc);
         line-height: 1.6;
         margin-bottom: 35px;
         font-weight: 500;
         max-width: 400px;
         margin-left: auto;
         margin-right: auto;
+        transition: color 0.4s ease;
     }
 
     .btn-back-home {
