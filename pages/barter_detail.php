@@ -317,7 +317,7 @@ require_once '../includes/header.php';
                             <i class="fas fa-crown"></i> นี่คือประกาศของคุณเอง
                         </div>
                     <?php else: ?>
-                        <a href="offer_make.php?post_id=<?= $post['id'] ?>" class="btn-make-offer">
+                        <a href="chat.php?user=<?= $post['user_id'] ?>" class="btn-make-offer">
                             <i class="fas fa-handshake"></i> ยื่นข้อเสนอแลกเปลี่ยน
                         </a>
                     <?php endif; ?>
