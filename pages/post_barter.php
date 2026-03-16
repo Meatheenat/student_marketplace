@@ -42,9 +42,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     try {
-        $stmt = $db->prepare("INSERT INTO barter_posts (user_id, title, item_have, item_want, description, image_url, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");$stmt = $db->prepare("INSERT INTO barter_posts (user_id, title, item_want, description, image_url, status) VALUES (?, ?, ?, ?, ?, 'open')");        
-        if ($stmt->execute([$_SESSION['user_id'], $title, $item_have, $item_want, $description, $image, $status])) {
-            
+       // 🎯 เอาบรรทัดที่ซ้ำกันออก ให้เหลือแค่อันนี้อันเดียวพอครับ (มี ? 7 ตัว)
+$stmt = $db->prepare("INSERT INTO barter_posts (user_id, title, item_have, item_want, description, image_url, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
+
+// 🎯 ส่งข้อมูลไป 7 ตัว ให้ตรงกับ ? ด้านบนเป๊ะๆ
+if ($stmt->execute([
+    $_SESSION['user_id'], 
+    $title, 
+    $item_have, 
+    $item_want, 
+    $description, 
+    $image,  // ตรงนี้เช็กชื่อตัวแปรให้ดีนะครับว่าพี่ใช้ $image หรือ $image_url
+    $status
+])) {
+
             // 🔔 แจ้งเตือนแอดมิน/ครู
             $adminStmt = $db->query("SELECT id FROM users WHERE role IN ('admin', 'teacher')");
             $admins = $adminStmt->fetchAll(PDO::FETCH_COLUMN);
